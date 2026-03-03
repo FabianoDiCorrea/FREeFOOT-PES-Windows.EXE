@@ -113,6 +113,12 @@
 
 
 <script setup>
+import imgMelhorMundo from '../assets/trofeus/individuais/melhor_do_mundo.png'
+import imgMelhorTecnico from '../assets/trofeus/individuais/melhor_tecnico_mundo.png'
+import imgMelhorEuropa from '../assets/trofeus/individuais/melhor_da_europa.png'
+import imgMelhorAmerica from '../assets/trofeus/individuais/melhor_da_america.png'
+import imgMelhorConcacaf from '../assets/trofeus/individuais/melhor_da_concacaf.png'
+
 const loadAllData = async () => {
     loading.value = true
     // SEMPRE carrega tudo para o checklist para evitar instabilidade do store filtrado
@@ -146,11 +152,11 @@ const loadAllData = async () => {
 
     // Itens Especiais de Controle
     const awardsData = [
-        { id: 'aw-1', nome: 'Melhor do Mundo', trofeu: '/assets/trofeus/individuais/melhor_do_mundo.png' },
-        { id: 'aw-2', nome: 'Melhor do Mundo (Técnico)', trofeu: '/assets/trofeus/individuais/melhor_tecnico_mundo.png' },
-        { id: 'aw-3', nome: 'Melhor da Europa', trofeu: '/assets/trofeus/individuais/melhor_da_europa.png' },
-        { id: 'aw-4', nome: 'Melhor da CONMEBOL (Rei da América)', trofeu: '/assets/trofeus/individuais/melhor_da_america.png' },
-        { id: 'aw-5', nome: 'Melhor da CONCACAF', trofeu: '/assets/trofeus/individuais/melhor_da_concacaf.png' }
+        { id: 'aw-1', nome: 'Melhor do Mundo', trofeu: imgMelhorMundo },
+        { id: 'aw-2', nome: 'Melhor do Mundo (Técnico)', trofeu: imgMelhorTecnico },
+        { id: 'aw-3', nome: 'Melhor da Europa', trofeu: imgMelhorEuropa },
+        { id: 'aw-4', nome: 'Melhor da CONMEBOL (Rei da América)', trofeu: imgMelhorAmerica },
+        { id: 'aw-5', nome: 'Melhor da CONCACAF', trofeu: imgMelhorConcacaf }
     ]
 
     awardsData.forEach(aw => {

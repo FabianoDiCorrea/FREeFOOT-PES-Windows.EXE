@@ -261,6 +261,21 @@ const awardTypesList = [
   'Melhor da CONCACAF'
 ]
 
+// Importação estática para garantir inclusão no bundle do Electron/Vite
+import imgMelhorMundo from '../assets/trofeus/individuais/melhor_do_mundo.png'
+import imgMelhorTecnico from '../assets/trofeus/individuais/melhor_tecnico_mundo.png'
+import imgMelhorEuropa from '../assets/trofeus/individuais/melhor_da_europa.png'
+import imgMelhorAmerica from '../assets/trofeus/individuais/melhor_da_america.png'
+import imgMelhorConcacaf from '../assets/trofeus/individuais/melhor_da_concacaf.png'
+
+const trophyMap = {
+  'Melhor do Mundo': imgMelhorMundo,
+  'Melhor do Mundo (Técnico)': imgMelhorTecnico,
+  'Melhor da Europa': imgMelhorEuropa,
+  'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
+  'Melhor da CONCACAF': imgMelhorConcacaf
+}
+
 const searchQuery = ref('')
 const activeFilters = ref([])
 const expandedSeasons = ref([])
@@ -342,22 +357,7 @@ const isFormValid = computed(() => {
 
 const getTrophyUrl = (type) => {
   if (!type) return ''
-  
-  // Casos especiais de mapeamento conforme os arquivos enviados
-  if (type === 'Melhor do Mundo (Técnico)') {
-     return '/assets/trofeus/individuais/melhor_tecnico_mundo.png'
-  }
-  if (type === 'Melhor da CONMEBOL (Rei da América)') {
-     return '/assets/trofeus/individuais/melhor_da_america.png'
-  }
-
-  const filename = type.toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, '_')
-    .replace(/[^\w]/g, '')
-  
-  return `/assets/trofeus/individuais/${filename}.png`
+  return trophyMap[type] || ''
 }
 
 const handleTrophyError = (e) => {
