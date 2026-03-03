@@ -183,8 +183,8 @@
                         <tr>
                             <th class="text-start ps-3"><span>{{ selectedEntry.timeNome }}</span></th>
                             <th><span>POS.</span></th>
-                            <th><span>JOGOS</span></th>
                             <th><span>PONTOS</span></th>
+                            <th><span>JOGOS</span></th>
                             <th><span>VITORIAS</span></th>
                             <th><span>EMPATE</span></th>
                             <th><span>DERROTA</span></th>
@@ -201,8 +201,8 @@
                                 <span>{{ currentSeasonData?.nome || (selectedEntry.tipo === 'selecao' ? 'Copa do Mundo / Continental...' : 'Sincronizar Liga...') }}</span>
                             </td>
                             <td class="fw-bold"><span>{{ currentSeasonData?.posicao ? currentSeasonData.posicao + '°' : '---' }}</span></td>
+                            <td class="fw-bold text-info"><span>{{ currentSeasonData?.pontos || 0 }}</span></td>
                             <td><span>{{ currentSeasonData?.jogos || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.pontos || 0 }}</span></td>
                             <td><span>{{ currentSeasonData?.vitorias || 0 }}</span></td>
                             <td><span>{{ currentSeasonData?.empates || 0 }}</span></td>
                             <td><span>{{ currentSeasonData?.derrotas || 0 }}</span></td>
@@ -217,22 +217,22 @@
                                 <span>{{ selectedEntry.tipo === 'selecao' ? 'AMISTOSOS NA TEMPORADA' : 'TOTAL OUTRAS COMPETIÇÕES' }}</span>
                             </td>
                             <td><span>---</span></td>
+                            <td class="fw-bold text-info"><span>{{ copasPontosCalculado }}</span></td>
                             <td class="fw-bold"><span>{{ copasJogosCalculado }}</span></td>
-                            <td class="fw-bold"><span>{{ copasPontosCalculado }}</span></td>
                             <td><input v-model.number="selectedEntry.copas.vitorias" class="table-input"></td>
                             <td><input v-model.number="selectedEntry.copas.empates" class="table-input"></td>
                             <td><input v-model.number="selectedEntry.copas.derrotas" class="table-input"></td>
                             <td><input v-model.number="selectedEntry.copas.golsPro" class="table-input"></td>
                             <td><input v-model.number="selectedEntry.copas.golsContra" class="table-input"></td>
                             <td><span>{{ selectedEntry.copas.golsPro - selectedEntry.copas.golsContra }}</span></td>
-                            <td class="fw-bold"><span>{{ calculateWinRate({ jogos: copasJogosCalculado, vitorias: selectedEntry.copas.vitorias, empates: selectedEntry.copas.empates }) }}%</span></td>
+                            <td class="fw-bold"><span>{{ calculateWinRate({ pontos: copasPontosCalculado, jogos: copasJogosCalculado }) }}%</span></td>
                         </tr>
                         <!-- Linha de Resultado Total (Soma) -->
                         <tr class="row-total">
                             <td class="text-start ps-3 fw-black"><span>RESULTADO DA TEMPORADA</span></td>
                             <td><span>---</span></td>
+                            <td class="fw-bold text-info"><span>{{ totalStats.pontos }}</span></td>
                             <td class="fw-bold"><span>{{ totalStats.jogos }}</span></td>
-                            <td class="fw-bold"><span>{{ totalStats.pontos }}</span></td>
                             <td class="fw-bold"><span>{{ totalStats.vitorias }}</span></td>
                             <td class="fw-bold"><span>{{ totalStats.empates }}</span></td>
                             <td class="fw-bold"><span>{{ totalStats.derrotas }}</span></td>
@@ -345,6 +345,73 @@
         </div>
       </div>
 
+      <!-- Orçamento Financeiro -->
+      <div v-if="selectedEntry.tipo === 'clube'" class="row m-0 mb-4 px-2">
+         <div class="col-12 mt-2">
+            <div class="table-section-header text-center py-1 text-uppercase small fw-bold">ORÇAMENTO FINANCEIRO (PRÓX. TEMPORADA)</div>
+            
+            <div v-if="selectedEntry.orcamento">
+                <!-- Exibir Card de Orçamento Gerado -->
+                <div class="row g-3 px-3 py-3 bg-dark bg-opacity-50 rounded-bottom m-0">
+                    <div class="col-md-4">
+                        <div class="budget-card text-center p-3 border border-secondary rounded shadow">
+                            <div class="x-small fw-bold text-secondary mb-2">VERBA DE TRANSFERÊNCIAS</div>
+                            <h3 class="fw-black text-neon-green m-0">{{ formatCurrency(selectedEntry.orcamento.transferencias) }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="budget-card text-center p-3 border border-secondary rounded shadow">
+                            <div class="x-small fw-bold text-secondary mb-2">ORÇAMENTO SALARIAL</div>
+                            <h3 class="fw-black text-warning m-0">{{ formatCurrency(selectedEntry.orcamento.salarios) }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="budget-card text-center p-3 border border-warning rounded shadow bg-warning bg-opacity-10">
+                            <div class="x-small fw-bold text-warning mb-2">ORÇAMENTO TOTAL</div>
+                            <h3 class="fw-black text-white m-0">{{ formatCurrency(selectedEntry.orcamento.total) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="selectedEntry.orcamentoStatus === 'canceled'">
+                <div class="text-center p-4 bg-dark bg-opacity-50 rounded-bottom opacity-50">
+                    <i class="bi bi-x-circle d-block mb-2" style="font-size: 2rem;"></i>
+                    <div class="fw-bold x-small text-uppercase">Orçamento cancelado (Mudança de Clube)</div>
+                </div>
+            </div>
+            <div v-else>
+                <!-- Botão para Gerar Orçamento -->
+                <div class="text-center p-4 bg-dark bg-opacity-50 rounded-bottom">
+                    <p class="small text-secondary fw-bold mb-3">O orçamento da próxima temporada ainda não foi gerado.</p>
+                    <button class="btn btn-outline-success btn-lg fw-bold text-uppercase box-shadow" @click="openBudgetModal">
+                        <i class="bi bi-cash-coin me-2"></i> GERAR ORÇAMENTO
+                    </button>
+                </div>
+            </div>
+         </div>
+      </div>
+
+    </div>
+
+    <!-- Budget Modal -->
+    <div v-if="showBudgetModal" class="modal-backdrop-custom d-flex align-items-center justify-content-center">
+        <div class="modal-content-custom bg-dark border border-success p-4 rounded shadow-lg text-center" style="width: 450px;">
+            <i class="bi bi-question-circle text-success mb-3" style="font-size: 3rem;"></i>
+            <h4 class="text-white fw-black mb-3 text-uppercase">Confirmar Permanência?</h4>
+            <p class="text-secondary small mb-4">Para gerar o orçamento da próxima temporada, precisamos saber: você vai <strong>continuar comandando o {{ selectedEntry.timeNome }}</strong>?</p>
+            
+            <div class="d-flex flex-column gap-2">
+                <button class="btn btn-success fw-bold p-3 text-uppercase" @click="confirmBudgetGeneration">
+                    <i class="bi bi-check-circle me-1"></i> Sim, Continuarei (Gerar)
+                </button>
+                <button class="btn btn-outline-danger fw-bold p-3 text-uppercase" @click="cancelBudgetGeneration">
+                    <i class="bi bi-x-circle me-1"></i> Não, Vou Mudar de Clube
+                </button>
+            </div>
+            <button class="btn btn-link text-secondary text-decoration-none mt-3 x-small" @click="showBudgetModal = false">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </button>
+        </div>
     </div>
 
     <!-- Trophies Modal -->
@@ -406,6 +473,99 @@ const activeType = ref('clube') // 'clube' | 'selecao'
 const showForm = ref(false)
 const showTeams = ref(false)
 const showTrophyModal = ref(false)
+const showBudgetModal = ref(false)
+
+const openBudgetModal = () => {
+    showBudgetModal.value = true
+}
+
+const cancelBudgetGeneration = async () => {
+    selectedEntry.value.orcamentoStatus = 'canceled'
+    await careerStore.saveEntry(JSON.parse(JSON.stringify(selectedEntry.value)))
+    showBudgetModal.value = false
+}
+
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+}
+
+const confirmBudgetGeneration = async () => {
+    showBudgetModal.value = false;
+    
+    let base = 0;
+    const ligaNome = currentSeasonData.value?.nome?.toLowerCase() || '';
+    
+    if (ligaNome.includes('brasil') || ligaNome.includes('brasileirão') || ligaNome.includes('serie')) {
+        if (ligaNome.includes('série a') || ligaNome.includes('serie a')) base = 40000000;
+        else if (ligaNome.includes('série b') || ligaNome.includes('serie b')) base = 22000000;
+        else if (ligaNome.includes('série c') || ligaNome.includes('serie c')) base = 12000000;
+        else if (ligaNome.includes('série d') || ligaNome.includes('serie d')) base = 6000000;
+        else base = 25000000;
+    } else if (ligaNome.includes('argen')) {
+        if (ligaNome.includes('segunda') || ligaNome.includes('b nacional')) base = 20000000;
+        else base = 45000000;
+    } else if (ligaNome.includes('england') || ligaNome.includes('premier') || ligaNome.includes('championship')) {
+        if (ligaNome.includes('championship') || ligaNome.includes('segunda')) base = 50000000;
+        else base = 80000000;
+    } else {
+        base = 35000000;
+    }
+
+    let posBonus = 0;
+    const pos = currentSeasonData.value?.posicao || 0;
+    if (pos === 1) posBonus = 0.40;
+    else if (pos > 1 && pos <= 4) posBonus = 0.25;
+    else if (pos >= 5 && pos <= 12) posBonus = 0.10;
+    else if (pos > 12 && pos <= 16) posBonus = 0.00;
+    else if (pos > 16) posBonus = -0.15;
+
+    let cupBonus = 0;
+    let contBonus = 0;
+    
+    allCompetitionResults.value.forEach(r => {
+        const comp = r.competicao.toLowerCase();
+        const p = r.posicao;
+        
+        if (comp.includes('copa do brasil') || comp.includes('fa cup') || comp.includes('copa argentina') || comp.includes('copa del rey')) {
+             if (p === 'CAMPEÃO') cupBonus += 0.10;
+             else if (p === 'VICE-CAMPEÃO') cupBonus += 0.06;
+             else if (p === 'SEMIFINAL') cupBonus += 0.03;
+        }
+        
+        if (comp.includes('libertadores') || comp.includes('champions league')) {
+             if (p === 'CAMPEÃO') contBonus += 20000000;
+             else if (p === 'VICE-CAMPEÃO') contBonus += 10000000;
+             else if (p === 'SEMIFINAL') contBonus += 5000000;
+        } else if (comp.includes('sul-americana') || comp.includes('sudamericana') || comp.includes('europa league')) {
+             if (p === 'CAMPEÃO') contBonus += 10000000;
+             else if (p === 'VICE-CAMPEÃO') contBonus += 5000000;
+             else if (p === 'SEMIFINAL') contBonus += 2500000;
+        } else if (comp.includes('mundial de clubes') || comp.includes('club world cup')) {
+             if (p === 'CAMPEÃO') contBonus += 15000000;
+             else if (p === 'VICE-CAMPEÃO') contBonus += 8000000;
+        }
+    });
+
+    let budgetTransferencias = (base * (1 + posBonus + cupBonus)) + contBonus;
+    
+    let wagePerc = 0.55;
+    if (base <= 10000000) wagePerc = 0.70;
+    else if (base <= 25000000) wagePerc = 0.55;
+    else if (base <= 45000000) wagePerc = 0.35;
+    else wagePerc = 0.25;
+    
+    let budgetSalarios = budgetTransferencias * wagePerc;
+    let budgetTotal = budgetTransferencias + budgetSalarios;
+
+    selectedEntry.value.orcamento = {
+        transferencias: Math.round(budgetTransferencias),
+        salarios: Math.round(budgetSalarios),
+        total: Math.round(budgetTotal)
+    };
+    
+    selectedEntry.value.orcamentoStatus = 'generated';
+    await careerStore.saveEntry(JSON.parse(JSON.stringify(selectedEntry.value)));
+}
 
 const filteredHistory = computed(() => {
     return history.value.filter(h => h.tipo === activeType.value)
@@ -723,13 +883,12 @@ const totalStats = computed(() => {
 })
 
 const calculateWinRate = (stats) => {
-    // Se não tiver stats, retorna 0
-    if (!stats || !stats.jogos || stats.jogos === 0) return 0
-    
-    // Lógica eFootball / PES: (%) de VITÓRIAS (V / J * 100)
-    // Não é aproveitamento de pontos!
-    const rate = (stats.vitorias / stats.jogos) * 100
-    return Math.round(rate)
+    // NOVA FÓRMULA SOLICITADA: (((Vitórias * 3) + Empates) / (Jogos * 3)) * 100
+    if (!stats || !stats.jogos || stats.jogos === 0) return '0.00'
+    const pontos = stats.pontos !== undefined && stats.pontos > 0 ? stats.pontos : ((stats.vitorias || 0) * 3) + (stats.empates || 0);
+    const pontosMax = stats.jogos * 3;
+    const rate = (pontos / pontosMax) * 100;
+    return rate.toFixed(2);
 }
 
 const getPerformanceStatus = (rate) => {
@@ -893,53 +1052,62 @@ const currentSeasonData = computed(() => {
     let pontos = 0, jogos = 0, vitorias = 0, empates = 0, derrotas = 0, golsPro = 0, golsContra = 0, saldo = 0
     let percentualTexto = 0
 
-    if (numbers.length >= 9) {
-        // Ignorar posição (primeiro número)
-        //          Pos, P,      J,     V,        E,       D,        GP,      GC,          SG      (%)
-        const [pos, pts, games, wins, draws, losses, goalsF, goalsC, goalDiff, rate] = numbers
-        
-        // Verificar se J realmente é J (J >= V+E+D)
-        // Se games < wins, algo está errado (provavelmente games É wins e J está faltando)
-        if (games < wins + draws + losses) {
-             // Assumir: Pos, P, V, E, D, GP, GC, SG (J faltando)
-             //          0    1  2  3  4  5   6   7   (8=%)
-             const [p_pos, p_pts, p_wins, p_draws, p_losses, p_goalsF, p_goalsC, p_goalDiff, p_rate] = numbers;
-             
-             pontos = p_pts;
-             vitorias = p_wins; 
-             empates = p_draws; 
-             derrotas = p_losses; 
-             golsPro = p_goalsF; 
-             golsContra = p_goalsC;
-             saldo = p_goalDiff;
-             
-             jogos = vitorias + empates + derrotas;
-             if (p_rate) percentualTexto = p_rate;
-             
-        } else {
-             pontos = pts
-             jogos = games
-             vitorias = wins
-             empates = draws
-             derrotas = losses
-             golsPro = goalsF
-             golsContra = goalsC
-             saldo = goalDiff
-             if (rate) percentualTexto = rate;
+    let idxV = -1;
+    let fallbackJ = false;
+    
+    // 1. Procurar checksum J = V + E + D
+    // Procuramos V nas posições 1, 2 e 3
+    for (let i = 1; i <= 3; i++) {
+        if (numbers.length >= i + 3 && numbers[i-1] === numbers[i] + numbers[i+1] + numbers[i+2]) {
+            idxV = i;
+            break;
         }
-    } else if (numbers.length >= 8) {
-        // Fallback [Pos, P, V, E, D, GP, GC, SG]
-        const [pos, pts, wins, draws, losses, goalsF, goalsC, goalDiff] = numbers
-        
-        pontos = pts
-        vitorias = wins
-        empates = draws
-        derrotas = losses
-        golsPro = goalsF
-        golsContra = goalsC
-        saldo = goalDiff
-        
-        jogos = vitorias + empates + derrotas
+    }
+    
+    // 2. Procurar checksum P = V*3 + E (se J está faltando)
+    if (idxV === -1) {
+        for (let i = 1; i <= 2; i++) {
+            if (numbers.length >= i + 2 && numbers[i-1] === (numbers[i] * 3) + numbers[i+1]) {
+                idxV = i;
+                fallbackJ = true;
+                break;
+            }
+        }
+    }
+    
+    // 3. Fallback genérico se a matemática falhar (ex: punição de pontos)
+    if (idxV === -1) {
+        if (numbers.length >= 9) idxV = 3; // ex: [Pos, P, J, V...] -> V is 3
+        else if (numbers.length === 8) idxV = 2; // ex: [P, J, V...] or [Pos, P, V...] -> Assume V is 2
+        else idxV = 1;
+    }
+    
+    if (fallbackJ) {
+        pontos = numbers[idxV - 1] || 0;
+        vitorias = numbers[idxV] || 0;
+        empates = numbers[idxV + 1] || 0;
+        derrotas = numbers[idxV + 2] || 0;
+        golsPro = numbers[idxV + 3] || 0;
+        golsContra = numbers[idxV + 4] || 0;
+        saldo = numbers[idxV + 5] || 0;
+        jogos = vitorias + empates + derrotas;
+    } else {
+        pontos = numbers[idxV - 2] || 0;
+        jogos = numbers[idxV - 1] || 0;
+        vitorias = numbers[idxV] || 0;
+        empates = numbers[idxV + 1] || 0;
+        derrotas = numbers[idxV + 2] || 0;
+        golsPro = numbers[idxV + 3] || 0;
+        golsContra = numbers[idxV + 4] || 0;
+        saldo = numbers[idxV + 5] || 0;
+    }
+    
+    // Tentativa de puxar percentual se existir como numérico final (ex: '89%')
+    if (numbers.length > 8) {
+        let last = numbers[numbers.length - 1];
+        if (last > 0 && last <= 100 && last !== saldo && last !== golsContra && last !== golsPro) {
+            percentualTexto = last;
+        }
     }
     
     return {
@@ -1094,7 +1262,7 @@ const getCompLogo = (compName) => {
         .replace(/\s+/g, '-')
         .replace(/[^\w-]/g, '')
     
-    return `/logos/competitions/${slug}.png`
+    return `logos/competitions/${slug}.png`
 }
 
 // Auto-save changes in selectedEntry
@@ -1138,6 +1306,17 @@ watch(selectedEntry, async (newVal) => {
 .rank-card:hover, .obs-card:hover {
     background: rgba(255,255,255,0.05);
     border-color: rgba(255,255,255,0.2);
+}
+
+.budget-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+.budget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .rank-label {

@@ -135,7 +135,7 @@ const getCompLogo = (compName) => {
         .replace(/\s+/g, '-')
         .replace(/[^\w-]/g, '')
     
-    return `/logos/competitions/${slug}.png`
+    return `logos/competitions/${slug}.png`
 }
 
 // Formatar estrelas baseado no número de títulos

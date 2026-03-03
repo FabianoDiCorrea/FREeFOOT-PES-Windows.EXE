@@ -31,12 +31,12 @@ export const FEDERATIONS_DATA = {
     },
     "FIFA": {
         nome: "FIFA",
-        logo: "/logos/competitions/fifa.png",
+        logo: './logos/competitions/fifa.png',
         file: "fifa.png"
     },
     "Mundial": {
         nome: "FIFA",
-        logo: "/logos/competitions/fifa.png",
+        logo: './logos/competitions/fifa.png',
         file: "fifa.png"
     },
     "América": {

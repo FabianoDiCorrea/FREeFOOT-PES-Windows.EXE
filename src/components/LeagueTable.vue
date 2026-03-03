@@ -28,25 +28,18 @@ const props = defineProps({
   season: String // Necessário para marcar o time do usuário
 })
 
-// Helper para garantir que pegamos a célula correta mesmo que falte dado
-// ... (omitted similar parts if using replace_file_content, but I need to be exact)
-const getCell = (row, index) => {
-  return row[index] !== undefined ? row[index] : '-'
-}
-
-// Lógica de Estatísticas (Melhores/Piores)
+// Computar Mínimo e Máximo de GP/GC Dinamicamente com a Lógica Certa
 const statsExtremes = computed(() => {
   if (!props.data || props.data.length === 0) return {}
-
-  const gpValues = props.data.map(r => parseInt(r[6]) || 0)
-  const gcValues = props.data.map(r => parseInt(r[7]) || 0)
-
-  // Filtramos 0 se necessário, mas geralmente tabelas vêm com dados reais
+  const parsed = props.data.map(r => parsedRow(r));
+  const gpValues = parsed.map(p => p.golsPro);
+  const gcValues = parsed.map(p => p.golsContra);
+  
   return {
     maxGP: Math.max(...gpValues),
     minGP: Math.min(...gpValues),
-    minGC: Math.min(...gcValues), // Melhor defesa (menos gols)
-    maxGC: Math.max(...gcValues)  // Pior defesa (mais gols)
+    minGC: Math.min(...gcValues),
+    maxGC: Math.max(...gcValues)
   }
 })
 
@@ -92,6 +85,78 @@ const isAccessRow = (idx, teamName) => {
   // idx 1 (Vice/Direct2) -> True.
   // idx 2 (3º lugar) -> False (pois só tinham 2 diretas).
   return idx < directSpots
+}
+
+// --- NOVA LÓGICA DE EXTRAÇÃO IMUNE A ERROS (CHECKSUM) ---
+const parsedRow = (row) => {
+  // Ignorar o primeiro item (nome)
+  const numbers = row.slice(1).map(x => parseInt(x)).filter(x => !isNaN(x));
+  
+  let pontos = 0, jogos = 0, vitorias = 0, empates = 0, derrotas = 0, golsPro = 0, golsContra = 0, saldo = 0;
+  let idxV = -1;
+  let fallbackJ = false;
+  
+  // 1. Procurar J = V + E + D
+  for (let i = 1; i <= Math.min(3, numbers.length - 3); i++) {
+      if (numbers[i-1] === numbers[i] + numbers[i+1] + numbers[i+2]) {
+          idxV = i;
+          break;
+      }
+  }
+  
+  // 2. Procurar P = V*3 + E (se J sumiu)
+  if (idxV === -1) {
+      for (let i = 1; i <= Math.min(2, numbers.length - 2); i++) {
+          if (numbers[i-1] === (numbers[i] * 3) + numbers[i+1]) {
+              idxV = i;
+              fallbackJ = true;
+              break;
+          }
+      }
+  }
+  
+  // 3. Fallback genérico
+  if (idxV === -1) {
+      if (numbers.length >= 8) idxV = 2; // Assume P, J, V...
+      else idxV = 1;
+  }
+  
+  if (fallbackJ) {
+      pontos = numbers[idxV - 1] || 0;
+      vitorias = numbers[idxV] || 0;
+      empates = numbers[idxV + 1] || 0;
+      derrotas = numbers[idxV + 2] || 0;
+      golsPro = numbers[idxV + 3] || 0;
+      golsContra = numbers[idxV + 4] || 0;
+      saldo = numbers[idxV + 5] || 0;
+      jogos = vitorias + empates + derrotas;
+  } else {
+      pontos = numbers[idxV - 2] || 0;
+      jogos = numbers[idxV - 1] || 0;
+      vitorias = numbers[idxV] || 0;
+      empates = numbers[idxV + 1] || 0;
+      derrotas = numbers[idxV + 2] || 0;
+      golsPro = numbers[idxV + 3] || 0;
+      golsContra = numbers[idxV + 4] || 0;
+      saldo = numbers[idxV + 5] || 0;
+  }
+  
+  return { pontos, jogos, vitorias, empates, derrotas, golsPro, golsContra, saldo };
+}
+
+const getStat = (row, field) => {
+  return parsedRow(row)[field];
+}
+
+const calculateAproveitamento = (row) => {
+  const stats = parsedRow(row);
+  if (!stats.jogos || stats.jogos === 0) return '0.00';
+  
+  // NOVA FÓRMULA SOLICITADA: (((Vitórias * 3) + Empates) / (Jogos * 3)) * 100
+  const pontos = stats.pontos !== undefined && stats.pontos > 0 ? stats.pontos : (stats.vitorias * 3) + stats.empates;
+  const pontosMax = stats.jogos * 3;
+  const rate = (pontos / (pontosMax || 1)) * 100; // Evita divisão por zero se houver falha no parser
+  return rate.toFixed(2);
 }
 </script>
 
@@ -147,37 +212,44 @@ const isAccessRow = (idx, teamName) => {
 
           <!-- Estatísticas (Juntas e Inclinadas) -->
           <div class="stats-group-v2">
-            <div class="stat-slant-v2 pts-v2"><span>{{ getCell(row, 2) }}</span></div>
-            <div class="stat-slant-v2"><span>{{ getCell(row, 1) }}</span></div>
-            <div class="stat-slant-v2"><span>{{ getCell(row, 3) }}</span></div>
-            <div class="stat-slant-v2"><span>{{ getCell(row, 4) }}</span></div>
-            <div class="stat-slant-v2"><span>{{ getCell(row, 5) }}</span></div>
+            <!-- P -->
+            <div class="stat-slant-v2 pts-v2"><span>{{ getStat(row, 'pontos') }}</span></div>
+            <!-- J -->
+            <div class="stat-slant-v2"><span>{{ getStat(row, 'jogos') }}</span></div>
+            <!-- V -->
+            <div class="stat-slant-v2"><span>{{ getStat(row, 'vitorias') }}</span></div>
+            <!-- E -->
+            <div class="stat-slant-v2"><span>{{ getStat(row, 'empates') }}</span></div>
+            <!-- D -->
+            <div class="stat-slant-v2"><span>{{ getStat(row, 'derrotas') }}</span></div>
             
             <!-- Ataque (GP) -->
             <div class="stat-slant-v2 gp" 
                  :class="{ 
-                   'best-stat': isBestAttack(row[6]), 
-                   'worst-stat': isWorstAttack(row[6]) 
+                   'best-stat': isBestAttack(getStat(row, 'golsPro')), 
+                   'worst-stat': isWorstAttack(getStat(row, 'golsPro')) 
                  }">
-              <span>{{ getCell(row, 6) }}</span>
+              <span>{{ getStat(row, 'golsPro') }}</span>
             </div>
             
             <!-- Defesa (GC) -->
             <div class="stat-slant-v2 gc"
                  :class="{ 
-                   'best-stat': isBestDefense(row[7]), 
-                   'worst-stat': isWorstDefense(row[7]) 
+                   'best-stat': isBestDefense(getStat(row, 'golsContra')), 
+                   'worst-stat': isWorstDefense(getStat(row, 'golsContra')) 
                  }">
-              <span>{{ getCell(row, 7) }}</span>
+              <span>{{ getStat(row, 'golsContra') }}</span>
             </div>
             
-            <div class="stat-slant-v2 sg"><span>{{ getCell(row, 8) }}</span></div>
-            <div class="stat-slant-v2 perc"><span>{{ getCell(row, 9) }}</span></div>
-            
-            <!-- Badge de Controle (Fim da Linha) -->
-            <div v-if="careerStore.isUserTeam(getCell(row, 1), season)" class="stat-slant-v2 tray-icon-user">
-                <i class="bi bi-controller text-neon-green"></i>
+            <!-- SG -->
+            <div class="stat-slant-v2 sg"><span>{{ getStat(row, 'saldo') }}</span></div>
+            <!-- % (Aproveitamento ou Calculado) -->
+            <div class="stat-slant-v2 perc">
+              <span>
+                {{ calculateAproveitamento(row) }}%
+              </span>
             </div>
+            
           </div>
 
         </div>
@@ -192,19 +264,20 @@ const isAccessRow = (idx, teamName) => {
   padding: 0.2rem 0;
   font-family: 'Inter', 'Segoe UI', sans-serif;
   color: #fff;
-  display: inline-block;
+  display: block;
+  width: 100%;
 }
 
 .tv-table-wrapper.full-width { width: auto; }
 
 .table-responsive {
-  width: auto;
-  overflow-x: auto;
+  width: 100%;
+  overflow: hidden;
   padding-bottom: 5px;
 }
 
 .tv-league-table-v2 {
-  width: 550px; /* Reduzido de 650px para caber na SeasonDetail */
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -219,7 +292,8 @@ const isAccessRow = (idx, teamName) => {
 
 .h-main-v2 {
   display: flex;
-  width: 220px; /* Reduzido de 280px */
+  flex: 1;
+  min-width: 220px;
   font-weight: 900;
   font-size: 0.65rem;
   letter-spacing: 1.5px;
@@ -250,7 +324,7 @@ const isAccessRow = (idx, teamName) => {
 
 .h-slant.pts { width: 40px; background: rgba(88, 204, 255, 0.1); } /* Reduzido de 45 */
 .h-slant.gp, .h-slant.gc, .h-slant.sg { width: 30px; } /* Reduzido de 34 */
-.h-slant.perc { width: 36px; } /* Reduzido de 42 */
+.h-slant.perc { width: 42px; } /* Aumentado de 36 para não colar no border */
 
 /* ROW STYLE */
 .tv-row-v2 {
@@ -320,7 +394,8 @@ const isAccessRow = (idx, teamName) => {
   align-items: center;
   gap: 10px;
   padding-left: 15px;
-  width: 180px; /* Reduzido para match com h-main (220 - 40) */
+  flex: 1;
+  min-width: 180px;
   z-index: 1;
 }
 
@@ -373,7 +448,7 @@ const isAccessRow = (idx, teamName) => {
 }
 
 .stat-slant-v2.gp, .stat-slant-v2.gc, .stat-slant-v2.sg { width: 30px; font-size: 0.75rem; }
-.stat-slant-v2.perc { width: 36px; font-size: 0.75rem; opacity: 0.6; }
+.stat-slant-v2.perc { width: 42px; font-size: 0.75rem; opacity: 0.7; }
 
 .text-neon-green {
   color: #39ff14;

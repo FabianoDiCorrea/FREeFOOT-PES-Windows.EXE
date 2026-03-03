@@ -69,6 +69,7 @@ onMounted(async () => {
   height: 100vh;
   background-color: var(--color-bg);
   color: white;
+  overflow: hidden;
 }
 
 header.top-bar {
@@ -116,6 +117,7 @@ header.top-bar {
 
 .main-content {
   margin-top: var(--top-bar-height);
+  height: calc(100vh - var(--top-bar-height));
   width: 100%;
   padding: 20px;
   overflow-y: auto;

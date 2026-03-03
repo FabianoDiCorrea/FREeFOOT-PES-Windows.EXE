@@ -41,7 +41,7 @@ export const getSeasonFinalYear = (seasonStr) => {
  */
 export const getTrofeuPath = (slug) => {
     if (!slug) return '';
-    return `/assets/trofeus/${slug}.png`;
+    return `assets/trofeus/${slug}.png`;
 };
 
 /**

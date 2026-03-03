@@ -154,7 +154,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { seasonStore } from '../services/season.store'
 import { careerStore } from '../services/career.store'
-import { CLUBS_DATA } from '../data/clubs.data'
+import { clubStore } from '../services/club.store'
 import { ALL_COMPETITIONS_DATA as RAW_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import TeamShield from '../components/TeamShield.vue'
@@ -210,24 +210,30 @@ const setupSlots = () => {
   // 1. Identificar Continente e definir Slots Internacionais
   const continentName = getFederationByCountry(countryName.value)
   
+  // Buscando logos dinamicamente do data central
+  const getIntlLogo = (shortName) => {
+    const comp = INTERNATIONAL_DATA.find(c => c.shortName === shortName || c.nome.includes(shortName) || c.nome === shortName)
+    return comp ? comp.logo : ''
+  }
+
   const intlMap = {
     'América do Sul': [
-      { id: 'liberta', key: 'intl_Libertadores', name: 'Libertadores', shortName: 'LIBERTADORES', logo: '/logos/competitions/libertadores.png' },
-      { id: 'sula', key: 'intl_Sul-Americana', name: 'Sul-Americana', shortName: 'SUDAMERICANA', logo: '/logos/competitions/sulamericana.png' },
-      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+      { id: 'liberta', key: 'intl_Libertadores', name: 'Libertadores', shortName: 'LIBERTADORES', logo: getIntlLogo('Libertadores') },
+      { id: 'sula', key: 'intl_Sul-Americana', name: 'Sul-Americana', shortName: 'SUDAMERICANA', logo: getIntlLogo('Sul-Americana') },
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
     ],
     'Europa': [
-      { id: 'champions', key: 'intl_Champions League', name: 'Champions League', shortName: 'CHAMPIONS', logo: '/logos/competitions/champions-league.png' },
-      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+      { id: 'champions', key: 'intl_Champions League', name: 'Champions League', shortName: 'CHAMPIONS', logo: getIntlLogo('Champions League') },
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
     ],
     'América do Norte': [
-      { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: '/logos/competitions/concacaf-champions.png' },
-      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+      { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: getIntlLogo('CONCACAF') },
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
     ]
   }
 
   intlSlots.value = intlMap[continentName] || [
-    { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+    { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
   ]
 
   // 2. Buscar ligas deste país no sistema
@@ -273,8 +279,8 @@ const processedMatrix = computed(() => {
     return { data, seasons: [], clubs: [], empty: true }
   }
 
-  // 1. Identificar clubes do país (Normalizado)
-  const countryClubsNamesNormalized = CLUBS_DATA.filter(c => 
+  // 1. Identificar clubes do país (Normalizado) incluindo os Customizados
+  const countryClubsNamesNormalized = clubStore.list.filter(c => 
     normalize(c.pais) === countryIdVal
   ).map(c => normalize(c.nome))
 
@@ -361,8 +367,8 @@ const processedMatrix = computed(() => {
       if (slotKey) {
           if (!data[clubNameNorm]) {
              data[clubNameNorm] = {}
-             // Preservar o nome "Raw" para exibição
-             const originalClub = CLUBS_DATA.find(c => normalize(c.nome) === clubNameNorm)
+             // Preservar o nome "Raw" para exibição consultando todos os clubes (nativos e adcionados)
+             const originalClub = clubStore.list.find(c => normalize(c.nome) === clubNameNorm)
              clubNameMap[clubNameNorm] = originalClub ? originalClub.nome : clubNameRaw
           }
           if (!data[clubNameNorm][year]) data[clubNameNorm][year] = {}

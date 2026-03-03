@@ -706,7 +706,7 @@ const parsedTable = computed(() => {
         cells = [teamName, ...stats]
       }
     }
-    return cells.map(c => c.trim()).filter(c => c)
+    return cells.map(c => c.toString().trim()).filter(c => c !== '')
   })
 })
 

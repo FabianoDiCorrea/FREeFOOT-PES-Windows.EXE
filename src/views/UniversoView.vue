@@ -256,9 +256,12 @@
         <div class="game-grid-auto">
           <div v-for="comp in selectedCountry.competicoes" :key="comp.nome">
             <GamePanel 
-              :customClass="'comp-card-premium h-100 cursor-pointer ' + getFederationColorClass(comp.continente || (selectedContinent ? getFederation(selectedContinent.continente).nome : ''))"
+              :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente || (selectedContinent ? getFederation(selectedContinent.continente).nome : ''))"
               @click="selectCompetition(comp)"
             >
+              <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                {{ getCompCount(comp.nome) }} TEMPS
+              </div>
               <div class="d-flex align-items-center gap-3">
                 <div class="comp-items-horizontal d-flex gap-2">
                   <div class="comp-logo-container-highlight">
@@ -331,9 +334,12 @@
           <div class="game-grid-auto">
             <div v-for="comp in selectedContinent.competicoes" :key="comp.id">
               <GamePanel 
-                  :customClass="'comp-card-premium h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : getFederation(selectedContinent.continente).nome)"
+                  :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : getFederation(selectedContinent.continente).nome)"
                   @click="selectCompetition(comp)"
                 >
+                  <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                    {{ getCompCount(comp.nome) }} TEMPS
+                  </div>
                   <div class="d-flex align-items-center gap-3">
                     <div class="comp-items-horizontal d-flex gap-2">
                       <div class="comp-logo-container-highlight">
@@ -368,9 +374,12 @@
           <div class="international-grid">
             <div v-for="comp in INTERNATIONAL_DATA" :key="comp.id" class="col">
               <GamePanel 
-                :customClass="'comp-card-premium h-100 cursor-pointer ' + getFederationColorClass(comp.continente)"
+                :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente)"
                 @click="selectCompetition(comp)"
               >
+                <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                  {{ getCompCount(comp.nome) }} TEMPS
+                </div>
                 <div class="d-flex align-items-center gap-3">
                   <div class="comp-items-horizontal d-flex gap-2">
                     <div class="comp-logo-container-highlight">
@@ -871,6 +880,28 @@ import { db } from '../services/db'
 import { imageCacheService } from '../services/imageCache.service'
 import MundialBracket from '../components/MundialBracket.vue'
 import { careerStore } from '../services/career.store'
+import { seasonService } from '../services/season.service'
+
+const globalCompCounts = ref({})
+
+onMounted(async () => {
+   try {
+     const allSeasons = await seasonService.getAll()
+     const counts = {}
+     allSeasons.forEach(s => {
+       if(s.competitionName) {
+         counts[s.competitionName] = (counts[s.competitionName] || 0) + 1
+       }
+     })
+     globalCompCounts.value = counts
+   } catch(e) {
+     console.error("Erro ao contar competições globais:", e)
+   }
+})
+
+const getCompCount = (compName) => {
+  return globalCompCounts.value[compName] || 0
+}
 
 const showNewSeasonForm = ref(false)
 
@@ -1543,12 +1574,78 @@ const openForm = () => {
   viewMode.value = 'form'
 }
 
-// Watcher para detectar Campeão e Vice automaticamente ao colar a tabela
+// Watcher para detectar Campeão e Vice automaticamente ao colar a tabela e realizar Parse
 watch(() => newSeason.value.tabela, (newTable) => {
-  if (!newTable || isEditing.value) return
+  if (!newTable) return
 
-  const lines = newTable.split('\n').filter(l => l.trim())
-  if (lines.length >= 2) {
+  let hasModifications = false;
+  const tLines = newTable.split('\n');
+  const processedLines = tLines.map(line => {
+    if (!line.trim()) return line;
+    let cells = line.split('\t');
+    if (cells.length === 1) cells = line.split(/\s{2,}/);
+    if (cells.length === 1) {
+      const match = line.match(/^([^\d]+)(.*)$/);
+      if (match) {
+        const teamName = match[1].trim();
+        const stats = match[2].trim().split(/\s+/);
+        cells = [teamName, ...stats];
+      }
+    }
+    
+    // Formato colado 9 células: "Time P J V E D GP GC SG" -> Adicionamos apenas o %
+    if (cells.length === 9) {
+       const isNumbers = !isNaN(cells[1]) && !isNaN(cells[2]) && !isNaN(cells[3]);
+       if (isNumbers) {
+          const p = parseInt(cells[1]) || 0;
+          const j = parseInt(cells[2]) || 0;
+          const v = parseInt(cells[3]) || 0;
+          const e = parseInt(cells[4]) || 0;
+          
+          const pontos = p > 0 ? p : (v * 3) + e;
+          const pontosMax = j * 3;
+          let perc = '0.00';
+          if (pontosMax > 0) perc = ((pontos / pontosMax) * 100).toFixed(2);
+          
+          hasModifications = true;
+          return `${line}\t${perc}`;
+       }
+    }
+    
+    // Formato colado 8 células: "Time P V E D GP GC SG" -> Injetamos o J e o %
+    if (cells.length === 8) {
+       const isNumbers = !isNaN(cells[1]) && !isNaN(cells[2]) && !isNaN(cells[3]) && !isNaN(cells[4]);
+       if (isNumbers) {
+          const p = parseInt(cells[1]) || 0;
+          const v = parseInt(cells[2]) || 0;
+          const e = parseInt(cells[3]) || 0;
+          const d = parseInt(cells[4]) || 0;
+          const gp = parseInt(cells[5]) || 0;
+          const gc = parseInt(cells[6]) || 0;
+          const sg = parseInt(cells[7]) || 0;
+          
+          const j = v + e + d;
+          const pontos = p > 0 ? p : (v * 3) + e;
+          const pontosMax = j * 3;
+          let perc = '0.00';
+          if (pontosMax > 0) perc = ((pontos / pontosMax) * 100).toFixed(2);
+          
+          hasModifications = true;
+          return `${cells[0]}\t${p}\t${j}\t${v}\t${e}\t${d}\t${gp}\t${gc}\t${sg}\t${perc}`;
+       }
+    }
+    return line;
+  });
+
+  if (hasModifications) {
+     newSeason.value.tabela = processedLines.join('\n');
+     return; // O watcher será ativado novamente com o texto modificado
+  }
+
+  if (isEditing.value) return; // Evitar apagar dados já salvos de campeão/vice na edição
+
+  const filteredLines = processedLines.filter(l => l.trim() && !l.toUpperCase().startsWith('TIME') && !l.toUpperCase().startsWith('EQUIPE'));
+  if (filteredLines.length >= 2) {
     const parseLine = (line) => {
       let cells = line.split('\t')
       if (cells.length === 1) cells = line.split(/\s{2,}/)
@@ -1559,8 +1656,8 @@ watch(() => newSeason.value.tabela, (newTable) => {
       return cells[0] ? cells[0].replace(/^\d+[\s.]*/, '').trim() : ''
     }
 
-    const champ = parseLine(lines[0])
-    const vice = parseLine(lines[1])
+    const champ = parseLine(filteredLines[0])
+    const vice = parseLine(filteredLines[1])
 
     if (champ && !newSeason.value.campeao) newSeason.value.campeao = champ
     if (vice && !newSeason.value.vice) newSeason.value.vice = vice

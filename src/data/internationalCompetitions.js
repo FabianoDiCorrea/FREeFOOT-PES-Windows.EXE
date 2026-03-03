@@ -5,7 +5,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "participantes",
         continente: "CONMEBOL",
-        logo: "/logos/competitions/libertadores.png",
+        logo: './logos/competitions/libertadores.png',
         pais: null,
         trofeu: 'trofeu-libertadores'
     },
@@ -15,7 +15,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "participantes",
         continente: "CONMEBOL",
-        logo: "/logos/competitions/sulamericana.png",
+        logo: './logos/competitions/sulamericana.png',
         pais: null,
         trofeu: 'trofeu-sulamericana'
     },
@@ -25,7 +25,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "mata_mata_simples",
         continente: "CONMEBOL",
-        logo: "/logos/competitions/recopa-conmebol.png",
+        logo: './logos/competitions/recopa-conmebol.png',
         pais: null,
         trofeu: 'trofeu-recopa-sulamericana'
     },
@@ -35,7 +35,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "participantes",
         continente: "UEFA",
-        logo: "/logos/competitions/champions-league.png",
+        logo: './logos/competitions/champions-league.png',
         pais: null,
         trofeu: 'trofeu-champions-league'
     },
@@ -45,7 +45,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "participantes",
         continente: "CONCACAF",
-        logo: "/logos/competitions/concacaf-champions.png",
+        logo: './logos/competitions/concacaf-champions.png',
         pais: null,
         trofeu: 'trofeu-concacaf-champions-league'
     },
@@ -55,7 +55,7 @@ export const INTERNATIONAL_DATA = [
         tipo: "internacional",
         modoRegistro: "mundial",
         continente: "FIFA",
-        logo: "/logos/competitions/mundial-de-clubes.png",
+        logo: './logos/competitions/mundial-de-clubes.png',
         pais: null,
         trofeu: 'trofeu-mundial-de-clubes'
     }

@@ -56,8 +56,8 @@
                                <th class="text-center" width="60">POS</th>
                                <th class="text-center" width="80">EVO</th>
                                <th width="80">ESCUDO</th>
-                               <th>TIME</th>
-                               <th>PAÍS</th>
+                               <th>{{ activeTab === 'clubes' ? 'TIME' : 'SELEÇÃO' }}</th>
+                               <th v-if="activeTab === 'clubes'">PAÍS</th>
                                <th class="text-center">BAND.</th>
                                <th class="text-center">FED.</th>
                             </tr>
@@ -91,7 +91,7 @@
                                         class="bi bi-controller text-neon-green pulse-neon fs-4"></i>
                                   </div>
                                </td>
-                               <td>
+                               <td v-if="activeTab === 'clubes'">
                                   <span class="x-small text-uppercase fw-bold opacity-50">{{ item.country }}</span>
                                </td>
                                <td class="text-center">
@@ -130,7 +130,7 @@
                                      <i class="bi bi-controller text-neon-green pulse-neon fs-4"></i>
                                   </div>
                                </td>
-                               <td>
+                               <td v-if="activeTab === 'clubes'">
                                   <span class="x-small text-uppercase fw-bold opacity-50">{{ group.myTeam.country }}</span>
                                </td>
                                <td class="text-center">
