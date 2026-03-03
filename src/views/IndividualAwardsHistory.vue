@@ -345,10 +345,10 @@ const getTrophyUrl = (type) => {
   
   // Casos especiais de mapeamento conforme os arquivos enviados
   if (type === 'Melhor do Mundo (Técnico)') {
-     return '/src/assets/trofeus/individuais/melhor_tecnico_mundo.png'
+     return '/assets/trofeus/individuais/melhor_tecnico_mundo.png'
   }
   if (type === 'Melhor da CONMEBOL (Rei da América)') {
-     return '/src/assets/trofeus/individuais/melhor_da_america.png'
+     return '/assets/trofeus/individuais/melhor_da_america.png'
   }
 
   const filename = type.toLowerCase()
@@ -356,7 +356,8 @@ const getTrophyUrl = (type) => {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, '_')
     .replace(/[^\w]/g, '')
-  return `/src/assets/trofeus/individuais/${filename}.png`
+  
+  return `/assets/trofeus/individuais/${filename}.png`
 }
 
 const handleTrophyError = (e) => {

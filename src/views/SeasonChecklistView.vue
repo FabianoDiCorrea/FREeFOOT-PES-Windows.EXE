@@ -146,11 +146,11 @@ const loadAllData = async () => {
 
     // Itens Especiais de Controle
     const awardsData = [
-        { id: 'aw-1', nome: 'Melhor do Mundo', trofeu: '/src/assets/trofeus/individuais/melhor_do_mundo.png' },
-        { id: 'aw-2', nome: 'Melhor do Mundo (Técnico)', trofeu: '/src/assets/trofeus/individuais/melhor_tecnico_mundo.png' },
-        { id: 'aw-3', nome: 'Melhor da Europa', trofeu: '/src/assets/trofeus/individuais/melhor_da_europa.png' },
-        { id: 'aw-4', nome: 'Melhor da CONMEBOL (Rei da América)', trofeu: '/src/assets/trofeus/individuais/melhor_da_america.png' },
-        { id: 'aw-5', nome: 'Melhor da CONCACAF', trofeu: '/src/assets/trofeus/individuais/melhor_da_concacaf.png' }
+        { id: 'aw-1', nome: 'Melhor do Mundo', trofeu: '/assets/trofeus/individuais/melhor_do_mundo.png' },
+        { id: 'aw-2', nome: 'Melhor do Mundo (Técnico)', trofeu: '/assets/trofeus/individuais/melhor_tecnico_mundo.png' },
+        { id: 'aw-3', nome: 'Melhor da Europa', trofeu: '/assets/trofeus/individuais/melhor_da_europa.png' },
+        { id: 'aw-4', nome: 'Melhor da CONMEBOL (Rei da América)', trofeu: '/assets/trofeus/individuais/melhor_da_america.png' },
+        { id: 'aw-5', nome: 'Melhor da CONCACAF', trofeu: '/assets/trofeus/individuais/melhor_da_concacaf.png' }
     ]
 
     awardsData.forEach(aw => {
