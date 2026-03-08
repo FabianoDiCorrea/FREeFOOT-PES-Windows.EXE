@@ -31,9 +31,14 @@
           </select>
         </div>
 
-        <button @click="$router.push(`/pais/${countryName}/matriz`)" class="btn btn-info btn-sm fw-black text-dark px-3 hover-glow border-0 shadow-sm" style="background: #00f2ff;">
-          <i class="bi bi-calendar3 me-2"></i>VER MATRIZ DE TEMPORADAS
-        </button>
+        <div class="d-flex gap-2">
+          <button @click="$router.push(`/pais/${countryName}/matriz`)" class="btn btn-info btn-sm fw-black text-dark px-3 hover-glow border-0 shadow-sm" style="background: #00f2ff;">
+            <i class="bi bi-calendar3 me-2"></i>VER MATRIZ DE TEMPORADAS
+          </button>
+          <button @click="$router.push(`/pais/${countryName}/trofeus`)" class="btn btn-warning btn-sm fw-black text-dark px-3 hover-glow border-0 shadow-sm">
+            <i class="bi bi-trophy-fill me-2"></i>SALA DE TROFÉUS
+          </button>
+        </div>
      </div>
 
     <GamePanel customClass="p-0 overflow-hidden shadow-lg border border-secondary border-opacity-10 bg-black bg-opacity-20">

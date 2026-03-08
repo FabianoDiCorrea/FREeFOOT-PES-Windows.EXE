@@ -6,8 +6,11 @@
         <button @click="$router.push(`/pais/${countryId}/historico`)" class="btn btn-sm btn-action hover-glow px-3 me-2">
           <i class="bi bi-table me-2"></i>HISTÓRICO
         </button>
-        <button @click="$router.push('/universo?pais=' + countryName)" class="btn btn-sm btn-outline-info hover-glow px-3">
+        <button @click="$router.push('/universo?pais=' + countryName)" class="btn btn-sm btn-outline-info hover-glow px-3 me-2">
           <i class="bi bi-trophy me-2"></i>COMPETIÇÕES
+        </button>
+        <button @click="$router.push(`/pais/${countryName}/trofeus`)" class="btn btn-sm btn-warning text-dark hover-glow px-3 fw-bold">
+          <i class="bi bi-trophy-fill me-2"></i>SALA DE TROFÉUS
         </button>
         <div class="d-flex align-items-center gap-2">
           <NationalFlag v-if="countryName" :countryName="countryName" :size="32" />

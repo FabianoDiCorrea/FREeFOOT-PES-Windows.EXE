@@ -278,6 +278,9 @@
               <button class="btn btn-info fw-black text-uppercase small text-dark" style="background: #00f2ff;" @click="$router.push(`/pais/${selectedCountry.nome}/matriz`)">
                 <i class="bi bi-calendar3 me-2"></i> VER MATRIZ EXPERT
               </button>
+              <button class="btn btn-warning fw-black text-uppercase small text-dark" @click="$router.push(`/pais/${selectedCountry.nome}/trofeus`)">
+                <i class="bi bi-trophy-fill me-2"></i> SALA DE TROFÉUS
+              </button>
             </div>
          </div>
 
