@@ -126,6 +126,30 @@
       </div>
     </div>
 
+    <!-- GALERIA DE PRINTS (COPAS / INTERNACIONAIS) -->
+    <div v-if="season.printsUrls && season.printsUrls.filter(u => u).length > 0" class="row g-2 mb-4">
+      <div class="col-12">
+        <GamePanel customClass="p-3 border border-info border-opacity-10 overflow-hidden">
+          <h5 class="m-0 fw-black text-info text-uppercase ls-1 mb-3">
+            <i class="bi bi-images me-2"></i>GALERIA DE PRINTS
+          </h5>
+          
+          <div class="prints-gallery-container" :class="'prints-count-' + season.printsUrls.filter(u => u).length">
+            <div v-for="(url, idx) in season.printsUrls.filter(u => u)" 
+                 :key="idx" 
+                 class="print-item-wrapper"
+                 @click="openPhotoZoom(url)"
+            >
+              <img :src="getCachedLogo(url)" class="print-img-detail" />
+              <div class="print-zoom-hint">
+                <i class="bi bi-zoom-in"></i>
+              </div>
+            </div>
+          </div>
+        </GamePanel>
+      </div>
+    </div>
+
     <!-- CONTEÚDO PRINCIPAL: TABELA + ARTILHARIA (SIDE-BY-SIDE SEM VÁCUO) -->
     <div class="d-flex flex-wrap gap-2 align-items-start">
       
@@ -150,6 +174,7 @@
             :relegationCount="competitionStats.relegated"
             :playoffPromotedTeams="season.promovidosPlayoff || []"
             :season="season.ano"
+            :country="season.pais"
           />
         </GamePanel>
 
@@ -1768,5 +1793,73 @@ select.form-select.cup-input-select.pos-red-light {
   background: #ff4136;
   transform: rotate(180deg) scale(1.1);
   border-color: white;
+}
+
+/* PRINTS GALLERY DETAIL */
+.prints-gallery-container {
+  display: grid;
+  gap: 15px;
+  width: 100%;
+}
+
+.prints-count-1 { grid-template-columns: 1fr; }
+.prints-count-2 { grid-template-columns: 1fr 1fr; }
+.prints-count-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.print-item-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  background: rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  aspect-ratio: 16/9;
+}
+
+.prints-count-1 .print-item-wrapper {
+  aspect-ratio: 21/9;
+  max-height: 400px;
+}
+
+.print-item-wrapper:hover {
+  border-color: var(--game-info);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.print-img-detail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.print-zoom-hint {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.print-item-wrapper:hover .print-zoom-hint {
+  opacity: 1;
+}
+
+.print-zoom-hint i {
+  font-size: 2rem;
+  color: white;
+  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 992px) {
+  .prints-count-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .prints-count-2, .prints-count-3 { grid-template-columns: 1fr; }
 }
 </style>

@@ -1,5 +1,18 @@
 ﻿<template>
   <div class="view-container">
+    <!-- Overlay de Erro Crítico -->
+    <div v-if="renderError" class="alert alert-danger m-3 d-flex flex-column align-items-center p-5 rounded-4 shadow-lg animated-fade-in" style="z-index: 9999; position: relative;">
+      <i class="bi bi-exclamation-triangle-fill display-1 mb-4"></i>
+      <h2 class="fw-black text-uppercase">Opa! Algo deu errado.</h2>
+      <p class="fs-5 text-center mt-2">Um erro de renderização impediu o carregamento completo desta página.</p>
+      <div class="bg-black bg-opacity-25 p-3 rounded-3 w-100 my-4">
+        <code>{{ renderError }}</code>
+      </div>
+      <div class="d-flex gap-3">
+        <button class="btn btn-light fw-bold px-4 py-2" @click="recoverFromError">TENTAR RECUPERAR</button>
+        <button class="btn btn-outline-light fw-bold px-4 py-2" @click="resetNavigation(); renderError = null">VOLTAR AO INÍCIO</button>
+      </div>
+    </div>
     <div class="d-flex justify-content-between align-items-center mb-4 px-2">
       <div class="d-flex align-items-center gap-3">
           <h2 class="m-0"><i class="bi bi-globe-americas me-2"></i>UNIVERSO DO FUTEBOL</h2>
@@ -201,10 +214,13 @@
                           </div>
                         </div>
                       </td>
-                      <td class="text-center">
-                        <div class="d-flex justify-content-center gap-2">
-                           <span v-if="(s.topScorers && s.topScorers.length > 0) || (s.artilheiro && s.artilheiro.nome)" class="text-warning fs-5" title="Tem Artilheiro">⚽</span>
-                           <span v-if="s.tabela" class="text-info fs-5" title="Tem Tabela">📋</span>
+                       <td class="text-center">
+                        <div class="d-flex justify-content-center align-items-center gap-3">
+                           <span v-if="(s.topScorers && s.topScorers.length > 0) || (s.artilheiro && s.artilheiro.nome)" 
+                                 class="text-warning fs-4" title="Tem Artilheiro" style="text-shadow: 0 0 10px rgba(255,193,7,0.4)">⚽</span>
+                           <!-- O ícone de tabela agora aparece se houver tabela TEXTUAL ou PRINTS na galeria -->
+                           <span v-if="s.tabela || (s.printsUrls && s.printsUrls.some(u => u))" 
+                                 class="text-info fs-4" title="Tabela ou Prints Inseridos" style="text-shadow: 0 0 10px rgba(0,242,255,0.4)">📋</span>
                         </div>
                       </td>
                       <td class="text-center text-nowrap">
@@ -220,6 +236,18 @@
                         <button class="btn btn-sm btn-danger border-0 p-2 rounded-3" @click="confirmDelete(s)" title="Excluir Temporada">
                           <i class="bi bi-trash fs-6"></i>
                         </button>
+                      </td>
+                    </tr>
+                    <tr v-if="s.tabela">
+                      <td colspan="5" class="p-0">
+                        <LeagueTable 
+                          :data="s.tabela" 
+                          :promotedCount="s.promovidos"
+                          :relegationCount="s.rebaixados"
+                          :playoffPromotedTeams="s.promovidosPlayoff || []"
+                          :season="s.ano"
+                          :country="selectedCountry?.nome"
+                        />
                       </td>
                     </tr>
                     </template>
@@ -259,8 +287,8 @@
               :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente || (selectedContinent ? getFederation(selectedContinent.continente).nome : ''))"
               @click="selectCompetition(comp)"
             >
-              <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                {{ getCompCount(comp.nome) }} TEMPS
+              <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                {{ getCompCount(comp) }} TEMPS
               </div>
               <div class="d-flex align-items-center gap-3">
                 <div class="comp-items-horizontal d-flex gap-2">
@@ -337,8 +365,8 @@
                   :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : getFederation(selectedContinent.continente).nome)"
                   @click="selectCompetition(comp)"
                 >
-                  <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                    {{ getCompCount(comp.nome) }} TEMPS
+                  <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                    {{ getCompCount(comp) }} TEMPS
                   </div>
                   <div class="d-flex align-items-center gap-3">
                     <div class="comp-items-horizontal d-flex gap-2">
@@ -377,8 +405,8 @@
                 :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente)"
                 @click="selectCompetition(comp)"
               >
-                <div v-if="getCompCount(comp.nome) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                  {{ getCompCount(comp.nome) }} TEMPS
+                <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
+                  {{ getCompCount(comp) }} TEMPS
                 </div>
                 <div class="d-flex align-items-center gap-3">
                   <div class="comp-items-horizontal d-flex gap-2">
@@ -674,7 +702,7 @@
             </div>
  
             <!-- SEÇÃO 1.5: PARTICIPANTES (SOLO PARA COMPETIÇÕES ESPECÍFICAS) -->
-            <div v-if="selectedCompetition.modoRegistro === 'participantes'" class="form-section-premium mb-5">
+            <div v-if="selectedCompetition?.modoRegistro === 'participantes'" class="form-section-premium mb-5">
               <h4 class="text-success fw-black mb-3 text-uppercase"><i class="bi bi-people-fill me-2"></i>PARTICIPANTES</h4>
               
               <div class="row g-4 align-items-end mb-4">
@@ -733,11 +761,15 @@
 
             <!-- SEÇÃO 2: TABELA (OPCIONAL) -->
             <div class="form-section-premium">
-              <h4 class="text-info fw-black mb-3 text-uppercase"><i class="bi bi-list-ol me-2"></i>TABELA FINAL (OPCIONAL)</h4>
+              <h4 class="text-info fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-list-ol me-2"></i>TABELA FINAL (OPCIONAL)</span>
+                <span v-if="newSeason.tabela" class="text-success animated-fade-in" title="Tabela Inserida">✅</span>
+              </h4>
               
               <!-- NOVO: CHAVEAMENTO MUNDIAL (Componente Premium) -->
-              <div v-if="selectedCompetition.modoRegistro === 'mundial' || selectedCompetition.nome === 'Mundial de Clubes'" class="mb-4">
+              <div v-if="selectedCompetition?.modoRegistro === 'mundial' || selectedCompetition?.nome === 'Mundial de Clubes'" class="mb-4">
                 <MundialBracket 
+                  v-if="newSeason?.mundial"
                   :mundial="newSeason.mundial" 
                   :isEditable="true" 
                 />
@@ -850,6 +882,43 @@
           <GameButton @click="saveNewSeason(true)">SALVAR E FECHAR</GameButton>
           <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="saveNewSeason(false)">SALVAR</button>
         </div>
+
+        <!-- SEÇÃO 4: GALERIA DE PRINTS (COPAS) -->
+        <div v-if="selectedCompetition?.tipo === 'Copa' || selectedCompetition?.tipo === 'internacional'" class="row mt-4">
+          <div class="col-12">
+            <div class="form-section-premium">
+              <h4 class="text-info fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-images me-2"></i>GALERIA DE PRINTS (MAX 3)</span>
+                <span v-if="newSeason.printsUrls && newSeason.printsUrls.some(u => u)" class="text-success animated-fade-in">✅</span>
+              </h4>
+              <p class="text-secondary small mb-4">Adicione prints de chaveamentos, resultados ou fases prévias. Clique no slot e use CTRL+V para colar.</p>
+              
+              <div class="d-flex flex-wrap gap-3">
+                <div v-for="(url, idx) in newSeason.printsUrls" :key="idx" 
+                     class="print-upload-slot"
+                     :class="{ 'has-image': url }"
+                     @paste="(e) => handlePastePrint(e, idx)"
+                     tabindex="0"
+                >
+                  <template v-if="url">
+                    <img :src="getCachedLogo(url)" class="print-preview-img" @click="openPhotoZoom(url)">
+                    <div class="print-slot-overlay">
+                       <button class="btn btn-danger btn-sm rounded-circle" @click.stop="removePrint(idx)">
+                         <i class="bi bi-trash"></i>
+                       </button>
+                    </div>
+                  </template>
+                  <div v-else class="print-slot-empty" @click="$refs['printInput'+idx][0].click()">
+                    <i class="bi bi-plus-lg d-block mb-1"></i>
+                    <span class="x-small fw-bold">PRINT {{ idx + 1 }}</span>
+                    <span v-if="url" class="text-success ms-1">✅</span>
+                  </div>
+                  <input type="file" :ref="'printInput'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -861,7 +930,7 @@ export default { name: 'UniversoView' }
 </script>
 
 <script setup>
-import { ref, onMounted, onActivated, watch, computed } from 'vue'
+import { ref, onMounted, onActivated, watch, computed, onErrorCaptured } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import GamePanel from '../components/GamePanel.vue'
 import GameButton from '../components/GameButton.vue'
@@ -873,6 +942,7 @@ import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { seasonStore } from '../services/season.store'
+import { clubStore } from '../services/club.store'
 import { getSeasonFinalYear, getTrofeuPath, getNextSeasonYear } from '../services/utils'
 import { CLUBS_DATA } from '../data/clubs.data'
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
@@ -883,13 +953,34 @@ import { careerStore } from '../services/career.store'
 import { seasonService } from '../services/season.service'
 
 const globalCompCounts = ref({})
+const renderError = ref(null)
 
-onMounted(async () => {
+onErrorCaptured((err, component, info) => {
+  console.error("CAPTURADO NO UNIVERSOVIEW:", err, info)
+  renderError.value = `Erro no componente: ${err.message}`
+  return false // Impede que o erro suba e quebre o App.vue
+})
+
+const recoverFromError = async () => {
+  renderError.value = null
+  viewMode.value = 'list'
+  isEditing.value = false
+  await refreshCompCounts()
+  if (selectedCompetition.value) {
+    await selectCompetition(selectedCompetition.value)
+  }
+}
+
+const refreshCompCounts = async () => {
    try {
      const allSeasons = await seasonService.getAll()
      const counts = {}
      allSeasons.forEach(s => {
-       if(s.competitionName) {
+       // Tentar contar pelo ID primeiro, depois pelo nome
+       if (s.competitionId) {
+         counts[s.competitionId] = (counts[s.competitionId] || 0) + 1
+       }
+       if (s.competitionName) {
          counts[s.competitionName] = (counts[s.competitionName] || 0) + 1
        }
      })
@@ -897,10 +988,17 @@ onMounted(async () => {
    } catch(e) {
      console.error("Erro ao contar competições globais:", e)
    }
+}
+
+onMounted(async () => {
+   await refreshCompCounts()
 })
 
-const getCompCount = (compName) => {
-  return globalCompCounts.value[compName] || 0
+const getCompCount = (comp) => {
+  if (!comp) return 0
+  // Tentar buscar por ID primeiro (mais preciso), depois por nome
+  if (comp.id && globalCompCounts.value[comp.id]) return globalCompCounts.value[comp.id]
+  return globalCompCounts.value[comp.nome] || 0
 }
 
 const showNewSeasonForm = ref(false)
@@ -1071,8 +1169,9 @@ const newSeason = ref({
   competitionName: '',
   topScorers: [],
   participantes: [],
-  tabela: '',
   promovidosPlayoff: [],
+  tabela: '',
+  printsUrls: ['', '', ''], // Novo: Suporte para até 3 prints
   mundial: {
     semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
     semi2: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -1101,8 +1200,11 @@ const playerPhotoPreview = ref(null)
 const filteredTeams = (query) => {
   if (!query) return [];
   const q = query.toLowerCase().trim();
-  const source = activeTab.value === 'selecoes' ? NATIONAL_TEAMS_DATA : CLUBS_DATA;
-  return source.filter(c => c.nome.toLowerCase().includes(q)).slice(0, 10);
+  if (activeTab.value === 'selecoes') {
+    return NATIONAL_TEAMS_DATA.filter(c => c.nome.toLowerCase().includes(q)).slice(0, 10);
+  }
+  // Usar a lista do store que contém os times novos/customizados
+  return clubStore.list.filter(c => c.nome.toLowerCase().includes(q)).slice(0, 10);
 }
 
 const updateMundialPositions = (phase, field, value) => {
@@ -1166,8 +1268,22 @@ const addParticipant = (teamName) => {
   const alreadyAdded = newSeason.value.participantes.some(p => p.nome.toLowerCase().trim() === q);
   if (alreadyAdded) return;
 
-  const source = activeTab.value === 'selecoes' ? NATIONAL_TEAMS_DATA : CLUBS_DATA;
-  const club = source.find(c => c.nome.toLowerCase().trim() === q);
+  if (activeTab.value === 'selecoes') {
+    const nation = NATIONAL_TEAMS_DATA.find(n => n.nome.toLowerCase().trim() === q);
+    if (nation) {
+      newSeason.value.participantes.push({
+        clubeId: nation.id,
+        nome: nation.nome,
+        escudo: nation.bandeira_url,
+        pais: nation.pais,
+        federacao: getFederation(nation.continente).nome,
+        colocacao: null
+      });
+      return;
+    }
+  }
+
+  const club = clubStore.getClub(teamName);
   
   if (club) {
     const fed = getFederation(club.continente);
@@ -1324,7 +1440,7 @@ const getISOCode = (pais) => {
 
 const getClubInfo = (clubName) => {
   if (!clubName) return null;
-  const club = CLUBS_DATA.find(c => c.nome.toLowerCase().trim() === clubName.toLowerCase().trim());
+  const club = clubStore.getClub(clubName);
   if (!club) return null;
   
   const fed = getFederation(club.continente);
@@ -1490,41 +1606,82 @@ const getGroupedVices = (vices) => {
   return groups > 0 ? `x${groups * 5}` : ''
 }
 
-const prepareEdit = async (season) => {
-  newSeason.value = JSON.parse(JSON.stringify({ 
-    ...season,
-    topScorers: season.topScorers || (season.artilheiro && season.artilheiro.nome ? [season.artilheiro] : []),
-    participantes: season.participantes || [],
-    promovidosPlayoff: season.promovidosPlayoff || [],
-    mundial: season.mundial || {
-      semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-      semi2: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-      final: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-      terceiro: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
-    }
-  }))
-  
-  // Carregar o primeiro artilheiro no formulrio unificado (opcional no form)
-  if (newSeason.value.topScorers && newSeason.value.topScorers.length > 0) {
-    scorerForm.value = JSON.parse(JSON.stringify(newSeason.value.topScorers[0]))
+const prepareEdit = async (s) => {
+  try {
+    isEditing.value = true
+    currentEditId.value = s.id
     
-    // Carregar foto do cache/banco para pr-visualizao
-    if (scorerForm.value.fotoUrl) {
-      const b64 = await imageCacheService.getLogo(scorerForm.value.fotoUrl)
-      if (b64) {
-        playerPhotoPreview.value = b64
-        cachedLogos.value[scorerForm.value.fotoUrl] = b64
-      } else {
-        playerPhotoPreview.value = scorerForm.value.fotoUrl
+    // Clone profundo para não afetar a store antes do save
+    const clone = JSON.parse(JSON.stringify(s))
+    
+    newSeason.value = {
+      ...clone,
+      printsUrls: clone.printsUrls || ['', '', ''],
+      topScorers: clone.topScorers || (clone.artilheiro && clone.artilheiro.nome ? [clone.artilheiro] : []),
+      participantes: clone.participantes || [],
+      promovidosPlayoff: clone.promovidosPlayoff || [],
+      mundial: {
+        semi1: clone.mundial?.semi1 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        semi2: clone.mundial?.semi2 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        final: clone.mundial?.final || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        terceiro: clone.mundial?.terceiro || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
       }
     }
-  } else {
-    resetScorerForm()
-  }
 
-  isEditing.value = true
-  currentEditId.value = season.id
-  viewMode.value = 'form'
+    // Carregar o primeiro artilheiro no formulário unificado (opcional no form)
+    if (newSeason.value.topScorers && newSeason.value.topScorers.length > 0) {
+      scorerForm.value = JSON.parse(JSON.stringify(newSeason.value.topScorers[0]))
+      
+      // Carregar foto do cache/banco para pré-visualização
+      if (scorerForm.value.fotoUrl) {
+        const b64 = await imageCacheService.getLogo(scorerForm.value.fotoUrl)
+        if (b64) {
+          playerPhotoPreview.value = b64
+          cachedLogos.value[scorerForm.value.fotoUrl] = b64
+        } else {
+          playerPhotoPreview.value = scorerForm.value.fotoUrl
+        }
+      }
+    } else {
+      resetScorerForm()
+    }
+    
+    viewMode.value = 'form'
+    // Carregar times da lib para este ano
+    loadLibTeams(newSeason.value.ano)
+  } catch (e) {
+    console.error("Erro ao preparar edição:", e)
+    renderError.value = "Erro ao abrir o formulário de edição. Dados corrompidos ou incompletos."
+  }
+}
+
+const handlePastePrint = async (event, index) => {
+  const items = event.clipboardData.items;
+  for (const item of items) {
+    if (item.type.indexOf("image") !== -1) {
+      const blob = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        newSeason.value.printsUrls[index] = e.target.result;
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
+}
+
+const handleFilePrint = (event, index) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      newSeason.value.printsUrls[index] = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+const removePrint = (index) => {
+  newSeason.value.printsUrls[index] = '';
 }
 
 const resetScorerForm = () => {
@@ -1562,6 +1719,7 @@ const openForm = () => {
     topScorers: [],
     participantes: [],
     tabela: '',
+    printsUrls: ['', '', ''], // Inicializado para garantir visibilidade da galeria
     promovidosPlayoff: [],
     mundial: {
       semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -1583,16 +1741,41 @@ watch(() => newSeason.value.tabela, (newTable) => {
   const processedLines = tLines.map(line => {
     if (!line.trim()) return line;
     let cells = line.split('\t');
-    if (cells.length === 1) cells = line.split(/\s{2,}/);
     if (cells.length === 1) {
-      const match = line.match(/^([^\d]+)(.*)$/);
-      if (match) {
-        const teamName = match[1].trim();
-        const stats = match[2].trim().split(/\s+/);
-        cells = [teamName, ...stats];
+      // Tentar identificar o bloco de estatísticas (sequência de números no final)
+      const parts = line.trim().split(/\s{2,}/); // Tentar por múltiplos espaços primeiro
+      if (parts.length > 3) {
+        cells = parts;
+      } else {
+        // Fallback: Busca manual por números de trás para frente
+        const allTokens = line.trim().split(/\s+/);
+        let firstStatIdx = -1;
+        // Procuramos o primeiro número que inicia a sequência de stats (P, J, V...)
+        // Geralmente há pelo menos 5-6 números seguidos no final
+        for (let i = allTokens.length - 1; i >= 0; i--) {
+          if (!isNaN(allTokens[i]) || /^-?\d+$/.test(allTokens[i])) {
+            firstStatIdx = i;
+          } else {
+            // Se achamos um não-número, o bloco de stats acabou (indo de trás pra frente)
+            if (firstStatIdx !== -1 && (allTokens.length - firstStatIdx) >= 5) {
+              break;
+            }
+          }
+        }
+        
+        if (firstStatIdx !== -1 && firstStatIdx > 0) {
+          const teamName = allTokens.slice(0, firstStatIdx).join(' ').replace(/^\d+[\s.]*/, '').trim();
+          const stats = allTokens.slice(firstStatIdx);
+          cells = [teamName, ...stats];
+        }
       }
     }
     
+    // Se a primeira célula for apenas um número (Posição), removemos para normalizar
+    if (cells.length > 2 && /^\d+$/.test(cells[0]) && cells[0].length < 3) {
+       cells.shift();
+    }
+
     // Formato colado 9 células: "Time P J V E D GP GC SG" -> Adicionamos apenas o %
     if (cells.length === 9) {
        const isNumbers = !isNaN(cells[1]) && !isNaN(cells[2]) && !isNaN(cells[3]);
@@ -1601,14 +1784,19 @@ watch(() => newSeason.value.tabela, (newTable) => {
           const j = parseInt(cells[2]) || 0;
           const v = parseInt(cells[3]) || 0;
           const e = parseInt(cells[4]) || 0;
+          const d = parseInt(cells[5]) || 0;
+          const gp = parseInt(cells[6]) || 0;
+          const gc = parseInt(cells[7]) || 0;
+          const sg = parseInt(cells[8]) || 0;
           
-          const pontos = p > 0 ? p : (v * 3) + e;
+          // Validação tripla para evitar colisão
+          const pontos = (p === (v * 3) + e) ? p : (v * 3) + e;
           const pontosMax = j * 3;
           let perc = '0.00';
           if (pontosMax > 0) perc = ((pontos / pontosMax) * 100).toFixed(2);
           
           hasModifications = true;
-          return `${line}\t${perc}`;
+          return `${cells[0]}\t${pontos}\t${j}\t${v}\t${e}\t${d}\t${gp}\t${gc}\t${sg}\t${perc}`;
        }
     }
     
@@ -1625,13 +1813,13 @@ watch(() => newSeason.value.tabela, (newTable) => {
           const sg = parseInt(cells[7]) || 0;
           
           const j = v + e + d;
-          const pontos = p > 0 ? p : (v * 3) + e;
+          const pontos = (p === (v * 3) + e) ? p : (v * 3) + e;
           const pontosMax = j * 3;
           let perc = '0.00';
           if (pontosMax > 0) perc = ((pontos / pontosMax) * 100).toFixed(2);
           
           hasModifications = true;
-          return `${cells[0]}\t${p}\t${j}\t${v}\t${e}\t${d}\t${gp}\t${gc}\t${sg}\t${perc}`;
+          return `${cells[0]}\t${pontos}\t${j}\t${v}\t${e}\t${d}\t${gp}\t${gc}\t${sg}\t${perc}`;
        }
     }
     return line;
@@ -1843,9 +2031,10 @@ const persistScorers = async () => {
   }
 }
 
-const confirmDelete = (season) => {
+const confirmDelete = async (season) => {
   if (confirm(`Excluir permanentemente o registro de ${season.ano}?`)) {
-    seasonStore.removeSeason(season.id)
+    await seasonStore.removeSeason(season.id)
+    await refreshCompCounts()
   }
 }
 
@@ -1888,6 +2077,9 @@ const saveNewSeason = async (shouldClose = true) => {
         pais: selectedCountry.value?.nome || selectedCompetition.value.pais || 'Internacional'
       })
     }
+    
+    // Atualizar contador global
+    await refreshCompCounts()
     
     // Reset form e estado
     if (shouldClose) {
@@ -3127,5 +3319,69 @@ onActivated(async () => {
   outline: none;
   box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
 }
+.print-upload-slot {
+  width: 140px;
+  height: 180px;
+  border: 2px dashed rgba(255,255,255,0.1);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.print-upload-slot:hover, .print-upload-slot:focus {
+  border-color: var(--game-info);
+  background: rgba(var(--game-info-rgb), 0.1);
+  outline: none;
+}
+
+.print-upload-slot.has-image {
+  border: 2px solid rgba(var(--game-info-rgb), 0.3);
+}
+
+.print-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.print-upload-slot:hover .print-preview-img {
+  transform: scale(1.05);
+}
+
+.print-slot-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.print-upload-slot:hover .print-slot-overlay {
+  opacity: 1;
+}
+
+.print-slot-empty {
+  text-align: center;
+  opacity: 0.4;
+}
+
+.print-slot-empty i {
+  font-size: 1.5rem;
+}
+
 </style>
 

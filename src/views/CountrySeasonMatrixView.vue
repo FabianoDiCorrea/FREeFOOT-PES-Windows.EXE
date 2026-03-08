@@ -177,6 +177,11 @@ const sortSlot = ref('league_A')
 const countrySlots = ref([])
 const intlSlots = ref([])
 
+const isRelegationCountry = computed(() => {
+  const c = countryName.value?.toLowerCase().trim()
+  return c === 'brasil' || c === 'argentina' || c === 'inglaterra' || c === 'brazil' || c === 'england'
+})
+
 const getFederationByCountry = (cName) => {
   const norm = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() || ""
   const target = norm(cName)
@@ -572,7 +577,7 @@ const getCellExpertStyle = (club, season, slot) => {
          classes.push('expert-green-bg')
       } 
       
-      if (result.isRelegation) {
+      if (result.isRelegation && isRelegationCountry.value) {
          classes.push('expert-red-bg')
       }
 
@@ -625,8 +630,8 @@ const getRank = (club, season, slot) => {
     return '🥈 2º'
   }
 
-  // Rebaixamento (Seta para baixo)
-  if (slot.type === 'league' && result.isRelegation) {
+  // Rebaixamento (Seta para baixo) - Apenas para países selecionados
+  if (slot.type === 'league' && result.isRelegation && isRelegationCountry.value) {
     return '↓ ' + rank + 'º'
   }
 

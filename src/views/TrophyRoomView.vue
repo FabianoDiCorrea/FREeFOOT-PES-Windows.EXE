@@ -57,8 +57,10 @@
 
               <!-- Bottom: Anos e Times -->
               <div class="tc-footer">
-                <div class="tc-years opacity-75 mb-3">
-                  {{ trophy.years.join(', ') }}
+                <div class="tc-dates-list custom-scrollbar mb-3">
+                  <div v-for="year in trophy.years" :key="year" class="tc-date-item">
+                    {{ year }}
+                  </div>
                 </div>
                 
                 <!-- Lista de Times com Escudo GRANDE e APENAS NOME -->
@@ -223,6 +225,15 @@ const groupedTrophies = computed(() => {
         })
     })
 
+    // Ordena os anos internamente de forma decrescente (mais recente no topo)
+    Object.values(grouped).forEach(g => {
+        g.years.sort((a, b) => {
+            const yearA = parseInt(a.split('/')[0]) || 0;
+            const yearB = parseInt(b.split('/')[0]) || 0;
+            return yearB - yearA;
+        });
+    });
+
     // Convert to array and sort by earliest year
     return Object.values(grouped).sort((a, b) => {
         const minYearA = Math.min(...a.years.map(y => parseInt(y.split('/')[0])))
@@ -386,14 +397,25 @@ const groupedTrophies = computed(() => {
     letter-spacing: 0.5px;
 }
 
-.tc-years {
-    font-size: 0.9rem; /* Aumentado de 0.7rem */
-    line-height: 1.4;
-    max-height: 60px; 
+.tc-dates-list {
+    max-height: 100px;
     overflow-y: auto;
-    margin-bottom: 10px;
-    font-weight: 700; /* Mais peso */
-    color: #ccc; /* Mais claro */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 0;
+}
+
+.tc-date-item {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tc-date-item:last-child {
+    border-bottom: none;
 }
 
 /* Lista de Times */

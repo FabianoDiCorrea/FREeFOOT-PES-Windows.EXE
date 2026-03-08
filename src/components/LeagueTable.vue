@@ -25,7 +25,8 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  season: String // Necessário para marcar o time do usuário
+  season: String, // Necessário para marcar o time do usuário
+  country: String // Novo: Para restringir destaque de rebaixamento
 })
 
 // Computar Mínimo e Máximo de GP/GC Dinamicamente com a Lógica Certa
@@ -87,60 +88,96 @@ const isAccessRow = (idx, teamName) => {
   return idx < directSpots
 }
 
+const isRelegationCountry = computed(() => {
+  if (!props.country) return false
+  const c = props.country.toLowerCase().trim()
+  return c === 'brasil' || c === 'argentina' || c === 'inglaterra' || c === 'brazil' || c === 'england'
+})
+
 // --- NOVA LÓGICA DE EXTRAÇÃO IMUNE A ERROS (CHECKSUM) ---
 const parsedRow = (row) => {
-  // Ignorar o primeiro item (nome)
-  const numbers = row.slice(1).map(x => parseInt(x)).filter(x => !isNaN(x));
+  if (!row || row.length < 2) return { pontos: 0, jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, saldo: 0 };
+  
+  // Ignorar o primeiro item (nome) e converter o resto para números
+  const numbers = row.slice(1).map(x => parseInt(String(x).replace(/[^\d-]/g, ''))).filter(x => !isNaN(x));
   
   let pontos = 0, jogos = 0, vitorias = 0, empates = 0, derrotas = 0, golsPro = 0, golsContra = 0, saldo = 0;
-  let idxV = -1;
-  let fallbackJ = false;
+  let bestIdxV = -1;
+  let bestScore = -1;
   
-  // 1. Procurar J = V + E + D
-  for (let i = 1; i <= Math.min(3, numbers.length - 3); i++) {
-      if (numbers[i-1] === numbers[i] + numbers[i+1] + numbers[i+2]) {
-          idxV = i;
-          break;
+  /**
+   * SISTEMA DE PONTUAÇÃO DE JANELA (VOTO)
+   * Tentamos encontrar o índice de 'Vitórias' que melhor se ajusta aos dados.
+   * i é o índice sugerido para Vitórias no array 'numbers'.
+   */
+  for (let i = 0; i < numbers.length; i++) {
+    let score = 0;
+    
+    // Verificamos se os campos necessários existem nesta janela [i-2, i+5]
+    // P (i-2), J (i-1), V (i), E (i+1), D (i+2), GP (i+3), GC (i+4), SG (i+5)
+    
+    const p = numbers[i - 2];
+    const j = numbers[i - 1];
+    const v = numbers[i];
+    const e = numbers[i + 1];
+    const d = numbers[i + 2];
+    
+    if (v !== undefined && e !== undefined && d !== undefined) {
+      // 1. Checksum de Jogos: J = V + E + D
+      if (j !== undefined && j === v + e + d) {
+        score += 10;
+        // Se J é razoável para uma liga (ex: 0-80)
+        if (j >= 0 && j <= 82) score += 5;
       }
-  }
-  
-  // 2. Procurar P = V*3 + E (se J sumiu)
-  if (idxV === -1) {
-      for (let i = 1; i <= Math.min(2, numbers.length - 2); i++) {
-          if (numbers[i-1] === (numbers[i] * 3) + numbers[i+1]) {
-              idxV = i;
-              fallbackJ = true;
-              break;
-          }
+      
+      // 2. Checksum de Pontos: P = 3*V + E
+      if (p !== undefined && p === (v * 3) + e) {
+        score += 10;
+        // Se P é razoável
+        if (p >= 0 && p <= 150) score += 5;
       }
+
+      // 3. Checksum de Saldo: SG = GP - GC
+      const gp = numbers[i + 3];
+      const gc = numbers[i + 4];
+      const sg = numbers[i + 5];
+      if (gp !== undefined && gc !== undefined && sg !== undefined && sg === gp - gc) {
+        score += 8;
+      }
+      
+      // Bônus por posição esperada (Geralmente P é a 2ª ou 1ª coluna numérica)
+      if (i === 2) score += 2; // Formato padrão: Nome, P, J, V...
+      if (i === 1) score += 1; // Formato: Nome, J, V...
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdxV = i;
+    }
   }
-  
-  // 3. Fallback genérico
-  if (idxV === -1) {
-      if (numbers.length >= 8) idxV = 2; // Assume P, J, V...
-      else idxV = 1;
+
+  // Se não achamos nada bom (bestScore baixo), usamos um fallback seguro
+  if (bestScore < 5) {
+    bestIdxV = numbers.length >= 8 ? 2 : 1;
   }
+
+  // Extração final baseada no melhor índice de Vitórias encontrado
+  vitorias = numbers[bestIdxV] || 0;
+  empates = numbers[bestIdxV + 1] || 0;
+  derrotas = numbers[bestIdxV + 2] || 0;
   
-  if (fallbackJ) {
-      pontos = numbers[idxV - 1] || 0;
-      vitorias = numbers[idxV] || 0;
-      empates = numbers[idxV + 1] || 0;
-      derrotas = numbers[idxV + 2] || 0;
-      golsPro = numbers[idxV + 3] || 0;
-      golsContra = numbers[idxV + 4] || 0;
-      saldo = numbers[idxV + 5] || 0;
-      jogos = vitorias + empates + derrotas;
-  } else {
-      pontos = numbers[idxV - 2] || 0;
-      jogos = numbers[idxV - 1] || 0;
-      vitorias = numbers[idxV] || 0;
-      empates = numbers[idxV + 1] || 0;
-      derrotas = numbers[idxV + 2] || 0;
-      golsPro = numbers[idxV + 3] || 0;
-      golsContra = numbers[idxV + 4] || 0;
-      saldo = numbers[idxV + 5] || 0;
-  }
+  // Pontos e Jogos podem estar antes ou ausentes
+  const pRaw = numbers[bestIdxV - 2]; 
+  const jRaw = numbers[bestIdxV - 1];
+
+  // Se pontos ou jogos não faziam parte da janela indexada, ou falharam no checksum, recalculamos
+  pontos = (pRaw !== undefined && pRaw === (vitorias * 3) + empates) ? pRaw : (vitorias * 3) + empates;
+  jogos = (jRaw !== undefined && jRaw === vitorias + empates + derrotas) ? jRaw : (vitorias + empates + derrotas);
   
+  golsPro = numbers[bestIdxV + 3] || 0;
+  golsContra = numbers[bestIdxV + 4] || 0;
+  saldo = numbers[bestIdxV + 5] !== undefined ? numbers[bestIdxV + 5] : (golsPro - golsContra);
+
   return { pontos, jogos, vitorias, empates, derrotas, golsPro, golsContra, saldo };
 }
 
@@ -152,10 +189,10 @@ const calculateAproveitamento = (row) => {
   const stats = parsedRow(row);
   if (!stats.jogos || stats.jogos === 0) return '0.00';
   
-  // NOVA FÓRMULA SOLICITADA: (((Vitórias * 3) + Empates) / (Jogos * 3)) * 100
-  const pontos = stats.pontos !== undefined && stats.pontos > 0 ? stats.pontos : (stats.vitorias * 3) + stats.empates;
-  const pontosMax = stats.jogos * 3;
-  const rate = (pontos / (pontosMax || 1)) * 100; // Evita divisão por zero se houver falha no parser
+  // NOVA FÓRMULA SOLICITADA: % de aproveitamento (jogos em que pontuou)
+  // (Vitórias + Empates) / Total de Jogos
+  const totalPontuados = stats.vitorias + stats.empates;
+  const rate = (totalPontuados / stats.jogos) * 100;
   return rate.toFixed(2);
 }
 </script>
@@ -190,15 +227,15 @@ const calculateAproveitamento = (row) => {
              :class="{
                'linha-campeao': idx === 0,
                'linha-acesso': isAccessRow(idx, row[0]),
-               'linha-rebaixado': relegationCount > 0 && idx >= data.length - relegationCount,
+               'linha-rebaixado': isRelegationCountry && props.relegationCount > 0 && idx >= data.length - props.relegationCount,
                'row-alt-v2': idx % 2 !== 0
              }">
 
           
           <!-- Rank Inclinado -->
-          <div class="rank-slant-v2" :class="{ 
+           <div class="rank-slant-v2" :class="{ 
             'bg-champion': idx === 0, 
-            'bg-relegation': relegationCount > 0 && idx >= data.length - relegationCount 
+            'bg-relegation': isRelegationCountry && props.relegationCount > 0 && idx >= data.length - props.relegationCount 
           }">
             <span>{{ idx + 1 }}</span>
           </div>

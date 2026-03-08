@@ -27,7 +27,7 @@
             <option v-for="slot in intlSlots" :key="slot.id" :value="slot.id">
               {{ slot.name }}
             </option>
-            <option value="relegations">Rebaixamentos</option>
+            <option value="relegations" v-if="isRelegationCountry">Rebaixamentos</option>
           </select>
         </div>
 
@@ -103,7 +103,7 @@
           </thead>
           <tbody>
             <tr v-for="club in sortedClubs" :key="club.nome" class="club-row">
-              <td class="ps-1 fw-black text-uppercase border-none">
+              <td class="ps-1 fw-black text-uppercase border-none cursor-pointer hover-bright" @click="openClubTrophyRoom(club.nome)">
                 <div class="d-flex align-items-center gap-1">
                   <TeamShield :teamName="club.nome" :size="20" />
                   <span class="name-cell-full d-flex align-items-center gap-1">
@@ -114,34 +114,34 @@
 
               <!-- CÉLULA TOTAL -->
               <td class="text-center px-1 fw-black text-warning-neon col-total-titulos" :data-value="calculateTotalTitles(club)">
-                <span class="stat-badge">{{ calculateTotalTitles(club) || '' }}</span>
+                <span v-if="calculateTotalTitles(club) > 0" class="stat-badge">{{ calculateTotalTitles(club) }}</span>
               </td>
               
               <!-- CÉLULAS NACIONAIS -->
               <td v-for="comp in nationalCompetitions" :key="comp.nome + club.nome" class="text-center px-1" :data-value="club.stats.national[comp.nome]">
-                <span class="stat-badge" :class="{ 'text-neon-gold': club.stats.national[comp.nome] > 0 }">
-                  {{ club.stats.national[comp.nome] || '' }}
+                <span v-if="club.stats.national[comp.nome] > 0" class="stat-badge" :class="{ 'text-neon-gold': club.stats.national[comp.nome] > 0 }">
+                  {{ club.stats.national[comp.nome] }}
                 </span>
               </td>
 
               <!-- CÉLULAS MOVIMENTO (BR, AR, EN) -->
               <template v-if="['Brasil', 'Argentina', 'Inglaterra'].includes(countryName)">
-                <td class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_A_B"><span class="stat-badge">{{ club.stats.relegation_A_B || '' }}</span></td>
-                <td class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_B_A"><span class="stat-badge">{{ club.stats.access_B_A || '' }}</span></td>
-                <td v-if="hasSerieC" class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_B_C"><span class="stat-badge">{{ club.stats.relegation_B_C || '' }}</span></td>
-                <td v-if="hasSerieC" class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_C_B"><span class="stat-badge">{{ club.stats.access_C_B || '' }}</span></td>
-                <td v-if="hasSerieD" class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_C_D"><span class="stat-badge">{{ club.stats.relegation_C_D || '' }}</span></td>
-                <td v-if="hasSerieD" class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_D_C"><span class="stat-badge">{{ club.stats.access_D_C || '' }}</span></td>
+                <td class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_A_B"><span v-if="club.stats.relegation_A_B > 0" class="stat-badge">{{ club.stats.relegation_A_B }}</span></td>
+                <td class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_B_A"><span v-if="club.stats.access_B_A > 0" class="stat-badge">{{ club.stats.access_B_A }}</span></td>
+                <td v-if="hasSerieC" class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_B_C"><span v-if="club.stats.relegation_B_C > 0" class="stat-badge">{{ club.stats.relegation_B_C }}</span></td>
+                <td v-if="hasSerieC" class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_C_B"><span v-if="club.stats.access_C_B > 0" class="stat-badge">{{ club.stats.access_C_B }}</span></td>
+                <td v-if="hasSerieD" class="text-center px-1 fw-black text-danger-neon col-relegation" :data-value="club.stats.relegation_C_D"><span v-if="club.stats.relegation_C_D > 0" class="stat-badge">{{ club.stats.relegation_C_D }}</span></td>
+                <td v-if="hasSerieD" class="text-center px-1 fw-black text-success-neon col-access" :data-value="club.stats.access_D_C"><span v-if="club.stats.access_D_C > 0" class="stat-badge">{{ club.stats.access_D_C }}</span></td>
               </template>
 
               <!-- CÉLULAS INTERNACIONAIS -->
               <!-- CÉLULAS INTERNACIONAIS DINÂMICAS -->
               <template v-for="intl in intlSlots" :key="'stat_intl_' + intl.id + club.nome">
                 <td class="text-center px-1 fw-black text-info-neon" :data-value="club.stats['part_' + intl.id]">
-                  <span class="stat-badge">{{ club.stats['part_' + intl.id] || '' }}</span>
+                  <span v-if="club.stats['part_' + intl.id] > 0" class="stat-badge">{{ club.stats['part_' + intl.id] }}</span>
                 </td>
                 <td class="text-center px-1 fw-black text-neon-gold" :data-value="club.stats[intl.id]">
-                  <span class="stat-badge">{{ club.stats[intl.id] || '' }}</span>
+                  <span v-if="club.stats[intl.id] > 0" class="stat-badge">{{ club.stats[intl.id] }}</span>
                 </td>
               </template>
 
@@ -172,15 +172,19 @@
         <span class="medal-dot bg-light-black mini"></span> <span class="text-white">CINZA: 4º LUGAR</span>
       </div>
     </div>
+    
+    <!-- MODAL DE TROFÉUS DO CLUBE -->
+    <ClubTrophyModal :clubName="selectedClubName" ref="clubTrophyModalRef" />
 
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { CLUBS_DATA } from '../data/clubs.data'
 import { seasonStore } from '../services/season.store'
+import { clubStore } from '../services/club.store'
 import { SOUTH_AMERICA_DATA, EUROPE_DATA, CONCACAF_DATA, ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import GamePanel from '../components/GamePanel.vue'
@@ -189,6 +193,7 @@ import NationalFlag from '../components/NationalFlag.vue'
 import { careerStore } from '../services/career.store'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import { getSeasonFinalYear } from '../services/utils'
+import ClubTrophyModal from '../components/ClubTrophyModal.vue'
 
 const route = useRoute()
 const countryName = ref('')
@@ -197,38 +202,59 @@ const intlSlots = ref([])
 const nationalCompetitions = ref([])
 const sortBy = ref('total')
 
-// Helpers
+// --- ESTADO DA SALA DE TROFÉUS ---
+const selectedClubName = ref('')
+const clubTrophyModalRef = ref(null)
+let modalInstance = null
+
+const openClubTrophyRoom = (clubName) => {
+    selectedClubName.value = clubName
+    nextTick(() => {
+        if (clubTrophyModalRef.value) {
+            clubTrophyModalRef.value.open()
+        }
+    })
+}
+
+const isRelegationCountry = computed(() => {
+  if (!countryName.value) return false
+  const p = countryName.value.toLowerCase().trim()
+  return p === 'brasil' || p === 'argentina' || p === 'inglaterra'
+})
+
+// Helpers e Cache
+const competitionCache = new Map();
+
+const buildCompetitionCache = () => {
+    competitionCache.clear();
+    const allIntl = INTERNATIONAL_DATA || [];
+    allIntl.forEach(c => {
+        if (c.nome) competitionCache.set(normalizeName(c.nome), { ...c, type: 'international' });
+    });
+
+    const allNats = ALL_COMPETITIONS_DATA || [];
+    allNats.forEach(cont => {
+      cont?.paises?.forEach(p => {
+        p?.competicoes?.forEach(c => {
+          if (c.nome) competitionCache.set(normalizeName(c.nome), { ...c, type: 'national' });
+        });
+      });
+    });
+}
+
 const normalizeName = (name) => {
     if (!name) return '';
     return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
 const getCompetitionInfo = (compName) => {
-  if (!compName || !ALL_COMPETITIONS_DATA) return { type: 'unknown' };
-  const cName = compName.toLowerCase().trim();
-
-  // Verifica Internacionais
-  const isInt = INTERNATIONAL_DATA?.some(c => c.nome?.toLowerCase().trim() === cName);
-  if (isInt) return { type: 'international' };
-
-  // Verifica Nacionais
-  let found = null;
-  ALL_COMPETITIONS_DATA.forEach(cont => {
-     if (cont && cont.paises) {
-        cont.paises.forEach(p => {
-           if (p && p.competicoes) {
-              p.competicoes.forEach(c => {
-                 if (c && c.nome && c.nome.toLowerCase().trim() === cName) {
-                   found = c;
-                 }
-              })
-           }
-        })
-     }
-  })
-  
-  return found || { type: 'unknown' };
+  if (!compName) return { type: 'unknown' };
+  const norm = normalizeName(compName);
+  if (competitionCache.size === 0) buildCompetitionCache();
+  return competitionCache.get(norm) || { type: 'unknown' };
 }
+
+
 
 const getFederationByCountry = (cName) => {
   const norm = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() || ""
@@ -280,9 +306,13 @@ const loadData = async () => {
     const pNome = decodeURIComponent(routeId);
     countryName.value = pNome;
 
+    // Inicializar Cache de Competições (Gargalo removido)
+    buildCompetitionCache();
+
     // 0. Carregar TODAS as temporadas do banco (evita dados parciais na store)
     await seasonStore.loadAll();
     await careerStore.loadAll();
+    await clubStore.init();
 
     // 1. Carregar Competições do País
     const allContinents = [SOUTH_AMERICA_DATA, EUROPE_DATA, CONCACAF_DATA];
@@ -302,21 +332,21 @@ const loadData = async () => {
     const continentName = getFederationByCountry(foundCountry?.nome || pNome);
     const intlMap = {
       'América do Sul': [
-        { id: 'liberta', key: 'intl_Libertadores', name: 'Libertadores', shortName: 'LIBERTA', logo: '/logos/competitions/libertadores.png' },
-        { id: 'sula', key: 'intl_Sul-Americana', name: 'Sul-Americana', shortName: 'SUL-AM.', logo: '/logos/competitions/sulamericana.png' },
-        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+        { id: 'liberta', key: 'intl_Libertadores', name: 'Libertadores', shortName: 'LIBERTA', logo: 'logos/competitions/libertadores.png' },
+        { id: 'sula', key: 'intl_Sul-Americana', name: 'Sul-Americana', shortName: 'SUL-AM.', logo: 'logos/competitions/sulamericana.png' },
+        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: 'logos/competitions/mundial-de-clubes.png' }
       ],
       'Europa': [
-        { id: 'champions', key: 'intl_Champions League', name: 'Champions League', shortName: 'CHAMPIONS', logo: '/logos/competitions/champions-league.png' },
-        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+        { id: 'champions', key: 'intl_Champions League', name: 'Champions League', shortName: 'CHAMPIONS', logo: 'logos/competitions/champions-league.png' },
+        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: 'logos/competitions/mundial-de-clubes.png' }
       ],
       'América do Norte': [
-        { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: '/logos/competitions/concacaf-champions.png' },
-        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+        { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: 'logos/competitions/concacaf-champions.png' },
+        { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: 'logos/competitions/mundial-de-clubes.png' }
       ]
     }
     intlSlots.value = intlMap[continentName] || [
-      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: '/logos/competitions/mundial-de-clubes.png' }
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: 'logos/competitions/mundial-de-clubes.png' }
     ];
 
     if (foundCountry) {
@@ -328,7 +358,8 @@ const loadData = async () => {
     }
 
     // 2. Carregar Clubes e Inicializar Stats
-    const clubsData = CLUBS_DATA.filter(c => c.pais && normalizeName(c.pais) === normalizeName(pNome));
+    const baseClubs = clubStore.list && clubStore.list.length > 0 ? clubStore.list : CLUBS_DATA;
+    const clubsData = baseClubs.filter(c => c.pais && normalizeName(c.pais) === normalizeName(pNome));
     
     const statsMap = {};
     clubsData.forEach(c => {
@@ -362,9 +393,13 @@ const loadData = async () => {
         });
     });
 
+    // Indexar nomes de clubes para busca rápida
+    const clubNamesMap = new Map();
+    clubsData.forEach(c => clubNamesMap.set(normalizeName(c.nome), c.nome));
+
     const getStatsKey = (name) => {
-        const norm = normalizeName(name);
-        return Object.keys(statsMap).find(key => normalizeName(key) === norm);
+        if (!name) return null;
+        return clubNamesMap.get(normalizeName(name));
     };
 
     // 3. Processar Temporadas (Com trava de unicidade por ID)
@@ -470,37 +505,20 @@ const loadData = async () => {
         // --- ACESSOS E REBAIXAMENTOS (BR, AR, EN) ---
         if (['brasil', 'argentina', 'inglaterra'].includes(normalizeName(countryName.value)) && season.tabela) {
              const items = parseTable(season.tabela);
-             const cNameLow = compName.toLowerCase();
+             const cNameLow = normalizeName(compName);
 
-             // ACESSOS (PROMOÇÕES)
-             const isB = cNameLow.includes('série b') || cNameLow.includes('nacional') || cNameLow.includes('liga inglesa série b')
-             const isC = cNameLow.includes('série c')
-             const isD = cNameLow.includes('série d')
+             // Detecção de Tipo de Liga e Vagas
+             const isSerieA = cNameLow.includes('serie a') || cNameLow.includes('profissional') || cNameLow.includes('primera division') || cNameLow.includes('liga inglesa');
+             const isSerieB = cNameLow.includes('serie b') || cNameLow.includes('nacional') || cNameLow.includes('liga inglesa serie b');
+             const isSerieC = cNameLow.includes('serie c');
+             const isSerieD = cNameLow.includes('serie d');
 
-             if (isB) {
-                 getPromotedTeams(season, items, compInfo).forEach(t => {
-                     const key = getStatsKey(t);
-                     if (key) statsMap[key].access_B_A++;
-                 });
-             } else if (isC) {
-                 getPromotedTeams(season, items, compInfo).forEach(t => {
-                     const key = getStatsKey(t);
-                     if (key) statsMap[key].access_C_B++;
-                 });
-             } else if (isD) {
-                 getPromotedTeams(season, items, compInfo).forEach(t => {
-                     const key = getStatsKey(t);
-                     if (key) statsMap[key].access_D_C++;
-                 });
-             }
+             // REBAIXAMENTOS
+             let nRebaixados = compInfo.rebaixados || 0;
+             if (isSerieA && normalizeName(countryName.value) === 'argentina') nRebaixados = 4;
+             if (!nRebaixados && (isSerieA || isSerieB || isSerieC)) nRebaixados = 4; // Fallback comum
 
-             // REBAIXAMENTOS (Série A, B, C -> Últimos X)
-             const isSerieA = cNameLow.includes('série a') || cNameLow.includes('profissional') || cNameLow.includes('primera division') || cNameLow.includes('liga inglesa')
-             const isSerieB = cNameLow.includes('série b') || cNameLow.includes('nacional') || cNameLow.includes('liga inglesa série b')
-             const isSerieC = cNameLow.includes('série c')
-
-             const nRebaixados = compInfo.rebaixados || 0
-             if ((isSerieA || isSerieB || isSerieC) && nRebaixados > 0 && items.length >= nRebaixados) {
+             if (nRebaixados > 0 && items.length >= nRebaixados) {
                  const dropped = items.slice(-nRebaixados);
                  dropped.forEach(t => {
                      const key = getStatsKey(t.time);
@@ -511,19 +529,34 @@ const loadData = async () => {
                      }
                  });
              }
-            // Rebaixamentos gerais para outros países (APAGADO: conforme pedido do usuário para focar apenas em BR, AR, EN)
-             /* 
-             const items = parseTable(season.tabela);
-             let nRelegated = compInfo.rebaixados || 0;
-             if (compName === 'Liga Profissional' || compName === 'Liga Argentina' || compName === 'Primera División') nRelegated = 4;
 
-             if (nRelegated > 0 && items.length > 0) {
-                 items.slice(-nRelegated).forEach(t => {
-                     const key = getStatsKey(t.time);
-                     if (key) statsMap[key].relegations++;
+             // ACESSOS
+             let nPromovidos = compInfo.promovidos || 0;
+             if (!nPromovidos && (isSerieB || isSerieC || isSerieD)) nPromovidos = 4; // Fallback comum
+
+             if (nPromovidos > 0) {
+                 const manualPromoted = season.promovidosPlayoff || [];
+                 const normManual = manualPromoted.map(p => normalizeName(p));
+                 const directCount = Math.max(0, nPromovidos - manualPromoted.length);
+                 
+                 // Times que subiram direto (topo da tabela não selecionados no playoff)
+                 const directPromoted = items
+                    .slice(0, directCount + manualPromoted.length)
+                    .filter(t => !normManual.includes(normalizeName(t.time)))
+                    .slice(0, directCount)
+                    .map(t => t.time);
+
+                 const totalPromoted = [...manualPromoted, ...directPromoted];
+                 
+                 totalPromoted.forEach(t => {
+                     const key = getStatsKey(t);
+                     if (key) {
+                         if (isSerieB) statsMap[key].access_B_A++;
+                         else if (isSerieC) statsMap[key].access_C_B++;
+                         else if (isSerieD) statsMap[key].access_D_C++;
+                     }
                  });
              }
-             */
         }
     });
 
@@ -540,34 +573,24 @@ const parseTable = (tableStr) => {
         let cells = line.split('\t');
         if (cells.length === 1) cells = line.split(/\s{2,}/);
         
-        let time = cells[0]?.trim();
+        if (cells.length === 1) {
+            const match = line.match(/^(\d+)?\.?\s*([^\d]+)(.*)$/);
+            if (match) {
+                cells = [match[2].trim(), ...match[3].trim().split(/\s+/)];
+            }
+        }
         
-        // Se a primeira coluna for número (pos), pega a segunda (time)
-        if (/^\d+$/.test(time) || /^\d+\.?$/.test(time)) {
-            time = cells[1]?.trim();
+        let time = cells[0];
+        if (time && /^\d+/.test(time) && cells.length > 1) {
+            time = cells[1];
         }
+        if (time) time = time.replace(/^\d+[\s.-]*/, '').trim();
 
-        // Fallback regex para linhas mal formatadas
-        if (!time && cells.length === 1) {
-            const match = line.match(/^(\d+)?\.?\s*([^\d]+)(.*)$/)
-            if (match) time = match[2].trim()
-        }
-
-        return { time };
+        return { time: time || '' };
     }).filter(x => x.time);
 }
 
-const getPromotedTeams = (season, tableData, compInfo) => {
-    const promoted = [];
-    if (season.promovidosPlayoff && season.promovidosPlayoff.length > 0) {
-        promoted.push(...season.promovidosPlayoff);
-        const direct = (compInfo?.promovidos || 0) - season.promovidosPlayoff.length;
-        if (direct > 0) promoted.push(...tableData.slice(0, direct).map(t => t.time).filter(n => !promoted.includes(n)));
-    } else if (compInfo?.promovidos > 0) {
-        promoted.push(...tableData.slice(0, compInfo.promovidos).map(t => t.time));
-    }
-    return promoted;
-}
+
 
 const calculateTotalTitles = (club) => {
     const nat = Object.values(club.stats.national).reduce((acc, v) => acc + v, 0);
@@ -923,4 +946,7 @@ onMounted(() => {
 @media (max-width: 1200px) {
   /* REMOVIDO: .stats-sidebar */
 }
+
+.cursor-pointer { cursor: pointer; }
+.hover-bright:hover { filter: brightness(1.3); color: #00f2ff !important; transition: all 0.2s ease; }
 </style>

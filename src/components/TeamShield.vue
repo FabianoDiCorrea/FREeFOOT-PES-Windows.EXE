@@ -9,6 +9,8 @@
         :src="shieldUrl" 
         :alt="teamName"
         class="shield-img"
+        loading="lazy"
+        decoding="async"
         @error="handleError"
       >
       <div v-else class="shield-fallback">

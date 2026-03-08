@@ -10,11 +10,13 @@ export const careerStore = reactive({
         this.loading = true;
         try {
             const data = await careerService.getAll();
-            // Migração: registros sem tipo são 'clube'
-            this.history = data.map(h => ({
-                ...h,
-                tipo: h.tipo || 'clube'
-            }));
+            // Migração e Filtro: registros sem tipo são 'clube', ignorar corrompidos
+            this.history = data
+                .filter(h => h && typeof h === 'object')
+                .map(h => ({
+                    ...h,
+                    tipo: h.tipo || 'clube'
+                }));
         } catch (e) {
             console.error('Erro ao carregar histórico de carreira:', e);
         } finally {
@@ -57,11 +59,12 @@ export const careerStore = reactive({
      * @param {string} tipo - 'clube' ou 'selecao' (opcional)
      */
     isUserTeam(teamName, seasonYear, tipo = null) {
-        if (!teamName || !seasonYear) return false;
+        if (!teamName || !seasonYear || !this.history) return false;
         const normalizedTeam = teamName.toLowerCase().trim();
         const normalizedYear = seasonYear.toString().toLowerCase().trim().replace(/\s/g, '');
 
         return this.history.some(h => {
+            if (!h) return false;
             const hTeam = h.timeNome?.toLowerCase().trim();
             const hYear = h.temporada?.toString().toLowerCase().trim().replace(/\s/g, '');
             const typeMatch = !tipo || h.tipo === tipo;

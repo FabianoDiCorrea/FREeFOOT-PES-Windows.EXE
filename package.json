@@ -1,7 +1,7 @@
 {
   "name": "freefoot-pes21",
   "private": true,
-  "version": "0.0.6",
+  "version": "5.9.4",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -13,7 +13,7 @@
   },
   "build": {
     "appId": "com.devduo.freefoot",
-    "productName": "FreeFoot-PES.0.0.6",
+    "productName": "FreeFoot-PES-v5.9.4",
     "directories": {
       "output": "dist-desktop"
     },

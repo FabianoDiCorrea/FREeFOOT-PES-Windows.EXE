@@ -52,7 +52,7 @@ export const SOUTH_AMERICA_COMPETITIONS = [
     { id: 35, nome: "Copa Venezuela", pais: "Venezuela", tipo: "Copa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/copa_venezuela.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-copa-venezuela' },
 
     // CONTINENTAIS (Bônus para integridade)
-    { id: 31, nome: "Copa Libertadores", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: './logos/competitions/libertadores.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-libertadores' },
+    { id: 31, nome: "Copa Libertadores", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: '/logos/competitions/libertadores.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-libertadores' },
     { id: 32, nome: "Copa Sul-Americana", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: './logos/competitions/sulamericana.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-sulamericana' },
     { id: 33, nome: "Recopa Sul-Americana", pais: "América do Sul", tipo: "Supercopa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/recopa.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-recopa-sulamericana' }
 ];
@@ -83,7 +83,7 @@ export const UEFA_COMPETITIONS = [
 ];
 
 export const INTERNATIONAL_COMPETITIONS = [
-    { id: 201, nome: "Copa Libertadores", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: './logos/competitions/libertadores.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-libertadores' },
+    { id: 201, nome: "Copa Libertadores", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: '/logos/competitions/libertadores.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-libertadores' },
     { id: 202, nome: "Copa Sul-Americana", pais: "América do Sul", tipo: "Copa", modoRegistro: "participantes", logo: './logos/competitions/sulamericana.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-sulamericana' },
     { id: 203, nome: "Recopa Sul-Americana", pais: "América do Sul", tipo: "Supercopa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/recopa-conmebol.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-recopa-sulamericana' },
     { id: 204, nome: "Champions League", pais: "Europa", tipo: "Copa", modoRegistro: "participantes", logo: './logos/competitions/champions-league.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-champions-league' },

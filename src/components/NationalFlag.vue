@@ -5,6 +5,8 @@
       :src="flagUrl" 
       :alt="countryName"
       class="flag-img"
+      loading="lazy"
+      decoding="async"
       @error="handleError"
     >
     <div v-else class="flag-placeholder">

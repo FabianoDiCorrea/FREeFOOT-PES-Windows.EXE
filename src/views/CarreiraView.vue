@@ -345,8 +345,8 @@
         </div>
       </div>
 
-      <!-- Orçamento Financeiro -->
-      <div v-if="selectedEntry.tipo === 'clube'" class="row m-0 mb-4 px-2">
+      <!-- Orçamento Financeiro (Apenas Clubes) -->
+      <div v-if="selectedEntry?.tipo === 'clube'" class="row m-0 mb-4 px-2">
          <div class="col-12 mt-2">
             <div class="table-section-header text-center py-1 text-uppercase small fw-bold">ORÇAMENTO FINANCEIRO (PRÓX. TEMPORADA)</div>
             
@@ -568,12 +568,13 @@ const confirmBudgetGeneration = async () => {
 }
 
 const filteredHistory = computed(() => {
-    return history.value.filter(h => h.tipo === activeType.value)
+    return (history.value || []).filter(h => h && h.tipo === activeType.value)
 })
 
 watch(activeType, () => {
-    if (filteredHistory.value.length > 0) {
-        selectedEntry.value = filteredHistory.value[filteredHistory.value.length - 1]
+    const list = filteredHistory.value
+    if (list && list.length > 0) {
+        selectedEntry.value = list[list.length - 1]
     } else {
         selectedEntry.value = null
     }
@@ -883,12 +884,11 @@ const totalStats = computed(() => {
 })
 
 const calculateWinRate = (stats) => {
-    // NOVA FÓRMULA SOLICITADA: (((Vitórias * 3) + Empates) / (Jogos * 3)) * 100
     if (!stats || !stats.jogos || stats.jogos === 0) return '0.00'
-    const pontos = stats.pontos !== undefined && stats.pontos > 0 ? stats.pontos : ((stats.vitorias || 0) * 3) + (stats.empates || 0);
-    const pontosMax = stats.jogos * 3;
-    const rate = (pontos / pontosMax) * 100;
-    return rate.toFixed(2);
+    // NOVA FÓRMULA SOLICITADA: (V+E)/J
+    const totalPontuados = (stats.vitorias || 0) + (stats.empates || 0)
+    const rate = (totalPontuados / stats.jogos) * 100
+    return rate.toFixed(2)
 }
 
 const getPerformanceStatus = (rate) => {

@@ -7,7 +7,9 @@ export const careerService = {
      * Recupera todo o histórico de carreira do banco de dados.
      */
     async getAll() {
-        return await db.get(STORAGE_KEY) || [];
+        const data = await db.get(STORAGE_KEY) || [];
+        // Garantir que não retornamos entradas nulas por falhas na persistência
+        return Array.isArray(data) ? data.filter(h => h && typeof h === 'object') : [];
     },
 
     /**

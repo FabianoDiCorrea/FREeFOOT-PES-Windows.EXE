@@ -1,17 +1,37 @@
 <template>
-  <div class="view-container animated-fade-in">
+  <div class="view-container animated-fade-in position-relative">
+    <!-- OVERLAY DE SINCRONIZAÇÃO -->
+    <div v-if="syncing" class="sync-overlay">
+      <div class="sync-content text-center">
+        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;"></div>
+        <h3 class="fw-black text-uppercase ls-2">Sincronizando...</h3>
+        <p class="text-secondary fw-bold">Por favor, aguarde. Lendo dados do Excel...</p>
+      </div>
+    </div>
+
     <!-- CABEÇALHO -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div class="d-flex gap-2">
         <button @click="handleBack" class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left me-2"></i>VOLTAR
         </button>
+        <button @click="repairClubData" class="btn btn-info fw-black" title="Corrigir Erros de Importação (Escudo/Continente)">
+          <i class="bi bi-wrench-adjustable me-2"></i>REPARAR DADOS
+        </button>
       </div>
       <div class="text-center flex-grow-1">
         <h2 class="fw-black text-uppercase m-0 ls-2 text-warning">
           <i class="bi bi-shield-shaded me-2"></i>GESTÃO DE CLUBES
         </h2>
-        <div class="small text-secondary fw-bold text-uppercase mt-1 opacity-75">Navegue por país ou use a busca global</div>
+        <div class="small text-secondary fw-bold text-uppercase mt-1 opacity-75 d-flex align-items-center justify-content-center gap-2">
+          Navegue por país ou use a busca global
+          <span v-if="clubStore.needsExport" class="badge bg-danger pulse-red ms-2" title="Você adicionou times que ainda não estão no seu Excel. Exporte para atualizar!">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>ALTERAÇÕES PENDENTES
+          </span>
+          <span v-else class="badge bg-success opacity-50 ms-2">
+            <i class="bi bi-check-circle-fill me-1"></i>SINCRONIZADO
+          </span>
+        </div>
       </div>
       <LogoFREeFOOT />
     </div>
@@ -49,13 +69,13 @@
               <button class="btn btn-warning fw-black" @click="createNewClub">
                 <i class="bi bi-plus-lg me-1"></i> NOVO TIME
               </button>
-              <button class="btn btn-outline-info fw-black" @click="exportClubsToCSV" title="Exportar para Excel (CSV)">
-                <i class="bi bi-download"></i>
+              <button class="btn btn-outline-info fw-black" @click="exportClubsToExcel" title="Exportar para Excel (.xlsx)">
+                <i class="bi bi-file-earmark-excel me-1"></i> EXPORTAR
               </button>
-              <button class="btn btn-outline-info fw-black" @click="$refs.fileInput.click()" title="Importar do Excel (CSV)">
-                <i class="bi bi-upload"></i>
+              <button class="btn btn-outline-info fw-black" @click="$refs.fileInput.click()" title="Importar do Excel (.xlsx ou .csv)">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> IMPORTAR
               </button>
-              <input type="file" ref="fileInput" @change="handleCSVImport" accept=".csv" class="d-none">
+              <input type="file" ref="fileInput" @change="handleExcelImport" accept=".xlsx, .xls, .csv" class="d-none">
             </div>
           </div>
 
@@ -108,24 +128,34 @@
             </div>
 
             <!-- NÍVEL 3: LISTA DE TIMES DO PAÍS -->
-            <div v-else class="club-list-grid">
-              <div 
-                v-for="club in countryClubs" 
-                :key="club.id" 
-                class="club-item-card"
-                :class="{ 'active': selectedClub?.id === club.id }"
-                @click="selectClub(club)"
-              >
-                <div class="d-flex align-items-center gap-3">
-                  <TeamShield :teamName="club.nome" :size="44" :forceUrl="club.escudo_url" />
-                  <div class="min-w-0">
-                    <div class="fw-black text-uppercase truncate text-white mb-1">{{ club.nome }}</div>
-                    <div class="d-flex align-items-center gap-2 opacity-50">
-                      <span class="x-small fw-black text-uppercase">{{ club.continente }}</span>
+            <div v-else>
+              <div class="club-list-grid">
+                <div 
+                  v-for="club in visibleClubs" 
+                  :key="club.id" 
+                  class="club-item-card"
+                  :class="{ 'active': selectedClub?.id === club.id }"
+                  @click="selectClub(club)"
+                >
+                  <div class="d-flex align-items-center gap-3">
+                    <TeamShield :teamName="club.nome" :size="44" :forceUrl="club.escudo_url" />
+                    <div class="min-w-0">
+                      <div class="fw-black text-uppercase truncate text-white mb-1">{{ club.nome }}</div>
+                      <div class="d-flex align-items-center gap-2 opacity-50">
+                        <span class="x-small fw-black text-uppercase">{{ club.continente }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              
+              <!-- Botão Carregar Mais -->
+              <div v-if="countryClubs.length > displayLimit" class="text-center mt-4">
+                <button class="btn btn-outline-warning fw-black text-uppercase px-5" @click="displayLimit += 50">
+                   <i class="bi bi-plus-circle me-2"></i>Carregar mais {{ countryClubs.length - displayLimit }} times
+                </button>
+              </div>
+
               <div v-if="countryClubs.length === 0" class="text-center py-5 opacity-25 fw-black text-uppercase">
                  Nenhum time registrado em {{ selectedCountry.nome }}.
               </div>
@@ -144,9 +174,8 @@
         </GamePanel>
       </div>
 
-      <!-- COLUNA DIREITA: FORMULÁRIO DE EDIÇÃO (MANTIDO) -->
+      <!-- COLUNA DIREITA: FORMULÁRIO DE EDIÇÃO -->
       <div class="col-lg-5">
-        <!-- O formulário permanece igual, pois sua lógica de edição é sólida -->
         <GamePanel v-if="selectedClub" customClass="neon-warning h-100">
           <div class="d-flex justify-content-between align-items-start mb-4">
             <h4 class="fw-black text-uppercase m-0">
@@ -213,6 +242,11 @@
               <label class="form-label x-small fw-bold text-secondary text-uppercase">ID PES (Opcional)</label>
               <input type="number" v-model="editForm.pesId" class="form-control game-input" placeholder="ID">
             </div>
+            
+            <div class="mb-3" v-if="!isNew">
+              <label class="form-label x-small fw-bold text-secondary text-uppercase">ID do App (Referência: {{ editForm.id }})</label>
+              <input type="text" :value="editForm.id" class="form-control game-input opacity-50" readonly>
+            </div>
           </div>
 
           <div class="d-grid gap-2 mt-4 pt-4 border-top border-secondary border-opacity-10">
@@ -245,6 +279,8 @@ import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
+import { db } from '../services/db'
+import * as XLSX from 'xlsx'
 
 const searchQuery = ref('')
 const selectedContinent = ref(null)
@@ -252,6 +288,8 @@ const selectedCountry = ref(null)
 const selectedClub = ref(null)
 const isNew = ref(false)
 const saving = ref(false)
+const syncing = ref(false)
+const displayLimit = ref(50)
 
 const editForm = ref({
   id: null,
@@ -268,7 +306,6 @@ onMounted(async () => {
   await clubStore.init()
 })
 
-// Ordenação solicitada: América do Sul, América do Norte, Europa...
 const orderedContinents = computed(() => {
   const order = ["América do Sul", "América do Norte", "Europa", "África", "Ásia", "Oceania"]
   return [...ALL_COMPETITIONS_DATA].sort((a, b) => {
@@ -283,34 +320,43 @@ const searchResults = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
   return clubStore.list.filter(c => 
     c.nome.toLowerCase().includes(q) || 
-    c.pais?.toLowerCase().includes(q)
-  ).slice(0, 50)
+    c.pais.toLowerCase().includes(q)
+  ).slice(0, 30)
 })
 
 const countryClubs = computed(() => {
   if (!selectedCountry.value) return []
-  const pais = selectedCountry.value.nome.toLowerCase().trim()
-  return clubStore.list.filter(c => c.pais?.toLowerCase().trim() === pais)
+  return clubStore.list.filter(c => 
+    c.pais.toLowerCase() === selectedCountry.value.nome.toLowerCase()
+  ).sort((a, b) => a.nome.localeCompare(b.nome))
+})
+
+const visibleClubs = computed(() => {
+    return countryClubs.value.slice(0, displayLimit.value)
 })
 
 const selectContinent = (cont) => {
   selectedContinent.value = cont
   selectedCountry.value = null
+  selectedClub.value = null
 }
 
 const selectCountry = (pais) => {
   selectedCountry.value = pais
+  selectedClub.value = null
+  displayLimit.value = 50 // Resetar limite ao mudar de país
 }
 
 const selectClub = (club) => {
-  isNew.value = false
   selectedClub.value = club
-  editForm.value = JSON.parse(JSON.stringify(club))
+  isNew.value = false
+  editForm.value = { ...club }
 }
 
 const resetNavigation = () => {
   selectedContinent.value = null
   selectedCountry.value = null
+  selectedClub.value = null
   searchQuery.value = ''
 }
 
@@ -318,14 +364,16 @@ const createNewClub = () => {
   isNew.value = true
   selectedClub.value = { id: 'new' }
   editForm.value = {
-    id: null, nome: '', pais: selectedCountry.value?.nome || '', 
-    continente: selectedContinent.value?.continente || 'AMÉRICA DO SUL',
-    escudo_url: '', bandeira_url: selectedCountry.value?.bandeira || '',
-    federacao_logo: '', pesId: null
+    id: null,
+    nome: '',
+    pais: selectedCountry.value ? selectedCountry.value.nome : '',
+    continente: selectedContinent.value ? selectedContinent.value.continente.toUpperCase() : 'AMÉRICA DO SUL',
+    escudo_url: '',
+    bandeira_url: selectedCountry.value ? selectedCountry.value.bandeira : '',
+    federacao_logo: '',
+    pesId: null
   }
 }
-
-const isCustom = (id) => clubStore.customClubs.some(c => c.id === id)
 
 const saveClub = async () => {
   if (!editForm.value.nome) return
@@ -333,128 +381,210 @@ const saveClub = async () => {
   try {
     await clubStore.saveClub(editForm.value)
     selectedClub.value = null
-    alert('Time salvo com sucesso!')
+    isNew.value = false
   } catch (error) {
-    alert('Erro ao salvar o time.')
+    alert('Erro ao salvar clube: ' + error.message)
   } finally {
     saving.value = false
   }
 }
 
 const deleteClub = async () => {
-  if (!selectedClub.value?.id) return
-  if (confirm(`Deseja remover as customizações do time ${selectedClub.value.nome}?`)) {
-    try {
-      await clubStore.removeClub(selectedClub.value.id)
-      selectedClub.value = null
-    } catch (error) {}
-  }
+  if (!confirm(`Deseja realmente excluir o clube ${editForm.value.nome}?`)) return
+  await clubStore.removeClub(editForm.value.id)
+  selectedClub.value = null
 }
 
-const handleBack = () => {
-  if (selectedCountry.value) selectedCountry.value = null
-  else if (selectedContinent.value) selectedContinent.value = null
-  else $router.push('/universo')
+const isCustom = (id) => {
+  if (!id) return false
+  return clubStore.customClubs.some(c => c.id.toString() === id.toString())
 }
 
-// --- CSV LOGIC (EXCEL INTEGRATION) ---
-
-const exportClubsToCSV = () => {
-  // Cabeçalhos (Apenas os campos editáveis relevantes)
+const exportClubsToExcel = () => {
   const headers = ['id', 'nome', 'pais', 'continente', 'escudo_url', 'bandeira_url', 'pesId']
   
-  // Usar apenas os clubes customizados ou todos? 
-  const rows = clubStore.list.map(c => [
-    c.id || '',
-    c.nome || '',
-    c.pais || '',
-    c.continente || '',
-    c.escudo_url || '',
-    c.bandeira_url || '',
-    c.pesId || ''
-  ])
+  // Garantir que os dados exportados estejam sanitizados (limpeza final)
+  const data = clubStore.list.map(c => ({
+    id: c.id || '',
+    nome: clubStore.sanitizeString(c.nome || ''),
+    pais: clubStore.sanitizeString(c.pais || ''),
+    continente: clubStore.sanitizeString(c.continente || ''),
+    escudo_url: (c.escudo_url || '').trim(),
+    bandeira_url: (c.bandeira_url || '').trim(),
+    pesId: c.pesId || ''
+  }))
 
-  // BOM UTF-8 (\ufeff) é essencial para o Excel reconhecer acentos em UTF-8
-  // Usamos ponto e vírgula (;) pois é o padrão de separador do Excel no Brasil (PT-BR)
-  const csvContent = "\ufeff" + headers.join(";") + "\n"
-    + rows.map(e => e.map(val => {
-        // Escapar aspas duplas e envolver em aspas para segurança
-        const cleanVal = val.toString().replace(/"/g, '""')
-        return `"${cleanVal}"`
-    }).join(";")).join("\n")
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
+  const worksheet = XLSX.utils.json_to_sheet(data, { header: headers })
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Clubes")
   
-  const link = document.createElement("a")
-  link.setAttribute("href", url)
-  link.setAttribute("download", "lista_de_clubes.csv")
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  // Gerar arquivo XLSX
+  XLSX.writeFile(workbook, `FREEFOOT_CLUBS_${new Date().toISOString().slice(0,10)}.xlsx`)
+  
+  clubStore.markSynced()
 }
 
-const fileInput = ref(null)
-
-const handleCSVImport = (event) => {
+const handleExcelImport = (event) => {
   const file = event.target.files[0]
   if (!file) return
 
+  syncing.value = true
   const reader = new FileReader()
+  
   reader.onload = async (e) => {
-    const text = e.target.result
-    const lines = text.split(/\r?\n/).filter(line => line.trim())
-    if (lines.length < 2) return
-
-    // Detectar separador (vírgula ou ponto e vírgula)
-    const firstLine = lines[0]
-    const separator = firstLine.includes(';') ? ';' : ','
-    
-    const headers = firstLine.split(separator).map(h => h.trim().replace(/"/g, ''))
-    
-    let importedCount = 0
-    let updatedCount = 0
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
+    try {
+      const data = new Uint8Array(e.target.result)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const firstSheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[firstSheetName]
       
-      // Regex para lidar com separadores dentro de aspas
-      const regex = new RegExp(`("${separator}"|[^"${separator}\\s]+|"(?:\\""|[^"])*")`, 'g')
-      const values = []
-      let match
-      while ((match = regex.exec(line)) !== null) {
-          values.push(match[0].trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
+      // Converter para JSON ignorando espaços vazios e garantindo cabeçalhos
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" })
+      
+      let importedCount = 0
+      let updatedCount = 0
+      let errorCount = 0
+
+      for (const row of jsonData) {
+        // Mapeamento flexível de colunas (caso o usuário mude o nome da coluna ou a ordem)
+        const clubData = {
+          id: row.id || row.ID || null,
+          nome: row.nome || row.Nome || row.NOME || '',
+          pais: row.pais || row.Pais || row.PAÍS || row.PAIS || '',
+          continente: row.continente || row.Continente || row.CONTINENTE || '',
+          escudo_url: row.escudo_url || row.Escudo || '',
+          bandeira_url: row.bandeira_url || row.Bandeira || '',
+          pesId: row.pesId || row.PESID || null
+        }
+
+        if (clubData.nome && clubData.pais) {
+           // Sanitização de nomes por precaução
+           clubData.nome = clubStore.sanitizeString(clubData.nome)
+           clubData.pais = clubStore.sanitizeString(clubData.pais)
+           
+           let pais = clubData.pais.trim()
+           if (pais.toLowerCase() === 'bolivia') pais = 'Bolívia'
+           if (pais.toLowerCase() === 'colombia') pais = 'Colômbia'
+           if (pais.toLowerCase() === 'mexico') pais = 'México'
+           
+           let continente = (clubData.continente || '').trim().toUpperCase()
+           if (continente.startsWith('AMERICA') || continente.startsWith('AMÉRICA')) {
+              if (!continente.includes('SUL') && !continente.includes('NORTE')) {
+                 continente = 'AMÉRICA DO SUL'
+              }
+           }
+
+           const idVal = clubData.id && clubData.id !== 'null' && clubData.id !== '' ? clubData.id : null
+
+           await clubStore.saveClub({
+             ...clubData,
+             id: idVal,
+             pais: pais,
+             continente: continente,
+             pesId: clubData.pesId ? parseInt(clubData.pesId) : null
+           })
+
+           if (idVal) updatedCount++
+           else importedCount++
+        } else {
+           errorCount++
+        }
       }
 
-      const clubData = {}
-      headers.forEach((header, idx) => {
-        clubData[header] = values[idx] || ''
-      })
+      alert(`Sincronização via Excel concluída!\n${importedCount} novos times criados.\n${updatedCount} times atualizados.\n${errorCount > 0 ? errorCount + ' linhas ignoradas por dados incompletos.' : ''}`)
+      await clubStore.markSynced()
+    } catch (err) {
+      console.error("Erro na importação Excel:", err)
+      alert("Erro ao ler o arquivo Excel. Verifique se o arquivo está correto.")
+    } finally {
+      syncing.value = false
+      event.target.value = ''
+      await clubStore.init()
+    }
+  }
+  reader.readAsArrayBuffer(file)
+}
 
-      if (clubData.nome && clubData.pais) {
-        await clubStore.saveClub({
-          ...clubData,
-          id: clubData.id || null,
-          pesId: clubData.pesId ? parseInt(clubData.pesId) : null
-        })
-        if (clubData.id) updatedCount++
-        else importedCount++
+const repairClubData = async () => {
+  if (!confirm('Esta ação irá reconstruir nomes de times e países que foram "quebrados" em várias colunas no Excel. Deseja iniciar o Reparo Profundo?')) return
+  
+  let fixedCount = 0
+  const customClubs = await db.getAll('custom_clubs') || []
+  const repairedClubs = []
+  
+  const continenteList = ['AMÉRICA DO SUL', 'EUROPA', 'AMÉRICA DO NORTE', 'ÁFRICA', 'ÁSIA', 'OCEANIA', 'FIFA', 'MUNDIAL']
+  const paisesConhecidos = [...new Set(ALL_COMPETITIONS_DATA.flatMap(cont => cont.paises.map(p => p.nome.toUpperCase())))]
+  
+  customClubs.forEach(club => {
+    let changed = false
+    const c = { ...club }
+    
+    // 1. RECONSTRUÇÃO INTELIGENTE POR ÂNCORAS (Split Fix v5.8.0)
+    // Se o nome foi quebrado pelo Excel, tentamos "pescar" o país e continente na linha toda
+    const rawValues = [c.nome, c.pais, c.continente, c.escudo_url, c.bandeira_url]
+      .filter(v => v && !v.toString().startsWith('http')) // Evita pegar URLs como parte do nome
+      .map(v => (v || '').toString().trim())
+    
+    const fullLine = rawValues.join(' ').toUpperCase()
+    
+    // Âncora A: Continente
+    const continentsUpper = continenteList.map(ct => ct.toUpperCase())
+    let foundContinent = continentsUpper.find(ct => fullLine.includes(ct))
+    
+    // Âncora B: País (Busca o país mais longo que encaixa na linha)
+    let foundCountry = paisesConhecidos
+      .filter(p => fullLine.includes(p.toUpperCase()))
+      .sort((a, b) => b.length - a.length)[0]
+
+    if (foundContinent && foundCountry) {
+      const rawLine = rawValues.join(' ')
+      const countryIdx = rawLine.toUpperCase().indexOf(foundCountry.toUpperCase())
+      
+      const newName = clubStore.sanitizeString(rawLine.substring(0, countryIdx).trim())
+      const newCountry = clubStore.sanitizeString(foundCountry)
+      
+      if (newName && (newName !== c.nome || newCountry !== c.pais)) {
+        c.nome = newName
+        c.pais = newCountry.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+        c.continente = foundContinent
+        changed = true
       }
     }
     
-    alert(`Sincronização concluída!\n${importedCount} novos times criados.\n${updatedCount} times atualizados.`)
-    event.target.value = '' // Reset input
-    await clubStore.init() // Recarregar
-  }
-  reader.readAsText(file)
+    // Sanitização de URLs de escudos (muitas vezes vêm com resíduos de aspas)
+    if (c.escudo_url && (c.escudo_url.includes('"') || c.escudo_url.includes(' '))) {
+      c.escudo_url = c.escudo_url.replace(/"/g, '').trim()
+      changed = true
+    }
+
+    repairedClubs.push(c)
+    if (changed) fixedCount++
+  })
+  
+  // Deduplicação e Salvamento
+  const finalUnique = []
+  const seenKeys = new Set()
+  repairedClubs.forEach(club => {
+    const key = `${(club.nome || '').toLowerCase().trim()}|${(club.pais || '').toLowerCase().trim()}`
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key)
+      finalUnique.push(club)
+    }
+  })
+  
+  await db.save('custom_clubs', finalUnique)
+  await clubStore.init() // Isso aplicará a sanitização final e reparo de IDs
+  alert(`Reparação profunda v5.7.0 concluída! ${fixedCount} clubes reconstruídos e textos limpos.`)
 }
 
-// Injetar o router para o handleBack funcionar
-import { useRouter } from 'vue-router'
-const router = useRouter()
-const $router = { push: (p) => router.push(p) }
+// Funções de navegação auxiliares
+const handleBack = () => {
+    if (history.length > 1) {
+        window.history.back()
+    } else {
+        location.href = '#/'
+    }
+}
 </script>
 
 <style scoped>
@@ -575,5 +705,32 @@ const $router = { push: (p) => router.push(p) }
 .neon-warning {
   border-color: rgba(255, 193, 7, 0.3) !important;
   box-shadow: 0 0 20px rgba(255, 193, 7, 0.1) !important;
+}
+
+.pulse-red {
+  animation: pulse-red-anim 2s infinite;
+  box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+}
+
+@keyframes pulse-red-anim {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.sync-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 12, 24, 0.9);
+  backdrop-filter: blur(10px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+}
+
+.sync-content {
+  color: white;
 }
 </style>

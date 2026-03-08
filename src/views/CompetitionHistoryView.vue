@@ -69,7 +69,7 @@
              </div>
           </div>
         </div>
-        <div class="stats-card-clean" v-if="liderRebaixamentos && liderRebaixamentos.count > 0">
+        <div class="stats-card-clean" v-if="liderRebaixamentos && liderRebaixamentos.count > 0 && isRelegationCountry">
           <div class="d-flex align-items-center gap-3">
              <TeamShield :teamName="liderRebaixamentos.nome" :size="48" borderless />
              <div class="text-start">
@@ -173,7 +173,7 @@
               </div>
 
               <!-- REBAIXADOS -->
-              <div v-if="competition.tipo === 'Liga' && s.rebaixadosList && s.rebaixadosList.length" class="extra-group relegation">
+              <div v-if="competition.tipo === 'Liga' && s.rebaixadosList && s.rebaixadosList.length && isRelegationCountry" class="extra-group relegation">
                 <div class="d-flex align-items-center gap-2 mb-1">
                   <span class="icon-label">↓ REBAIXADOS</span>
                 </div>
@@ -283,6 +283,12 @@ const isInternational = computed(() => {
   const isContinent = ['América do Sul', 'Europa', 'América do Norte', 'Ásia', 'África', 'Oceania'].includes(competition.value.pais)
   
   return isInterType || isWorld || isContinent
+})
+
+const isRelegationCountry = computed(() => {
+  if (!competition.value || !competition.value.pais) return false
+  const p = competition.value.pais.toLowerCase().trim()
+  return p === 'brasil' || p === 'argentina' || p === 'inglaterra'
 })
 
 const parseTable = (tableText) => {

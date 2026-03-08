@@ -22,8 +22,19 @@
     </header>
 
     <main class="main-content">
+      <!-- Error Boundary Global -->
+      <div v-if="appError" class="alert alert-danger m-5 p-5 d-flex flex-column align-items-center shadow-lg rounded-4 border-0" style="background: linear-gradient(135deg, #842029 0%, #431015 100%);">
+        <i class="bi bi-bug-fill display-1 mb-4"></i>
+        <h2 class="fw-black text-uppercase">Falha Crítica do Sistema</h2>
+        <p class="fs-5 opacity-75 text-center mb-4">A aplicação encontrou um erro inesperado que impediu a renderização.</p>
+        <div class="bg-black bg-opacity-25 p-3 rounded-3 w-100 mb-4 text-start">
+          <code class="text-white">{{ appError }}</code>
+        </div>
+        <button class="btn btn-light fw-black px-5 py-3 rounded-pill" @click="resetApp">REINICIAR INTERFACE</button>
+      </div>
+
       <!-- keep-alive preserva o UniversoView em memória para evitar remontagem e piscada ao voltar -->
-      <router-view v-slot="{ Component }">
+      <router-view v-else v-slot="{ Component }">
         <keep-alive include="UniversoView">
           <component :is="Component" />
         </keep-alive>
@@ -33,11 +44,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onErrorCaptured } from 'vue'
 import LogoFREeFOOT from './components/LogoFREeFOOT.vue'
 import { clubStore } from './services/club.store'
 
 const currentTime = ref('')
+const appError = ref(null)
+
+onErrorCaptured((err, instance, info) => {
+  console.error("ERRO GLOBAL:", err, info)
+  appError.value = err.message
+  return false
+})
+
+const resetApp = () => {
+  localStorage.removeItem('freefoot_universo_nav')
+  window.location.href = '#/'
+  window.location.reload()
+}
 
 const updateTime = () => {
   const now = new Date()
