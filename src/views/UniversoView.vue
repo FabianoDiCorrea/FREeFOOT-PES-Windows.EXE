@@ -762,6 +762,34 @@
               </div>
             </div>
 
+            <!-- SEÇÃO 1.8: CLASSIFICAÇÃO FINAL DE COPA -->
+            <div class="form-section-premium mb-5">
+              <h4 class="text-primary fw-black mb-1 text-uppercase d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-diagram-3-fill me-2"></i>CLASSIFICAÇÃO DE COPA</span>
+                <span v-if="newSeason.participantes && newSeason.participantes.length > 0" class="text-success animated-fade-in">✅ {{ newSeason.participantes.length }} times</span>
+              </h4>
+              <p class="text-secondary small mb-3">Cole a classificação final (Nome&nbsp;&nbsp;Fase) — um time por linha. O sistema detecta a fase automaticamente.</p>
+              <p class="x-small opacity-50 mb-3 font-monospace">Ex: "River Plate Campeão" / "Aldosivi Semi" / "Instituto ACC Quartas"</p>
+
+              <textarea 
+                v-model="newSeason.classificacaoCopaTxt"
+                class="form-control game-textarea mb-3"
+                rows="8"
+                placeholder="River Plate  Campeão&#10;Rosario Central  Vice&#10;Aldosivi  Semi&#10;Central Córdoba  Semi&#10;Instituto ACC  Quartas&#10;Banfield  Quartas&#10;Racing Club  Oitavas&#10;Patronato  16 Avos&#10;Arsenal de Sarandí  Pré-Copa"
+              ></textarea>
+
+              <!-- Preview dos participantes importados com badge de fase -->
+              <div v-if="newSeason.participantes && newSeason.participantes.length > 0" class="copa-ranking-preview">
+                <div class="d-flex flex-wrap gap-2">
+                  <div v-for="(p, idx) in newSeason.participantes" :key="idx" class="copa-participant-chip" :class="getCopaBadgeClass(p.colocacao)">
+                    <TeamShield :teamName="p.nome" :size="16" borderless :filterCountry="newSeason.pais" />
+                    <span class="fw-bold x-small text-truncate" style="max-width: 120px;">{{ p.nome }}</span>
+                    <span class="badge rounded-pill x-small ms-1" :class="getCopaBadgeClass(p.colocacao)">{{ p.colocacao || '?' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- SEÇÃO 2: TABELA (OPCIONAL) -->
             <div class="form-section-premium">
               <h4 class="text-info fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
@@ -1622,6 +1650,7 @@ const prepareEdit = async (s) => {
       printsUrls: clone.printsUrls || ['', '', ''],
       topScorers: clone.topScorers || (clone.artilheiro && clone.artilheiro.nome ? [clone.artilheiro] : []),
       participantes: clone.participantes || [],
+      classificacaoCopaTxt: clone.classificacaoCopaTxt || '',
       promovidosPlayoff: clone.promovidosPlayoff || [],
       mundial: {
         semi1: clone.mundial?.semi1 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -1722,6 +1751,7 @@ const openForm = () => {
     topScorers: [],
     participantes: [],
     tabela: '',
+    classificacaoCopaTxt: '',
     printsUrls: ['', '', ''], // Inicializado para garantir visibilidade da galeria
     promovidosPlayoff: [],
     mundial: {
@@ -1734,6 +1764,159 @@ const openForm = () => {
   resetScorerForm()
   viewMode.value = 'form'
 }
+
+// Fases de copa conhecidas (da mais específica para a mais genérica, para matching em cascata)
+// Fases de copa conhecidas com tokens específicos para match exato
+const CUP_PHASES = [
+  { tokens: ['campeao', 'campea', 'champion'], label: 'Campeão', priority: 1 },
+  { tokens: ['vice', 'finalista', 'runner-up', 'segundo'], label: 'Vice', priority: 2 },
+  { tokens: ['semi', 'semifinal', 'semi-final', '3', '4'], label: 'Semifinal', priority: 3 },
+  { tokens: ['quartas', 'quarta', 'quartas de final', '8'], label: 'Quartas', priority: 4 },
+  { tokens: ['oitavas', 'oitava', 'oitavas de final', '16'], label: 'Oitavas', priority: 5 },
+  { tokens: ['elim. 16 avos', '16 avos', 'avos', '32'], label: '16 Avos', priority: 6 },
+  { tokens: ['pre-copa', 'pré-copa', 'elim. pre', 'elim. pré', 'pre'], label: 'Pré-Copa', priority: 7 },
+  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Eliminado', priority: 8 },
+  { tokens: ['participante', 'participant'], label: 'Participante', priority: 9 },
+]
+
+const safeNormalize = (str) => {
+  if (!str) return ''
+  return str.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.]/g, '') // remove pontos para facilitar (ex: Elim. -> Elim)
+}
+
+const detectCupPhase = (phaseStr) => {
+  if (!phaseStr) return null
+  const norm = safeNormalize(phaseStr)
+  
+  for (const phase of CUP_PHASES) {
+    if (phase.tokens.some(t => {
+      const tNorm = safeNormalize(t)
+      return norm === tNorm
+    })) {
+      return phase.label
+    }
+  }
+  return null
+}
+
+const getCopaBadgeClass = (colocacao) => {
+  if (!colocacao) return 'bg-secondary text-white'
+  const n = colocacao.toLowerCase()
+  if (n.includes('campe')) return 'bg-warning text-dark'
+  if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark'
+  if (n.includes('semi')) return 'bg-success text-white'
+  if (n.includes('quart')) return 'bg-info text-dark'
+  if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
+  if (n.includes('elim') || n.includes('pre') || n.includes('pré')) return 'bg-secondary text-white'
+  return 'bg-secondary text-white'
+}
+
+// Agrupa participantes de copa por fase, ordenados por prioridade de eliminação
+const getCopaPhasesGrouped = (participantes) => {
+  if (!participantes) return []
+  const phaseMap = new Map()
+  
+  participantes.forEach(p => {
+    const colocacao = p.colocacao || 'Participante'
+    if (!phaseMap.has(colocacao)) {
+      phaseMap.set(colocacao, { label: colocacao, teams: [], badgeClass: getCopaBadgeClass(colocacao) })
+    }
+    phaseMap.get(colocacao).teams.push(p)
+  })
+  
+  // Ordenar de acordo com a prioridade das fases
+  const phaseOrder = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+  return Array.from(phaseMap.values()).sort((a, b) => {
+    const ia = phaseOrder.findIndex(x => a.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
+    const ib = phaseOrder.findIndex(x => b.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+}
+
+// Watcher para parsear automaticamente a Classificação de Copa ao colar o texto
+watch(() => newSeason.value.classificacaoCopaTxt, (txt) => {
+  if (!txt || !txt.trim()) return
+
+  const lines = txt.split('\n').filter(l => l.trim())
+  const participantes = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    let teamName = ''
+    let phase = ''
+
+    // 1. Tentar separar por Tab ou Separadores explícitos (2+ espaços, " - ", " : ")
+    let parts = trimmed.split('\t')
+    if (parts.length < 2) parts = trimmed.split(/  +/)
+    if (parts.length < 2) parts = trimmed.split(' - ')
+    if (parts.length < 2) parts = trimmed.split(' : ')
+
+    if (parts.length >= 2) {
+      phase = parts[parts.length - 1].trim()
+      teamName = parts.slice(0, parts.length - 1).join(' ').trim()
+      phase = detectCupPhase(phase) || phase
+    } else {
+      // 2. Fallback: Busca reversa por tokens EXATOS (para espaços simples)
+      const tokens = trimmed.split(/\s+/)
+      let foundPhaseIdx = -1
+      
+      if (tokens.length >= 2) {
+        // Tenta casar blocos de 1 a 4 palavras no FINAL da linha
+        for (let len = 4; len >= 1; len--) {
+          if (tokens.length <= len) continue
+          const candidate = tokens.slice(-len).join(' ')
+          const detected = detectCupPhase(candidate)
+          if (detected) {
+            foundPhaseIdx = tokens.length - len
+            phase = detected
+            break
+          }
+        }
+      }
+
+      if (foundPhaseIdx !== -1) {
+        teamName = tokens.slice(0, foundPhaseIdx).join(' ').trim()
+      } else {
+        // Se nada for detectado de forma estruturada, verifica se a última palavra parece uma fase
+        if (tokens.length >= 2) {
+          const lastWord = tokens[tokens.length - 1]
+          const lastWordDetected = detectCupPhase(lastWord)
+          if (lastWordDetected) {
+             phase = lastWordDetected
+             teamName = tokens.slice(0, tokens.length - 1).join(' ').trim()
+          } else {
+             // Caso desesperador: assume que é apenas o nome do time
+             teamName = trimmed
+             phase = 'Participante'
+          }
+        } else {
+          teamName = trimmed
+          phase = 'Participante'
+        }
+      }
+    }
+
+    if (!teamName) continue
+    
+    // Normalizar a fase detectada
+    const finalPhase = CUP_PHASES.some(cp => cp.label === phase) ? phase : (detectCupPhase(phase) || phase)
+    
+    participantes.push({ nome: teamName, colocacao: finalPhase })
+
+    // Auto-preencher Campeão e Vice caso detectado
+    if (finalPhase === 'Campeão') newSeason.value.campeao = teamName
+    if (finalPhase === 'Vice') newSeason.value.vice = teamName
+  }
+
+  if (participantes.length > 0) {
+    newSeason.value.participantes = participantes
+  }
+}, { deep: true })
+
 
 // Watcher para detectar Campeão e Vice automaticamente ao colar a tabela e realizar Parse
 watch(() => newSeason.value.tabela, (newTable) => {
@@ -3384,6 +3567,78 @@ onActivated(async () => {
 
 .print-slot-empty i {
   font-size: 1.5rem;
+}
+
+/* == CHIPS DE COPA == */
+.copa-ranking-preview {
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.copa-participant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.75rem;
+  max-width: 200px;
+  transition: all 0.2s;
+}
+
+.copa-participant-chip:hover {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1);
+}
+
+/* == CLASSIFICAÇÃO DE COPA NA TELA DO CAMPEONATO == */
+.copa-classification-table {
+  background: rgba(0,0,0,0.15);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.copa-phases-wrapper { display: flex; flex-direction: column; gap: 4px; }
+
+.copa-phase-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.copa-phase-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.copa-team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  transition: all 0.2s;
+}
+
+.copa-team-chip:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
 }
 
 </style>

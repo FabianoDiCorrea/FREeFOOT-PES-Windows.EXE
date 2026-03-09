@@ -23,7 +23,7 @@
 
       <div class="stats-card-clean highlight-gold" v-if="maiorCampeao">
         <div class="d-flex align-items-center gap-3">
-          <TeamShield :teamName="maiorCampeao.nome" :size="48" borderless />
+          <TeamShield :teamName="maiorCampeao.nome" :size="48" borderless class="cursor-pointer" @click="navigateToClubHistory(maiorCampeao.nome)" />
           <div class="text-start">
             <div class="stats-val">{{ maiorCampeao.nome }}</div>
             <div class="d-flex align-items-center gap-2 mb-1" v-if="isInternational && getClubInfo(maiorCampeao.nome)">
@@ -42,7 +42,7 @@
 
       <div class="stats-card-clean" v-if="liderVices">
         <div class="d-flex align-items-center gap-3">
-          <TeamShield :teamName="liderVices.nome" :size="48" borderless />
+          <TeamShield :teamName="liderVices.nome" :size="48" borderless class="cursor-pointer" @click="navigateToClubHistory(liderVices.nome)" />
           <div class="text-start">
              <div class="stats-val small-val">{{ liderVices.nome }}</div>
              <div class="d-flex align-items-center gap-2 mb-1" v-if="isInternational && getClubInfo(liderVices.nome)">
@@ -62,7 +62,7 @@
       <template v-if="competition.tipo === 'Liga'">
         <div class="stats-card-clean" v-if="liderAcessos && liderAcessos.count > 0">
           <div class="d-flex align-items-center gap-3">
-             <TeamShield :teamName="liderAcessos.nome" :size="48" borderless />
+             <TeamShield :teamName="liderAcessos.nome" :size="48" borderless class="cursor-pointer" @click="navigateToClubHistory(liderAcessos.nome)" />
              <div class="text-start">
                <div class="stats-val small-val">{{ liderAcessos.nome }}</div>
                <div class="stats-lab text-success">Mais Acessos ({{ liderAcessos.count }})</div>
@@ -71,7 +71,7 @@
         </div>
         <div class="stats-card-clean" v-if="liderRebaixamentos && liderRebaixamentos.count > 0 && isRelegationCountry">
           <div class="d-flex align-items-center gap-3">
-             <TeamShield :teamName="liderRebaixamentos.nome" :size="48" borderless />
+             <TeamShield :teamName="liderRebaixamentos.nome" :size="48" borderless class="cursor-pointer" @click="navigateToClubHistory(liderRebaixamentos.nome)" />
              <div class="text-start">
                <div class="stats-val small-val">{{ liderRebaixamentos.nome }}</div>
                <div class="stats-lab text-danger">Mais Rebaixamentos ({{ liderRebaixamentos.count }})</div>
@@ -110,7 +110,7 @@
                    class="trofeu-hist" 
                    alt="Troféu"
                    @error="e => e.target.style.display='none'">
-              <TeamShield :teamName="s.campeao" :size="24" borderless :season="s.ano" />
+              <TeamShield :teamName="s.campeao" :size="24" borderless :season="s.ano" class="cursor-pointer" @click="navigateToClubHistory(s.campeao)" />
               <div class="d-flex flex-column lh-1">
                 <span class="fw-bold text-uppercase name-champion d-flex align-items-center">
                     {{ s.campeao }}
@@ -133,7 +133,7 @@
           <!-- VICE -->
           <div class="col-2">
             <div class="d-flex align-items-center gap-2 opacity-75" v-if="s.vice">
-              <TeamShield :teamName="s.vice" :size="20" borderless :season="s.ano" />
+              <TeamShield :teamName="s.vice" :size="20" borderless :season="s.ano" class="cursor-pointer" @click="navigateToClubHistory(s.vice)" />
               <div class="d-flex flex-column lh-1" style="min-width: 0;">
                 <span class="text-secondary small fw-bold text-uppercase text-truncate d-flex align-items-center gap-1">
                   {{ s.vice }}
@@ -211,6 +211,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { seasonService } from '../services/season.service'
@@ -230,6 +231,7 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const router = useRouter()
 const competition = ref(null)
 const history = ref([])
 
@@ -515,6 +517,10 @@ const liderVices = computed(() => {
 }) 
 const liderAcessos = computed(() => getLeader('promovidos'))
 const liderRebaixamentos = computed(() => getLeader('rebaixados'))
+
+const navigateToClubHistory = (name) => {
+  router.push({ name: 'club-history', params: { id: encodeURIComponent(name) } })
+}
 
 onMounted(loadData)
 </script>

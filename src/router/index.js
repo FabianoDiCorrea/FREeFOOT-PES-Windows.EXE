@@ -20,6 +20,7 @@ const router = createRouter({
         { path: '/checklist', name: 'season-checklist', component: () => import('../views/SeasonChecklistView.vue') },
         { path: '/sala-de-trofeus', name: 'trophy-room', component: () => import('../views/TrophyRoomView.vue') },
         { path: '/clubes', name: 'club-management', component: () => import('../views/ClubManagementView.vue') },
+        { path: '/clube/:id/historico', name: 'club-history', component: () => import('../views/ClubHistoryView.vue') },
     ],
 });
 

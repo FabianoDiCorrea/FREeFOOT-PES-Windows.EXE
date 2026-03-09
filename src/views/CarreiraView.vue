@@ -1363,7 +1363,7 @@ watch(selectedEntry, async (newVal) => {
 }
 
 /* Evolução Styles */
-.evolution-up { color: #00ff88; text-shadow: 0 0 5px rgba(0, 255, 136, 0.4); }
+.evolution-up { color: #00ff73; text-shadow: 0 0 5px rgba(0, 255, 115, 0.4); }
 .evolution-down { color: #ff4444; text-shadow: 0 0 5px rgba(255, 68, 68, 0.4); }
 .evolution-neutral { color: #4488ff; opacity: 0.8; }
 .evolution-dash { font-weight: 900; margin-top: -2px; }

@@ -8,7 +8,41 @@ export const normalizeString = (str) => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
+        .replace(/\bathletico\b/g, 'atletico')
+        .replace(/\batletico-mg\b/g, 'atletico mineiro')
+        .replace(/\batletico-pr\b/g, 'atletico paranaense')
+        .replace(/\bamerica-mg\b/g, 'america mineiro')
+        .replace(/\bamerica-rn\b/g, 'america natal')
+        .replace(/\bbotafogo-sp\b/g, 'botafogo ribeirao preto')
+        .replace(/\bbotafogo-pb\b/g, 'botafogo joao pessoa')
+        .replace(/\bbotafogo-rj\b/g, 'botafogo')
         .trim();
+};
+
+/**
+ * Normalização inteligente específica para clubes:
+ * Remove sufixos regionais (mineiro, carioca, paulista, etc) 
+ * e abreviações comuns (EC, FC, SAF, etc).
+ */
+export const clubSmartNormalize = (name) => {
+    if (!name) return '';
+    let norm = normalizeString(name);
+
+    // Lista de siglas puras para remover (NÃO remove termos regionais como 'mineiro', 'paulista')
+    const toRemove = [
+        /\brj\b/g, /\bsp\b/g, /\bmg\b/g, /\brs\b/g, /\bpr\b/g, /\bsc\b/g, /\bba\b/g, /\bpe\b/g, /\bgo\b/g, /\bce\b/g, /\bdf\b/g,
+        /\bfc\b/g, /\bec\b/g, /\bac\b/g, /\bas\b/g, /\ba\.c\.\b/g, /\bf\.c\.\b/g, /\be\.c\.\b/g,
+        /\bsaf\b/g, /\bclube\b/g, /\besporte\b/g, /\bcr\b/g, /\bcaa\b/g
+    ];
+
+    toRemove.forEach(regex => {
+        norm = norm.replace(regex, '');
+    });
+
+    // Se a normalização apagou TUDO (caso de um nome composto só de stopwords), 
+    // retorna o nome original normalizado simples para evitar match com tudo (string vazia)
+    const final = norm.replace(/\s+/g, ' ').trim();
+    return final || normalizeString(name);
 };
 
 /**

@@ -38,7 +38,8 @@ const props = defineProps({
   season: String,
   premium: Boolean, // Ativa o fundo de bandeira desfocada
   countryName: String, // Necessário para o fundo premium
-  isNational: Boolean // Força a busca apenas em seleções
+  isNational: Boolean, // Força a busca apenas em seleções
+  filterCountry: String // Se passado, prioriza busca de escudo pelo país exato
 })
 
 const hasError = ref(false)
@@ -49,6 +50,13 @@ const sourceUrl = computed(() => {
   if (!props.teamName || hasError.value) return null
   
   const type = props.isNational ? 'selecao' : null
+  
+  // Se filterCountry foi passado, tenta primeiro busca exata no país correto
+  if (props.filterCountry && !props.isNational) {
+    const team = dataSearchService.findClubByCountry(props.teamName, props.filterCountry)
+    if (team) return team?.escudo_url || team?.bandeira_url || null
+  }
+  
   const team = dataSearchService.search(props.teamName, type)
   return team?.escudo_url || team?.bandeira_url || null
 })
@@ -133,7 +141,7 @@ watch(() => props.teamName, () => {
 
 .shield-fallback {
   font-size: 1.2rem;
-  opacity: 0.3;
+  opacity: 0.6;
 }
 
 .shield-wrapper.premium-mode {

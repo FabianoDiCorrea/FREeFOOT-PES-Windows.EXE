@@ -67,6 +67,47 @@ body {
   color: var(--color-secondary);
 }
 
+/* Neon Colors & Effects */
+:root {
+  --color-neon-green: #00ff73;
+  --color-neon-green-glow: rgba(0, 255, 115, 0.8);
+}
+
+.text-neon-green {
+  color: var(--color-neon-green) !important;
+  filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+}
+
+.pulse-neon {
+  animation: global-neon-pulse 2s infinite ease-in-out;
+}
+
+@keyframes global-neon-pulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px var(--color-neon-green));
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+    opacity: 0.8;
+  }
+}
+
+.neon-pulse-icon {
+  color: var(--color-neon-green);
+  filter: drop-shadow(0 0 8px var(--color-neon-green-glow));
+  animation: global-neon-pulse 1.5s infinite ease-in-out;
+}
+
 /* Widescreen total sem limites */
 .container-full {
   width: 100% !important;

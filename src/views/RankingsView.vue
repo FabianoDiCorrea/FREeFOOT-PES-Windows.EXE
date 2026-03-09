@@ -794,10 +794,6 @@ const calculateSidebarStats = (ranking) => {
   box-shadow: 0 0 5px rgba(13, 202, 240, 0.5);
 }
 
-.text-neon-green {
-  color: #39FF14 !important;
-  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5), 0 0 10px rgba(57, 255, 20, 0.3);
-}
 
 .pulse-neon {
   animation: pulseNeon 2s infinite;

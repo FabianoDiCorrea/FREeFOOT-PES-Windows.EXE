@@ -18,6 +18,30 @@ export const dataSearchService = {
     },
 
     /**
+     * Busca um clube pelo nome com prioridade pelo país exato (evita confundir Barcelona SC Equador com Barcelona Espanha).
+     */
+    findClubByCountry(name, country) {
+        if (!name || !country) return null;
+        const search = normalizeString(name);
+        const searchCountry = normalizeString(country);
+        const list = clubStore.list.length > 0 ? clubStore.list : [];
+
+        // 1. Busca exata no país correto
+        const exactInCountry = list.find(c => normalizeString(c.nome) === search && normalizeString(c.pais) === searchCountry);
+        if (exactInCountry) return exactInCountry;
+
+        // 2. Busca parcial no país correto (Ex: "Barcelona" -> "Barcelona SC" se estiver no Equador)
+        const partialInCountry = list.find(c =>
+            normalizeString(c.pais) === searchCountry &&
+            (normalizeString(c.nome).startsWith(search) || search.startsWith(normalizeString(c.nome)))
+        );
+        if (partialInCountry) return partialInCountry;
+
+        // 3. Fallback: Match exato em qualquer país (Último recurso)
+        return list.find(c => normalizeString(c.nome) === search);
+    },
+
+    /**
      * Busca uma seleção pelo nome.
      */
     findNationalTeam(name, exactOnly = false) {

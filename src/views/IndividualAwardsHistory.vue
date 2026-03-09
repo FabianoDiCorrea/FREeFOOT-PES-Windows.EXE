@@ -286,6 +286,12 @@ const showPhotoZoom = ref(false)
 const zoomedPhotoUrl = ref('')
 const cachedLogos = ref({})
 
+const openPhotoZoom = (url) => {
+  if (!url) return
+  zoomedPhotoUrl.value = url
+  showPhotoZoom.value = true
+}
+
 const form = ref({
   season: '',
   tipo: '',
@@ -477,12 +483,6 @@ const getCachedLogo = (url) => {
   if (!url) return null
   if (url.startsWith('data:')) return url
   return cachedLogos.value[url] || url
-}
-
-const openPhotoZoom = (url) => {
-  if (!url) return
-  zoomedPhotoUrl.value = url
-  showPhotoZoom.value = true
 }
 
 // Carregar imagens do cache

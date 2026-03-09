@@ -71,6 +71,14 @@
                   <span class="header-main-label" v-else>LIGA SÉRIE</span>
                 </div>
               </th>
+              <!-- COPAS NACIONAIS -->
+              <th v-for="cupSlot in cupSlots" :key="season+'cup'+cupSlot.key" class="bg-cup-header border-all text-center py-1">
+                <div class="d-flex flex-column align-items-center">
+                  <img v-if="cupSlot.meta?.logo" :src="cupSlot.meta.logo" class="intl-header-logo" />
+                  <i v-else class="bi bi-trophy-fill text-warning" style="font-size:1.1rem;"></i>
+                  <span class="intl-header-minor">{{ cupSlot.meta?.nome?.split(' ').slice(-2).join(' ') || 'COPA' }}</span>
+                </div>
+              </th>
               <!-- INTERNACIONAIS -->
               <th v-for="intl in intlSlots" :key="season+intl.id" class="bg-intl-header border-all text-center py-1">
                 <div class="d-flex flex-column align-items-center">
@@ -209,6 +217,7 @@ const mainLeagueLogo = computed(() => {
 })
 
 const ligaSlotsCount = computed(() => countrySlots.value.filter(s => s.type === 'league').length)
+const cupSlots = computed(() => countrySlots.value.filter(s => s.type === 'cup'))
 
 const setupSlots = () => {
   const slots = []
@@ -266,6 +275,24 @@ const setupSlots = () => {
     })
   })
 
+  // Adicionar Copas Nacionais
+  let cupsFound = []
+  for (const continent of RAW_DATA) {
+    const p = continent.paises.find(p => p.nome.toLowerCase() === countryIdVal)
+    if (p) {
+      cupsFound = (p.competicoes || []).filter(c => c.tipo === 'Copa')
+      break
+    }
+  }
+  cupsFound.forEach(copa => {
+    slots.push({
+      key: `cup_${copa.nome.replace(/\s+/g, '_')}`,
+      label: 'Copa',
+      type: 'cup',
+      meta: copa
+    })
+  })
+
   intlSlots.value.forEach(i => {
     slots.push({ key: i.key, label: 'Pos', type: 'intl', id: i.id })
   })
@@ -311,6 +338,12 @@ const processedMatrix = computed(() => {
   seasonStore.list.forEach(season => {
     if (!season.competitionName) return
     
+    // Bloqueio de País: Só processa temporadas que pertencem ao país da Matriz ou são continentais/mundiais.
+    const seasonCountry = normalize(season.pais || '')
+    const isInternational = !seasonCountry || 
+                           ['continente', 'mundial', 'internacional', 'america do sul', 'europa', 'america do norte', 'asia', 'oceania', 'africa'].includes(seasonCountry)
+    if (!isInternational && seasonCountry !== countryIdVal) return
+    
     const tableStr = season.tabela || ''
     const table = parseTable(tableStr)
     const yearRaw = season.ano
@@ -330,8 +363,10 @@ const processedMatrix = computed(() => {
           }
       }
 
-      // Verificação flexível (Apenas clubes do país atual)
-      if (!countryClubsNamesNormalized.includes(clubNameNorm)) return
+      // Verificação flexível: Se o clube está no banco de dados, deve ser deste país.
+      // Se não está no banco, permitimos (provavelmente é um time de divisões inferiores ou novo).
+      const clubInStore = clubStore.list.find(c => normalize(c.nome) === clubNameNorm)
+      if (clubInStore && normalize(clubInStore.pais) !== countryIdVal) return
 
       // Determinar Slot
       let slotKey = null
@@ -408,10 +443,75 @@ const processedMatrix = computed(() => {
             }
           }
           
-          clubsSet.add(clubNameNorm)
+          const isNationalSlot = slotKey.startsWith('league_') || slotKey.startsWith('cup_')
+          const isFromThisCountry = countryClubsNamesNormalized.includes(clubNameNorm)
+
+          if (isNationalSlot || isFromThisCountry) {
+            clubsSet.add(clubNameNorm)
+          }
           seasonsSet.add(year)
       }
     })
+
+    // COPA NACIONAL: Popular via participantes com colocacao
+    const cupSlots = countrySlots.value.filter(s => s.type === 'cup')
+    if (cupSlots.length > 0 && season.participantes && season.participantes.length > 0) {
+      const compNorm = normalize(season.competitionName)
+      
+      cupSlots.forEach(cupSlot => {
+        const cupNomNorm = normalize(cupSlot.meta.nome)
+        // Match via ID (definitivo) ou nome completo — NUNCA via palavra parcial
+        const isThisCup = (season.competitionId && cupSlot.meta.id && season.competitionId === cupSlot.meta.id) 
+                       || compNorm === cupNomNorm
+                       // Se o ID falhar, o nome deve ser match exato ou começar com o nome da copa (ex: "Copa Equador" -> "Copa Equador 2024")
+                       || (compNorm.startsWith(cupNomNorm) && !isInternational)
+        if (!isThisCup) return
+
+        season.participantes.forEach(p => {
+          if (!p.nome || !p.colocacao) return
+          const pNorm = normalize(p.nome)
+          
+          const fase = p.colocacao.toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          const rank = getRankFromExtra(fase)
+          
+          // Smart-match: tenta encontrar o clube no PAÍS CORRETO (Prioridade Total)
+          // 1. Busca exata no país
+          let bestClub = clubStore.list.find(c => normalize(c.nome) === pNorm && normalize(c.pais) === countryIdVal)
+          
+          // 2. Se for uma copa nacional e não achou no país, tenta o smart-match local
+          if (!bestClub && isThisCup) {
+            bestClub = clubStore.list.find(c => 
+              normalize(c.pais) === countryIdVal && 
+              (normalize(c.nome).startsWith(pNorm) || pNorm.startsWith(normalize(c.nome)))
+            )
+          }
+
+          // 3. Bloqueio de Intrusos: Se achou match exato em OUTRO país e nada no atual, ignora na Matriz Nacional
+          if (!bestClub && isThisCup) {
+              const foreignMatch = clubStore.list.find(c => normalize(c.nome) === pNorm)
+              if (foreignMatch && normalize(foreignMatch.pais) !== countryIdVal) return
+          }
+
+          // Usa a chave normalizada do clube encontrado para mergear com dados de liga
+          const effectiveNorm = bestClub ? normalize(bestClub.nome) : pNorm
+          const displayName = bestClub ? bestClub.nome : p.nome
+          
+          if (!data[effectiveNorm]) {
+            data[effectiveNorm] = {}
+            clubNameMap[effectiveNorm] = displayName
+          }
+          if (!data[effectiveNorm][year]) data[effectiveNorm][year] = {}
+          if (!data[effectiveNorm][year][cupSlot.key] || rank < (data[effectiveNorm][year][cupSlot.key].rank || 999)) {
+            data[effectiveNorm][year][cupSlot.key] = { rank, compName: season.competitionName, colocacao: p.colocacao }
+          }
+          // Só adiciona ao Set se for do país ou se for uma competição nacional confirmada
+          if (isThisCup || countryClubsNamesNormalized.includes(effectiveNorm)) {
+            clubsSet.add(effectiveNorm)
+          }
+          seasonsSet.add(year)
+        })
+      })
+    }
 
     // NOVO: Coleta detalhada do Mundial (Top 4) - Fora do loop da tabela
     if (season.mundial) {
@@ -542,15 +642,17 @@ const parseTable = (str) => {
 
 const getRankFromExtra = (extra) => {
     if (!extra) return 999;
-    const e = extra.toUpperCase();
-    if (e === 'CAMPEÃO' || e === 'CAMPEAO') return 1;
-    if (e === 'VICE' || e === 'VICE-CAMPEÃO') return 2;
-    if (e === 'SEMIFINAL' || e === 'SEMIFINAIS') return 4;
-    if (e === 'QUARTAS' || e === 'QUARTAS DE FINAL') return 8;
-    if (e === 'OITAVAS' || e === 'OITAVAS DE FINAL') return 16;
-    if (e.includes('FASE DE GRUPOS') || e === 'GRUPOS') return 32;
-    if (e.includes('PRÉ') || e.includes('PRE')) return 64;
-    if (e.includes('16 AVOS')) return 24;
+    const e = extra.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (e === 'CAMPEAO' || e.includes('CAMPEA')) return 1;
+    if (e === 'VICE' || e.includes('VICE-CAMPEA') || e.includes('FINALISTA')) return 2;
+    if (e.includes('SEMIFINAL') || e === 'SEMI') return 4;
+    if (e.includes('QUARTAS DE FINAL') || e.includes('QUARTA DE FINAL') || e === 'QUARTAS') return 8;
+    if (e.includes('OITAVAS DE FINAL') || e.includes('OITAVA DE FINAL') || e === 'OITAVAS') return 16;
+    if (e.includes('16 AVOS') || e === 'ELIMINADO 16') return 24;
+    if (e.includes('GRUPOS') || e.includes('FASE DE GRUPOS')) return 32;
+    if (e.includes('PRE-COPA') || e.includes('ELIMINADO PRE') || e.includes('PRE COPA')) return 64;
+    if (e.includes('ELIM') || e.includes('ELIMINADO')) return 64;
+    if (e.includes('PRE') || e.includes('PRE')) return 64;
     return 999;
 }
 
@@ -588,6 +690,17 @@ const getCellExpertStyle = (club, season, slot) => {
          classes.push('expert-neutral-bg')
       }
     }
+  }
+
+  if (slot.type === 'cup') {
+    if (rank === 1) classes.push('expert-gold-bg', 'neon-border-gold')
+    else if (rank === 2) classes.push('expert-silver-bg', 'neon-border-silver')
+    else if (rank === 4) classes.push('expert-green-intl-grad')
+    else if (rank === 8) classes.push('expert-cyan-intl-grad')
+    else if (rank === 16) classes.push('expert-blue-intl-grad')
+    else if (rank === 24) classes.push('expert-brown-intl-grad') // 16 AVOS (MARROM)
+    else if (rank === 64) classes.push('expert-red-intl-grad')      // PRÉ-COPA
+    else classes.push('expert-neutral-bg')
   }
 
   if (slot.type === 'intl') {
@@ -636,6 +749,25 @@ const getRank = (club, season, slot) => {
   // Rebaixamento (Seta para baixo) - Apenas para países selecionados
   if (slot.type === 'league' && result.isRelegation && isRelegationCountry.value) {
     return '↓ ' + rank + 'º'
+  }
+
+  // COPA NACIONAL: Usar colocacao real ou rank mapeado
+  if (slot.type === 'cup') {
+    // Preferencialmente exibir o texto original da colocacao (Normalizado para curto)
+    let coloc = result.colocacao || '';
+    const n = coloc.toLowerCase();
+    if (n.includes('campe')) return '🏆 CAMPEÃO';
+    if (n.includes('vice')) return '🥈 VICE';
+    if (n.includes('semi')) return 'SEMI';
+    if (n.includes('quart')) return 'QUARTAS';
+    if (n.includes('oitav')) return 'OITAVAS';
+    if (n.includes('16')) return '16 AVOS';
+    if (n.includes('grupos')) return 'GRUPOS';
+    if (n.includes('pre') || n.includes('pré')) return 'PRÉ-COPA';
+    
+    if (rank === 1) return '🏆 CAMPEÃO'
+    if (rank === 2) return '🥈 VICE'
+    return result.colocacao || 'PART.'
   }
 
   if (slot.type === 'intl') {
@@ -896,31 +1028,31 @@ thead th {
 .expert-bronze-intl-grad { 
   background: linear-gradient(135deg, #ff8c00 0%, #cc7000 100%) !important; 
   color: #000 !important; 
-  font-weight: 950 !important;
+  font-weight: 700 !important;
 }
 
 .expert-green-intl-grad { 
   background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%) !important; /* Emerald */
   color: #000 !important; 
-  font-weight: 950 !important;
+  font-weight: 700 !important;
 }
 
 .expert-cyan-intl-grad { 
   background: linear-gradient(135deg, #00f2ff 0%, #00a8b3 100%) !important; 
   color: #000 !important; 
-  font-weight: 950 !important;
+  font-weight: 700 !important;
 }
 
 .expert-blue-intl-grad { 
   background: linear-gradient(135deg, #0056b3 0%, #003366 100%) !important; 
   color: #fff !important; 
-  font-weight: 900 !important;
+  font-weight: 700 !important;
 }
 
-.expert-blue-intl-grad-v2 { 
-  background: linear-gradient(135deg, #003366 0%, #001a33 100%) !important; 
+.expert-brown-intl-grad { 
+  background: linear-gradient(135deg, #8d6e63 0%, #4e342e 100%) !important; /* Marrom/Bronze */
   color: #fff !important; 
-  font-weight: 800 !important;
+  font-weight: 700 !important;
 }
 
 .expert-cyan-intl-grad { 
@@ -938,7 +1070,7 @@ thead th {
 .expert-red-intl-grad { 
   background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important; /* Carmesim */
   color: #fff !important; 
-  font-weight: 950 !important;
+  font-weight: 700 !important;
 }
 
 .expert-cyan-bg { 
@@ -1008,8 +1140,9 @@ thead th {
 .intl-slot-width {
   min-width: 110px !important;
   width: 110px !important;
-  font-size: 0.7rem !important;
-  letter-spacing: 0px !important;
+  font-size: 0.45rem !important;
+  letter-spacing: 0.6px !important;
+  font-weight: 800 !important;
 }
 
 .intl-slot-width .cell-rank-text {
@@ -1025,4 +1158,19 @@ thead th {
   border: 2px solid #0a0a10; 
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00f2ff88; }
+/* === COPA NACIONAL NA MATRIZ === */
+.bg-cup-header {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 200, 0, 0.08)) !important;
+  border-bottom: 2px solid rgba(255, 165, 0, 0.4) !important;
+}
+
+.intl-slot-width.cup-col {
+  min-width: 110px !important;
+  width: 110px !important;
+  font-size: 0.45rem !important;
+  letter-spacing: 0.6px !important;
+  background-color: rgba(255, 140, 0, 0.04) !important;
+  font-weight: 800 !important;
+}
+
 </style>

@@ -108,7 +108,7 @@
           </thead>
           <tbody>
             <tr v-for="club in sortedClubs" :key="club.nome" class="club-row">
-              <td class="ps-1 fw-black text-uppercase border-none cursor-pointer hover-bright" @click="openClubTrophyRoom(club.nome)">
+              <td class="ps-1 fw-black text-uppercase border-none cursor-pointer hover-bright" @click="navigateToClubHistory(club.nome)">
                 <div class="d-flex align-items-center gap-1">
                   <TeamShield :teamName="club.nome" :size="20" />
                   <span class="name-cell-full d-flex align-items-center gap-1">
@@ -186,7 +186,8 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
 import { CLUBS_DATA } from '../data/clubs.data'
 import { seasonStore } from '../services/season.store'
 import { clubStore } from '../services/club.store'
@@ -201,7 +202,9 @@ import { getSeasonFinalYear } from '../services/utils'
 import ClubTrophyModal from '../components/ClubTrophyModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const countryName = ref('')
+
 const countryClubs = ref([])
 const intlSlots = ref([])
 const nationalCompetitions = ref([])
@@ -212,14 +215,10 @@ const selectedClubName = ref('')
 const clubTrophyModalRef = ref(null)
 let modalInstance = null
 
-const openClubTrophyRoom = (clubName) => {
-    selectedClubName.value = clubName
-    nextTick(() => {
-        if (clubTrophyModalRef.value) {
-            clubTrophyModalRef.value.open()
-        }
-    })
+const navigateToClubHistory = (name) => {
+  router.push({ name: 'club-history', params: { id: encodeURIComponent(name) } })
 }
+
 
 const isRelegationCountry = computed(() => {
   if (!countryName.value) return false
@@ -364,7 +363,17 @@ const loadData = async () => {
 
     // 2. Carregar Clubes e Inicializar Stats
     const baseClubs = clubStore.list && clubStore.list.length > 0 ? clubStore.list : CLUBS_DATA;
-    const clubsData = baseClubs.filter(c => c.pais && normalizeName(c.pais) === normalizeName(pNome));
+    const clubsData = baseClubs.filter(c => {
+        // Ignora registros que representam o país em si
+        const nameNorm = normalizeName(c.nome);
+        const paisNorm = normalizeName(c.pais || '');
+        const countriesToIgnore = ['brasil', 'argentina', 'colombia', 'chile', 'uruguai', 'bolivia', 'equador', 'paraguai', 'peru', 'venezuela'];
+        const isCountryEntry = (paisNorm && nameNorm === paisNorm) || countriesToIgnore.includes(nameNorm);
+        
+        if (isCountryEntry && !c.escudo_url) return false;
+        
+        return c.pais && normalizeName(c.pais) === normalizeName(pNome);
+    });
     
     const statsMap = {};
     clubsData.forEach(c => {

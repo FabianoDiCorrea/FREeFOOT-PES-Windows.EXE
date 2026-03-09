@@ -59,7 +59,7 @@
 
           <!-- Grid de Campeões -->
           <div class="trophy-grid">
-            <div v-for="club in comp.champions" :key="club.nome" class="trophy-card">
+            <div v-for="club in comp.champions" :key="club.nome" class="trophy-card cursor-pointer" @click="navigateToClubHistory(club.nome)">
               <div class="tc-inner shadow-lg d-flex flex-column h-100 position-relative">
                 
                 <!-- Escudo Grande de Fundo (Marca d'água) -->
@@ -95,7 +95,7 @@
                 <div class="tc-dates-list mt-3 flex-shrink-0 position-relative z-index-2">
                   <div v-for="(yearObj, idx) in club.years" :key="idx" class="tc-date-item text-center d-flex justify-content-center align-items-center gap-2">
                     {{ yearObj.year }}
-                    <i v-if="yearObj.isMyCareer" class="bi bi-controller text-success neon-pulse-icon" title="Conquista na Sua Carreira"></i>
+                    <i v-if="yearObj.isMyCareer" class="bi bi-controller text-neon-green neon-pulse-icon" title="Conquista na Sua Carreira"></i>
                   </div>
                 </div>
 
@@ -112,7 +112,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { seasonStore } from '../services/season.store'
+
 import { careerStore } from '../services/career.store'
 import { getTrofeuPath, normalizeString } from '../services/utils'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
@@ -121,7 +123,9 @@ import NationalFlag from '../components/NationalFlag.vue'
 import TeamShield from '../components/TeamShield.vue'
 
 const route = useRoute()
+const router = useRouter()
 const countryName = ref('')
+
 const loading = ref(true)
 const competitions = ref([])
 
@@ -270,6 +274,9 @@ const formatStars = (count) => {
     if (ones > 0) result += '⭐'.repeat(ones)
     
     return result.trim() || '⭐'
+}
+const navigateToClubHistory = (name) => {
+    router.push({ name: 'club-history', params: { id: encodeURIComponent(name) } })
 }
 </script>
 
@@ -441,18 +448,5 @@ const formatStars = (count) => {
 
 .neon-pulse-icon {
     font-size: 1.1rem;
-    color: #00ff00 !important;
-    animation: neonPulse 1.5s infinite alternate;
-}
-
-@keyframes neonPulse {
-    from {
-        text-shadow: 0 0 2px #00ff00, 0 0 5px #00ff00;
-        transform: scale(1);
-    }
-    to {
-        text-shadow: 0 0 8px #00ff00, 0 0 15px #00ff00, 0 0 20px #00ff00;
-        transform: scale(1.1);
-    }
 }
 </style>

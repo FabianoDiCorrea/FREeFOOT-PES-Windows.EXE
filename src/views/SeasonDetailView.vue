@@ -150,6 +150,30 @@
       </div>
     </div>
 
+    <!-- CLASSIFICAÇÃO FINAL DE COPA (quando há participantes com colocacao) -->
+    <div v-if="season.participantes && season.participantes.length > 0 && season.participantes.some(p => p.colocacao)" class="row g-2 mb-4">
+      <div class="col-12">
+        <GamePanel customClass="p-3 border border-warning border-opacity-10">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-diagram-3-fill text-warning"></i>
+            <h6 class="m-0 fw-black text-uppercase text-warning ls-1">CLASSIFICAÇÃO FINAL</h6>
+            <span class="badge bg-warning text-dark rounded-pill">{{ season.participantes.length }} times</span>
+          </div>
+          <div class="copa-phases-wrapper">
+            <template v-for="phase in getCopaPhasesGrouped(season.participantes)" :key="phase.label">
+              <div class="copa-phase-row mb-2">
+                <span class="copa-phase-badge me-2" :class="phase.badgeClass">{{ phase.label }}</span>
+                <span v-for="(p, pi) in phase.teams" :key="pi" class="copa-team-chip me-1 mb-1">
+                  <TeamShield :teamName="p.nome" :size="18" borderless :filterCountry="season.pais" />
+                  <span class="x-small fw-bold">{{ p.nome }}</span>
+                </span>
+              </div>
+            </template>
+          </div>
+        </GamePanel>
+      </div>
+    </div>
+
     <!-- CONTEÚDO PRINCIPAL: TABELA + ARTILHARIA (SIDE-BY-SIDE SEM VÁCUO) -->
     <div class="d-flex flex-wrap gap-2 align-items-start">
       
@@ -416,14 +440,59 @@ import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import MundialBracket from '../components/MundialBracket.vue'
 
+// == Funções de Copa ==
+const getCopaBadgeClass = (colocacao) => {
+  if (!colocacao) return 'bg-secondary text-white'
+  const n = colocacao.toLowerCase()
+  if (n.includes('campe')) return 'bg-warning text-dark'
+  if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark'
+  if (n.includes('semi')) return 'bg-success text-white'
+  if (n.includes('quart')) return 'bg-info text-dark'
+  if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
+  return 'bg-secondary text-white'
+}
+
+const getCopaPhasesGrouped = (participantes) => {
+  if (!participantes) return []
+  const phaseMap = new Map()
+  
+  participantes.forEach(p => {
+    let colocacao = p.colocacao || 'Participante'
+    // Normalização agressiva para labels curtas (Ex: "Oitavas de Final" -> "Oitavas")
+    const norm = colocacao.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.]/g, '')
+    
+    if (norm.includes('campe')) colocacao = 'Campeão'
+    else if (norm.includes('vice')) colocacao = 'Vice'
+    else if (norm.includes('semi')) colocacao = 'Semifinal'
+    else if (norm.includes('quart')) colocacao = 'Quartas'
+    else if (norm.includes('oitav') || norm === '16') colocacao = 'Oitavas'
+    else if (norm.includes('16') || norm.includes('avos')) colocacao = '16 Avos'
+    else if (norm.includes('pre') || norm.includes('pré')) colocacao = 'Pré-Copa'
+    else if (norm.includes('grupos')) colocacao = 'Grupos'
+    
+    if (!phaseMap.has(colocacao)) {
+      phaseMap.set(colocacao, { label: colocacao, teams: [], badgeClass: getCopaBadgeClass(colocacao) })
+    }
+    phaseMap.get(colocacao).teams.push(p)
+  })
+  
+  const phaseOrder = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+  return Array.from(phaseMap.values()).sort((a, b) => {
+    const ia = phaseOrder.indexOf(a.label)
+    const ib = phaseOrder.indexOf(b.label)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+}
+
 const PLACEMENTS_OPTIONS = [
   'CAMPEÃO',
   'VICE',
-  'ELIM. 16 AVOS',
+  '16 AVOS',
   'SEMIFINAL',
   'QUARTAS',
   'OITAVAS',
   'FASE DE GRUPOS',
+  'PRÉ-COPA',
   'PRÉ-LIBERTADORES'
 ]
 
@@ -768,15 +837,15 @@ const loadSeasonData = async () => {
 
 const getPlacementColorClass = (colocacao) => {
   if (!colocacao) return '';
-  const c = colocacao.toUpperCase().trim();
-  if (c.includes('CAMPEÃO')) return 'pos-gold';
+  const c = colocacao.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (c.includes('CAMPEAO')) return 'pos-gold';
   if (c.includes('VICE')) return 'pos-silver';
   if (c.includes('SEMIFINAL')) return 'pos-bronze';
   if (c.includes('QUARTAS')) return 'pos-green';
   if (c.includes('OITAVAS')) return 'pos-cyan';
   if (c.includes('16 AVOS')) return 'pos-blue';
-  if (c.includes('GRUPOS')) return 'pos-red-light';
-  if (c.includes('PRÉ')) return 'pos-red';
+  if (c.includes('GRUPO')) return 'pos-red-light';
+  if (c.includes('PRE')) return 'pos-red';
   return '';
 }
 
@@ -1861,5 +1930,57 @@ select.form-select.cup-input-select.pos-red-light {
 
 @media (max-width: 768px) {
   .prints-count-2, .prints-count-3 { grid-template-columns: 1fr; }
+}
+/* == CLASSIFICAÇÃO FINAL DE COPA (COMPACTO) == */
+.copa-phases-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.copa-phase-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+}
+
+.copa-phase-badge {
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.copa-team-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  height: 24px;
+}
+
+.copa-team-chip .x-small {
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+}
+
+.pos-gold { background: linear-gradient(to right, #ffc107, #ff9800); color: #000; border-left-color: #ffc107; }
+.pos-silver { background: linear-gradient(to right, #e0e0e0, #bdbdbd); color: #000; border-left-color: #e0e0e0; }
+.pos-bronze { background: linear-gradient(to right, #cd7f32, #a0522d); color: #fff; border-left-color: #cd7f32; }
+
+@media (max-width: 768px) {
+  .prints-count-2, .prints-count-3 { grid-template-columns: 1fr; }
+  .copa-phase-row { flex-direction: column; align-items: flex-start; }
 }
 </style>
