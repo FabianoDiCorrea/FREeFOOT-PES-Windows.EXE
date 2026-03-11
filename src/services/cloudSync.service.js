@@ -116,29 +116,48 @@ export const cloudSyncService = {
     async downloadData(token) {
         if (!token) throw new Error("Token não configurado.");
         const user = await this.authenticate(token);
-        const fileUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/${SYNC_BACKUP_FILENAME}`;
-
-        const response = await fetch(fileUrl, {
+        
+        let fileUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/${SYNC_BACKUP_FILENAME}`;
+        let response = await fetch(fileUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github.v3+json' // Pegamos o JSON do arquivo para ter o Base64
+                'Accept': 'application/vnd.github.v3+json'
             }
         });
 
+        // Se não achou o .gz, tenta o .json antigo (sem compressão)
+        if (!response.ok && response.status === 404) {
+             const oldUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/backup.json`;
+             response = await fetch(oldUrl, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+             });
+        }
+
         if (!response.ok) {
-            if (response.status === 404) throw new Error("Nenhum backup encontrado na sua conta.");
+            if (response.status === 404) throw new Error("Nenhum backup encontrado na sua conta. (Certifique-se de ter clicado em ENVIAR no outro PC primeiro)");
             throw new Error("Erro ao baixar dados do repositório.");
         }
 
         const fileInfo = await response.json();
-        const base64Encoded = fileInfo.content.replace(/\s/g, ''); // Remove quebras de linha que o GitHub às vezes coloca
+        const base64Encoded = fileInfo.content.replace(/\s/g, '');
         
-        // --- DECOMPRESSÃO ---
-        const compressedData = base64ToUint8Array(base64Encoded);
-        const jsonString = pako.inflate(compressedData, { to: 'string' });
-        const backupData = JSON.parse(jsonString);
+        try {
+            // Tenta descomprimir
+            const compressedData = base64ToUint8Array(base64Encoded);
+            const jsonString = pako.inflate(compressedData, { to: 'string' });
+            const backupData = JSON.parse(jsonString);
+            await db.importDatabaseFromJSON(backupData);
+        } catch (e) {
+            // Se falhar a descompressão, assume que é o JSON puro (antigo)
+            console.log("Falha ao descomprimir, tentando ler como JSON puro...");
+            const jsonString = decodeURIComponent(escape(window.atob(base64Encoded)));
+            const backupData = JSON.parse(jsonString);
+            await db.importDatabaseFromJSON(backupData);
+        }
 
-        await db.importDatabaseFromJSON(backupData);
         return true;
     }
 };
