@@ -1,0 +1,133 @@
+:root {
+  --color-primary: #001f3f;
+  /* Dark Blue */
+  --color-secondary: #ff851b;
+  /* Orange */
+  --color-accent: #0074d9;
+  /* Lighter Blue */
+  --color-bg: #000c18;
+  --color-text: #ffffff;
+  --font-game: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-game);
+  margin: 0;
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+#app {
+  height: 100%;
+}
+
+/* Game Menu Styles */
+.game-panel {
+  background: rgba(0, 31, 63, 0.8);
+  border: 2px solid var(--color-accent);
+  border-radius: 10px;
+  padding: 20px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 15px rgba(0, 116, 217, 0.3);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.game-panel:hover {
+  border-color: var(--color-secondary);
+}
+
+.btn-game {
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-accent);
+  color: white;
+  padding: 15px 30px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  transition: all 0.3s ease;
+}
+
+.btn-game:hover {
+  background-color: var(--color-secondary);
+  color: var(--color-primary);
+  transform: scale(1.05);
+  box-shadow: 0 0 10px var(--color-secondary);
+}
+
+.game-header {
+  border-bottom: 3px solid var(--color-secondary);
+  background: linear-gradient(90deg, var(--color-primary) 0%, rgba(0, 0, 0, 0) 100%);
+  padding: 20px;
+}
+
+.logo-freefoot span {
+  color: var(--color-secondary);
+}
+
+/* Neon Colors & Effects */
+:root {
+  --color-neon-green: #00ff73;
+  --color-neon-green-glow: rgba(0, 255, 115, 0.8);
+}
+
+.text-neon-green {
+  color: var(--color-neon-green) !important;
+  filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+}
+
+.pulse-neon {
+  animation: global-neon-pulse 2s infinite ease-in-out;
+}
+
+@keyframes global-neon-pulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px var(--color-neon-green));
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--color-neon-green-glow));
+    opacity: 0.8;
+  }
+}
+
+.neon-pulse-icon {
+  color: var(--color-neon-green);
+  filter: drop-shadow(0 0 8px var(--color-neon-green-glow));
+  animation: global-neon-pulse 1.5s infinite ease-in-out;
+}
+
+/* Widescreen total sem limites */
+.container-full {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 10px 20px !important;
+}
+
+/* Full Width Real */
+.view-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* Deixa o padding para o main-content no App.vue */
+}
+
+/* Widescreen optimization */
+@media (min-width: 1200px) {
+  .container-widescreen {
+    max-width: 95%;
+  }
+}

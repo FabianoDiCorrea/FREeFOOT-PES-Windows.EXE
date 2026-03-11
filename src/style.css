@@ -1,0 +1,24 @@
+/* CSS Reset para Full Width */
+:root {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  display: block;
+  /* Remove o display: flex do padrão Vite */
+}
+
+#app {
+  width: 100%;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left;
+  /* Remove o centramento global */
+}

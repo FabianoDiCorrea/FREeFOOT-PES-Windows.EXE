@@ -1,0 +1,46 @@
+{
+  "name": "freefoot-pes21",
+  "private": true,
+  "version": "0.0.8",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:serve": "vite build && electron .",
+    "build:electron": "vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.devduo.freefoot",
+    "productName": "FreeFoot-PES-v0.0.8",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "win": {
+      "target": "portable",
+      "icon": "public/icon.png"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ]
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "chart.js": "^4.5.1",
+    "localforage": "^1.10.0",
+    "vue": "^3.5.25",
+    "vue-chartjs": "^5.3.3",
+    "vue-router": "^4.6.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.2",
+    "cross-env": "^10.1.0",
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
+    "vite": "^7.3.1"
+  }
+}
