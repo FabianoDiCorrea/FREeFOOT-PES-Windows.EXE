@@ -1,7 +1,8 @@
 import { db } from './db';
+import pako from 'pako';
 
 const SYNC_REPO_NAME = 'freefoot-pes-cloud-sync';
-const SYNC_BACKUP_FILENAME = 'backup.json';
+const SYNC_BACKUP_FILENAME = 'backup.json.gz'; // Mudamos a extensão para .gz para indicar compressão
 
 export const cloudSyncService = {
     /**
@@ -58,7 +59,7 @@ export const cloudSyncService = {
     },
 
     /**
-     * Faz upload dos dados para o Repositório
+     * Faz upload dos dados para o Repositório com Compressão
      */
     async uploadData(token) {
         if (!token) throw new Error("Você precisa configurar seu Token do GitHub com permissão 'repo'.");
@@ -67,7 +68,15 @@ export const cloudSyncService = {
         const exportData = await db.exportDatabase();
         const jsonContent = JSON.stringify(exportData);
         
-        // 1. Verificar se o arquivo já existe para pegar o SHA (necessário para update)
+        // --- COMPRESSÃO COM PAKO ---
+        const compressed = pako.deflate(jsonContent); // Gera um Uint8Array (binário)
+        const base64Content = uint8ArrayToBase64(compressed);
+        const sizeOriginal = (new TextEncoder().encode(jsonContent).length / (1024 * 1024)).toFixed(2);
+        const sizeCompressed = (compressed.length / (1024 * 1024)).toFixed(2);
+        
+        console.log(`Sync: ${sizeOriginal}MB -> ${sizeCompressed}MB (Redução de ${((1 - sizeCompressed/sizeOriginal)*100).toFixed(0)}%)`);
+
+        // 1. Verificar se o arquivo já existe para pegar o SHA
         const fileUrl = `https://api.github.com/repos/${repo.full_name}/contents/${SYNC_BACKUP_FILENAME}`;
         const getFileRes = await fetch(fileUrl, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -79,8 +88,7 @@ export const cloudSyncService = {
             sha = fileData.sha;
         }
 
-        // 2. Upload usando a API de Contents (Base64)
-        // Nota: O conteúdo aqui pode ter até 100MB via API.
+        // 2. Upload usando a API de Contents
         const putRes = await fetch(fileUrl, {
             method: 'PUT',
             headers: {
@@ -88,9 +96,9 @@ export const cloudSyncService = {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: `Sync Update ${new Date().toISOString()}`,
-                content: b64EncodeUnicode(jsonContent),
-                sha: sha // Necessário se estiver atualizando
+                message: `Sync Update ${new Date().toISOString()} (Compressed)`,
+                content: base64Content,
+                sha: sha
             })
         });
 
@@ -103,7 +111,7 @@ export const cloudSyncService = {
     },
 
     /**
-     * Baixa os dados do Repositório
+     * Baixa os dados do Repositório e Decomprime
      */
     async downloadData(token) {
         if (!token) throw new Error("Token não configurado.");
@@ -113,7 +121,7 @@ export const cloudSyncService = {
         const response = await fetch(fileUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github.v3.raw' // Puxa o conteúdo cru diretamente
+                'Accept': 'application/vnd.github.v3+json' // Pegamos o JSON do arquivo para ter o Base64
             }
         });
 
@@ -122,15 +130,40 @@ export const cloudSyncService = {
             throw new Error("Erro ao baixar dados do repositório.");
         }
 
-        const backupData = await response.json();
+        const fileInfo = await response.json();
+        const base64Encoded = fileInfo.content.replace(/\s/g, ''); // Remove quebras de linha que o GitHub às vezes coloca
+        
+        // --- DECOMPRESSÃO ---
+        const compressedData = base64ToUint8Array(base64Encoded);
+        const jsonString = pako.inflate(compressedData, { to: 'string' });
+        const backupData = JSON.parse(jsonString);
+
         await db.importDatabaseFromJSON(backupData);
         return true;
     }
 };
 
-// Help function for large content encoding
-function b64EncodeUnicode(str) {
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-        return String.fromCharCode(parseInt(p1, 16));
-    }));
+/**
+ * Converte Uint8Array para Base64 de forma segura e performática
+ */
+function uint8ArrayToBase64(uint8) {
+    let binary = '';
+    const len = uint8.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8[i]);
+    }
+    return window.btoa(binary);
+}
+
+/**
+ * Converte Base64 para Uint8Array
+ */
+function base64ToUint8Array(base64) {
+    const binary = window.atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
 }
