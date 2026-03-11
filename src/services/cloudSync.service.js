@@ -137,8 +137,26 @@ export const cloudSyncService = {
         }
 
         if (!response.ok) {
-            if (response.status === 404) throw new Error("Nenhum backup encontrado na sua conta. (Certifique-se de ter clicado em ENVIAR no outro PC primeiro)");
-            throw new Error("Erro ao baixar dados do repositório.");
+            if (response.status === 404) {
+                 // TENTATIVA 3: Gist Legado (Versão 1.0)
+                 console.log("Repo não encontrado, tentando Gist Legado...");
+                 const legacyGist = await this.findLegacyGist(token);
+                 if (legacyGist) {
+                     const filename = Object.keys(legacyGist.files)[0];
+                     const rawUrl = legacyGist.files[filename].raw_url;
+                     response = await fetch(rawUrl, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                     });
+                     
+                     if (response.ok) {
+                         const backupData = await response.json();
+                         await db.importDatabaseFromJSON(backupData);
+                         return true;
+                     }
+                 }
+                 throw new Error("Nenhum backup encontrado na sua conta. (PC: Gists/Repo não localizados)");
+            }
+            throw new Error("Erro ao acessar servidor do GitHub.");
         }
 
         const fileInfo = await response.json();
@@ -159,6 +177,25 @@ export const cloudSyncService = {
         }
 
         return true;
+    },
+
+    /**
+     * Busca por Gists legados (versão inicial)
+     */
+    async findLegacyGist(token) {
+        const response = await fetch('https://api.github.com/gists', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!response.ok) return null;
+        const gists = await response.json();
+        const SYNC_GIST_DESCRIPTION = '[FREeFOOT PES] Sincronização em Nuvem do Banco de Dados';
+        return gists.find(g => 
+            g.description === SYNC_GIST_DESCRIPTION || 
+            (g.files && g.files['freefoot-pes-v1-cloud-sync.json'])
+        );
     }
 };
 

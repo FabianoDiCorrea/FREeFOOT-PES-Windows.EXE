@@ -73,9 +73,13 @@
                 <i class="bi bi-info-circle me-2"></i> Para começar, crie um <b>Personal Access Token (Repo)</b> no seu GitHub e cole abaixo.
                 <a href="https://github.com/settings/tokens/new?description=FreeFootSync&scopes=repo" target="_blank" class="text-info ms-2">Criar Token Agora <i class="bi bi-box-arrow-up-right"></i></a>
               </div>
-              <div v-else class="d-flex align-items-center gap-2">
+              <div v-else class="d-flex align-items-center gap-3">
                  <div class="badge bg-success"><i class="bi bi-shield-lock-fill"></i> TOKEN CONFIGURADO</div>
-                 <button class="btn btn-link btn-sm text-secondary p-0" @click="githubToken = ''; saveToken()">Alterar Token</button>
+                 <div v-if="ghUser" class="d-flex align-items-center gap-2 small text-secondary">
+                    <img :src="ghUser.avatar_url" class="rounded-circle" width="20" height="20">
+                    <span>{{ ghUser.login }}</span>
+                 </div>
+                 <button class="btn btn-link btn-sm text-secondary p-0 m-0" @click="logoutGithub">Alterar Conta</button>
               </div>
             </div>
             <div class="col-md-4">
@@ -151,12 +155,31 @@ const githubToken = ref(localStorage.getItem('ff_github_token') || '')
 const tempToken = ref('')
 const isSyncing = ref(false)
 const syncStatus = ref(null)
+const ghUser = ref(null)
 
-const saveToken = (token = '') => {
+const loadGithubUser = async () => {
+  if (!githubToken.value) return
+  try {
+    ghUser.value = await cloudSyncService.authenticate(githubToken.value)
+  } catch (e) {
+    ghUser.value = null
+  }
+}
+
+const saveToken = async (token = '') => {
   if (token) githubToken.value = token
   localStorage.setItem('ff_github_token', githubToken.value)
   tempToken.value = ''
+  await loadGithubUser()
 }
+
+const logoutGithub = () => {
+  githubToken.value = ''
+  localStorage.removeItem('ff_github_token')
+  ghUser.value = null
+}
+
+loadGithubUser()
 
 const handleCloudUpload = async () => {
   if (!confirm('Deseja enviar seu banco de dados atual para a nuvem? Isso substituirá o backup anterior no seu GitHub.')) return
