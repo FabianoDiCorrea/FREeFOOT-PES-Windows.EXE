@@ -1,7 +1,7 @@
 import { db } from './db';
 
-const SYNC_GIST_FILENAME = 'freefoot-pes-v1-cloud-sync.json';
-const SYNC_GIST_DESCRIPTION = '[FREeFOOT PES] Sincronização em Nuvem do Banco de Dados';
+const SYNC_REPO_NAME = 'freefoot-pes-cloud-sync';
+const SYNC_BACKUP_FILENAME = 'backup.json';
 
 export const cloudSyncService = {
     /**
@@ -17,109 +17,120 @@ export const cloudSyncService = {
         });
 
         if (!response.ok) {
-            throw new Error("Token Inválido ou sem permissão de leitura as suas informações.");
+            throw new Error("Token Inválido ou sem permissão de acesso repo/user.");
         }
         return await response.json();
     },
 
     /**
-     * Procura pelo Gist de Sincronização do FreeFoot
+     * Tenta encontrar ou criar o repositório de sincronização
      */
-    async findSyncGist(token) {
-        const response = await fetch('https://api.github.com/gists', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
+    async getOrCreateRepo(token) {
+        const user = await this.authenticate(token);
+        const repoUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}`;
+        
+        const checkRes = await fetch(repoUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (!response.ok) return null;
-        const gists = await response.json();
-        
-        // Procura um Gist que tenha a descrição da sincronização ou o arquivo específico
-        return gists.find(g => 
-            g.description === SYNC_GIST_DESCRIPTION || 
-            (g.files && g.files[SYNC_GIST_FILENAME])
-        );
+        if (checkRes.ok) return await checkRes.json();
+
+        // Se não existe, cria um privado
+        const createRes = await fetch('https://api.github.com/user/repos', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: SYNC_REPO_NAME,
+                description: '[FREeFOOT PES] Sincronização em Nuvem do Banco de Dados',
+                private: true,
+                auto_init: true
+            })
+        });
+
+        if (!createRes.ok) {
+            throw new Error("Não foi possível criar o repositório de sincronização. Verifique se o seu Token tem a permissão 'repo'.");
+        }
+
+        return await createRes.json();
     },
 
     /**
-     * Reúne todo o banco de dados do LocalForage e faz o upload (Cria ou Atualiza o Gist)
+     * Faz upload dos dados para o Repositório
      */
     async uploadData(token) {
-        if (!token) throw new Error("Você precisa configurar seu Token do GitHub primeiro.");
+        if (!token) throw new Error("Você precisa configurar seu Token do GitHub com permissão 'repo'.");
 
-        // 1. Exporta tudo do IndexedDB local
+        const repo = await this.getOrCreateRepo(token);
         const exportData = await db.exportDatabase();
+        const jsonContent = JSON.stringify(exportData);
+        
+        // 1. Verificar se o arquivo já existe para pegar o SHA (necessário para update)
+        const fileUrl = `https://api.github.com/repos/${repo.full_name}/contents/${SYNC_BACKUP_FILENAME}`;
+        const getFileRes = await fetch(fileUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        // 2. Prepara o payload do Gist
-        const payload = {
-            description: SYNC_GIST_DESCRIPTION,
-            public: false, // O Gist será privado e exclusivo para o usurio logado
-            files: {
-                [SYNC_GIST_FILENAME]: {
-                    content: JSON.stringify(exportData, null, 2)
-                }
-            }
-        };
-
-        // 3. Procura se já existe
-        const existingGist = await this.findSyncGist(token);
-
-        let url = 'https://api.github.com/gists';
-        let method = 'POST';
-
-        if (existingGist) {
-            url = `https://api.github.com/gists/${existingGist.id}`;
-            method = 'PATCH'; // Atualiza o existente
+        let sha = null;
+        if (getFileRes.ok) {
+            const fileData = await getFileRes.json();
+            sha = fileData.sha;
         }
 
-        const response = await fetch(url, {
-            method: method,
+        // 2. Upload usando a API de Contents (Base64)
+        // Nota: O conteúdo aqui pode ter até 100MB via API.
+        const putRes = await fetch(fileUrl, {
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github.v3+json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                message: `Sync Update ${new Date().toISOString()}`,
+                content: b64EncodeUnicode(jsonContent),
+                sha: sha // Necessário se estiver atualizando
+            })
+        });
+
+        if (!putRes.ok) {
+            const err = await putRes.json();
+            throw new Error(err.message || "Erro ao salvar no repositório.");
+        }
+
+        return true;
+    },
+
+    /**
+     * Baixa os dados do Repositório
+     */
+    async downloadData(token) {
+        if (!token) throw new Error("Token não configurado.");
+        const user = await this.authenticate(token);
+        const fileUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/${SYNC_BACKUP_FILENAME}`;
+
+        const response = await fetch(fileUrl, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3.raw' // Puxa o conteúdo cru diretamente
+            }
         });
 
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || "Erro ao salvar na nuvem.");
+            if (response.status === 404) throw new Error("Nenhum backup encontrado na sua conta.");
+            throw new Error("Erro ao baixar dados do repositório.");
         }
 
-        return await response.json();
-    },
-
-    /**
-     * Baixa os dados da Nuvem e os salva no IndexedDB
-     */
-    async downloadData(token) {
-        if (!token) throw new Error("Você precisa configurar seu Token do GitHub primeiro.");
-
-        // 1. Busca o Gist
-        const existingGist = await this.findSyncGist(token);
-        if (!existingGist || !existingGist.files[SYNC_GIST_FILENAME]) {
-            throw new Error("Nenhum backup encontrado na sua conta do GitHub.");
-        }
-
-        const rawUrl = existingGist.files[SYNC_GIST_FILENAME].raw_url;
-
-        // 2. Faz o download do JSON Cru
-        const response = await fetch(rawUrl, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) throw new Error("Erro ao baixar o arquivo da nuvem.");
-        
         const backupData = await response.json();
-
-        // 3. Importa de volta pro LocalForage
         await db.importDatabaseFromJSON(backupData);
-
         return true;
     }
 };
+
+// Help function for large content encoding
+function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode(parseInt(p1, 16));
+    }));
+}

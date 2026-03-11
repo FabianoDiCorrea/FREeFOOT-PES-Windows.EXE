@@ -70,8 +70,8 @@
               <p class="opacity-75 m-0 mb-3">Mantenha seus dados sincronizados entre Trabalho e Casa sem precisar de arquivos JSON manuais.</p>
               
               <div v-if="!githubToken" class="alert alert-dark border-secondary p-2 small mb-0">
-                <i class="bi bi-info-circle me-2"></i> Para começar, crie um <b>Personal Access Token (Gist)</b> no seu GitHub e cole abaixo.
-                <a href="https://github.com/settings/tokens/new?description=FreeFootSync&scopes=gist" target="_blank" class="text-info ms-2">Criar Token Agora <i class="bi bi-box-arrow-up-right"></i></a>
+                <i class="bi bi-info-circle me-2"></i> Para começar, crie um <b>Personal Access Token (Repo)</b> no seu GitHub e cole abaixo.
+                <a href="https://github.com/settings/tokens/new?description=FreeFootSync&scopes=repo" target="_blank" class="text-info ms-2">Criar Token Agora <i class="bi bi-box-arrow-up-right"></i></a>
               </div>
               <div v-else class="d-flex align-items-center gap-2">
                  <div class="badge bg-success"><i class="bi bi-shield-lock-fill"></i> TOKEN CONFIGURADO</div>
