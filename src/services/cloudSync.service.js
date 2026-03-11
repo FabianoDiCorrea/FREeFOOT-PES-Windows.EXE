@@ -2,9 +2,13 @@ import { db } from './db';
 import pako from 'pako';
 
 const SYNC_REPO_NAME = 'freefoot-pes-cloud-sync';
+<<<<<<< HEAD
 const DATA_FILENAME = 'data.json.gz';
 const IMAGE_PREFIX = 'images_part_';
 const MAX_CHUNK_SIZE = 20 * 1024 * 1024; // 20MB por fragmento (limite seguro da API)
+=======
+const SYNC_BACKUP_FILENAME = 'backup.json.gz'; // Mudamos a extensão para .gz para indicar compressão
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
 
 export const cloudSyncService = {
     /**
@@ -61,13 +65,35 @@ export const cloudSyncService = {
     },
 
     /**
+<<<<<<< HEAD
      * Faz upload dos dados fragmentados para o Repositório (Suporta GBs)
+=======
+     * Faz upload dos dados para o Repositório com Compressão
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
      */
     async uploadData(token) {
         if (!token) throw new Error("Você precisa configurar seu Token do GitHub com permissão 'repo'.");
 
         const repo = await this.getOrCreateRepo(token);
         const exportData = await db.exportDatabase();
+<<<<<<< HEAD
+=======
+        const jsonContent = JSON.stringify(exportData);
+        
+        // --- COMPRESSÃO COM PAKO ---
+        const compressed = pako.deflate(jsonContent); // Gera um Uint8Array (binário)
+        const base64Content = uint8ArrayToBase64(compressed);
+        const sizeOriginal = (new TextEncoder().encode(jsonContent).length / (1024 * 1024)).toFixed(2);
+        const sizeCompressed = (compressed.length / (1024 * 1024)).toFixed(2);
+        
+        console.log(`Sync: ${sizeOriginal}MB -> ${sizeCompressed}MB (Redução de ${((1 - sizeCompressed/sizeOriginal)*100).toFixed(0)}%)`);
+
+        // 1. Verificar se o arquivo já existe para pegar o SHA
+        const fileUrl = `https://api.github.com/repos/${repo.full_name}/contents/${SYNC_BACKUP_FILENAME}`;
+        const getFileRes = await fetch(fileUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
 
         // 1. Separar dados de texto das imagens
         const storeData = exportData.store || {};
@@ -115,6 +141,7 @@ export const cloudSyncService = {
             currentChunkSize += entryStr.length;
         }
 
+<<<<<<< HEAD
         if (Object.keys(currentChunk).length > 0) {
             treeEntries.push(finalizeChunk(currentChunk, chunkIndex++));
         }
@@ -148,12 +175,23 @@ export const cloudSyncService = {
 
         const treeRes = await fetch(`https://api.github.com/repos/${repo.full_name}/git/trees`, {
             method: 'POST',
+=======
+        // 2. Upload usando a API de Contents
+        const putRes = await fetch(fileUrl, {
+            method: 'PUT',
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+<<<<<<< HEAD
                 tree: treeEntries // Sem base_tree para limpar fragmentos antigos orfãos
+=======
+                message: `Sync Update ${new Date().toISOString()} (Compressed)`,
+                content: base64Content,
+                sha: sha
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
             })
         });
         if (!treeRes.ok) throw new Error("Erro ao criar árvore de arquivos.");
@@ -186,11 +224,16 @@ export const cloudSyncService = {
     },
 
     /**
+<<<<<<< HEAD
      * Baixa os dados fragmentados e reconstrói o banco
+=======
+     * Baixa os dados do Repositório e Decomprime
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
      */
     async downloadData(token) {
         if (!token) throw new Error("Token não configurado.");
         const user = await this.authenticate(token);
+<<<<<<< HEAD
         const repoFull = `${user.login}/${SYNC_REPO_NAME}`;
 
         // 1. Obter a Tree mais recente
@@ -231,10 +274,92 @@ export const cloudSyncService = {
 
         await Promise.all(downloadPromises);
         await db.importDatabaseFromJSON(combinedData);
+=======
+        
+        let fileUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/${SYNC_BACKUP_FILENAME}`;
+        let response = await fetch(fileUrl, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        // Se não achou o .gz, tenta o .json antigo (sem compressão)
+        if (!response.ok && response.status === 404) {
+             const oldUrl = `https://api.github.com/repos/${user.login}/${SYNC_REPO_NAME}/contents/backup.json`;
+             response = await fetch(oldUrl, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+             });
+        }
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                 // TENTATIVA 3: Gist Legado (Versão 1.0)
+                 console.log("Repo não encontrado, tentando Gist Legado...");
+                 const legacyGist = await this.findLegacyGist(token);
+                 if (legacyGist) {
+                     const filename = Object.keys(legacyGist.files)[0];
+                     const rawUrl = legacyGist.files[filename].raw_url;
+                     response = await fetch(rawUrl, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                     });
+                     
+                     if (response.ok) {
+                         const backupData = await response.json();
+                         await db.importDatabaseFromJSON(backupData);
+                         return true;
+                     }
+                 }
+                 throw new Error("Nenhum backup encontrado na sua conta. (PC: Gists/Repo não localizados)");
+            }
+            throw new Error("Erro ao acessar servidor do GitHub.");
+        }
+
+        const fileInfo = await response.json();
+        const base64Encoded = fileInfo.content.replace(/\s/g, '');
+        
+        try {
+            // Tenta descomprimir
+            const compressedData = base64ToUint8Array(base64Encoded);
+            const jsonString = pako.inflate(compressedData, { to: 'string' });
+            const backupData = JSON.parse(jsonString);
+            await db.importDatabaseFromJSON(backupData);
+        } catch (e) {
+            // Se falhar a descompressão, assume que é o JSON puro (antigo)
+            console.log("Falha ao descomprimir, tentando ler como JSON puro...");
+            const jsonString = decodeURIComponent(escape(window.atob(base64Encoded)));
+            const backupData = JSON.parse(jsonString);
+            await db.importDatabaseFromJSON(backupData);
+        }
+
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
         return true;
+    },
+
+    /**
+     * Busca por Gists legados (versão inicial)
+     */
+    async findLegacyGist(token) {
+        const response = await fetch('https://api.github.com/gists', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!response.ok) return null;
+        const gists = await response.json();
+        const SYNC_GIST_DESCRIPTION = '[FREeFOOT PES] Sincronização em Nuvem do Banco de Dados';
+        return gists.find(g => 
+            g.description === SYNC_GIST_DESCRIPTION || 
+            (g.files && g.files['freefoot-pes-v1-cloud-sync.json'])
+        );
     }
 };
 
+<<<<<<< HEAD
 // Help function for binary to base64
 function arrayBufferToBase64(buffer) {
     var binary = '';
@@ -244,4 +369,29 @@ function arrayBufferToBase64(buffer) {
         binary += String.fromCharCode(bytes[i]);
     }
     return window.btoa(binary);
+=======
+/**
+ * Converte Uint8Array para Base64 de forma segura e performática
+ */
+function uint8ArrayToBase64(uint8) {
+    let binary = '';
+    const len = uint8.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8[i]);
+    }
+    return window.btoa(binary);
+}
+
+/**
+ * Converte Base64 para Uint8Array
+ */
+function base64ToUint8Array(base64) {
+    const binary = window.atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+>>>>>>> b5abbef7bca21cfd8a3a35b7f9f237d4d316cd52
 }
