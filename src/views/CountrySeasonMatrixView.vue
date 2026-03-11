@@ -943,8 +943,8 @@ thead th {
 }
 
 .matrix-xl-cell {
-  height: 38px;
-  max-height: 38px;
+  height: 30px;
+  max-height: 30px;
   font-size: 0.85rem;
   font-weight: 800;
   padding: 0 !important;
@@ -1140,7 +1140,8 @@ thead th {
 .intl-slot-width {
   min-width: 110px !important;
   width: 110px !important;
-  font-size: 0.45rem !important;
+  font-size: 0.38rem !important;
+  line-height: 1 !important;
   letter-spacing: 0.6px !important;
   font-weight: 800 !important;
 }
@@ -1167,7 +1168,8 @@ thead th {
 .intl-slot-width.cup-col {
   min-width: 110px !important;
   width: 110px !important;
-  font-size: 0.45rem !important;
+  font-size: 0.38rem !important;
+  line-height: 1 !important;
   letter-spacing: 0.6px !important;
   background-color: rgba(255, 140, 0, 0.04) !important;
   font-weight: 800 !important;

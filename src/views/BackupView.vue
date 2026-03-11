@@ -94,10 +94,17 @@
             </div>
           </div>
           
-          <div v-if="syncStatus" class="px-4 pb-3">
+          <div v-if="syncStatus" class="px-4 pb-1">
              <div :class="['alert py-2 px-3 m-0 small fw-bold d-flex align-items-center justify-content-between', syncStatus.type === 'error' ? 'alert-danger' : 'alert-success']">
                 <span><i :class="syncStatus.type === 'error' ? 'bi bi-exclamation-triangle-fill' : 'bi bi-check-circle-fill'" class="me-2"></i>{{ syncStatus.message }}</span>
                 <span class="x-mini opacity-50">{{ syncStatus.time }}</span>
+             </div>
+          </div>
+          <div class="px-4 pb-3 d-flex justify-content-between align-items-center">
+             <div class="x-mini opacity-25 text-uppercase ls-1">Status: {{ githubToken ? 'Conectado' : 'Não Configurado' }}</div>
+             <div v-if="dbSize" class="x-mini opacity-50">
+                Imagens: <span class="text-white fw-bold me-2">{{ imgCount }}</span>
+                Tamanho: <span class="text-info fw-bold">{{ dbSize }} MB</span>
              </div>
           </div>
         </GamePanel>
@@ -140,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import GamePanel from '../components/GamePanel.vue'
 import GameButton from '../components/GameButton.vue'
 import { db } from '../services/db'
@@ -151,6 +158,21 @@ const githubToken = ref(localStorage.getItem('ff_github_token') || '')
 const tempToken = ref('')
 const isSyncing = ref(false)
 const syncStatus = ref(null)
+const dbSize = ref(null)
+const imgCount = ref(0)
+
+const calculateDbSize = async () => {
+  console.log('Iniciando cálculo do tamanho do DB...')
+  try {
+    const data = await db.exportDatabase()
+    const size = JSON.stringify(data).length
+    dbSize.value = (size / (1024 * 1024)).toFixed(2)
+    imgCount.value = Object.keys(data.images || {}).length
+    console.log('Tamanho calculado:', dbSize.value, 'MB', 'Imagens:', imgCount.value)
+  } catch (e) {
+    console.error('Erro ao calcular tamanho do DB:', e)
+  }
+}
 
 const saveToken = (token = '') => {
   if (token) githubToken.value = token
@@ -209,6 +231,10 @@ const xlsxInput = ref(null)
 const importLog = ref('')
 const clubsGenerated = ref('')
 const nationalsGenerated = ref('')
+
+onMounted(() => {
+  calculateDbSize()
+})
 
 const handlePESImport = (event) => {
   const file = event.target.files[0]

@@ -121,10 +121,11 @@ import { awardsStore } from '../services/awards.store'
 import { rankingsStore } from '../services/rankings.store'
 import { ALL_COMPETITIONS_DATA as RAW_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
-import { normalizeYearStrict as normalizeYear } from '../services/utils'
+import { normalizeYearStrict as normalizeYear, getSeasonFinalYear as getYearDisplay } from '../services/utils'
 import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 
+// IMAGENS DE PRÊMIOS
 import imgMelhorMundo from '../assets/trofeus/individuais/melhor_do_mundo.png'
 import imgMelhorTecnico from '../assets/trofeus/individuais/melhor_tecnico_mundo.png'
 import imgMelhorEuropa from '../assets/trofeus/individuais/melhor_da_europa.png'
@@ -132,8 +133,6 @@ import imgMelhorAmerica from '../assets/trofeus/individuais/melhor_da_america.pn
 import imgMelhorConcacaf from '../assets/trofeus/individuais/melhor_da_concacaf.png'
 
 const router = useRouter()
-const goBack = () => router.back()
-
 const loading = ref(true)
 const seasons = ref([])
 const availableYears = ref([])
@@ -141,6 +140,7 @@ const allCompetitions = ref([])
 const activeTab = ref('americas')
 const expandedYears = ref({})
 
+const goBack = () => router.back()
 const toggleYear = (year) => {
     expandedYears.value[year] = !expandedYears.value[year]
 }
@@ -233,31 +233,6 @@ const sortedYears = computed(() => {
         return true
     })
 })
-
-const getYearDisplay = (year) => {
-    if (!year) return ''
-    const val = year.toString()
-    
-    // Prioridade 1: Se tem "=", pegamos o que vem DEPOIS (Ano de finalização)
-    if (val.includes('=')) {
-        const parts = val.split('=')
-        return parts[parts.length - 1].trim()
-    }
-
-    // Fallback para "-"
-    if (val.includes('-')) {
-        const parts = val.split('-')
-        return parts[parts.length - 1].trim()
-    }
-    
-    // Prioridade 2: Se tem "/", pegamos o que vem DEPOIS
-    if (val.includes('/')) {
-        const parts = val.split('/')
-        return parts[parts.length - 1].trim()
-    }
-
-    return val
-}
 
 
 const getCompetitionsForRegion = (region) => {
