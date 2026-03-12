@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="view-container">
     <!-- Overlay de Erro Crítico -->
     <div v-if="renderError" class="alert alert-danger m-3 d-flex flex-column align-items-center p-5 rounded-4 shadow-lg animated-fade-in" style="z-index: 9999; position: relative;">
@@ -648,7 +648,7 @@
               
               <div class="mb-4">
                 <label class="form-label fw-bold text-secondary text-uppercase small">Temporada</label>
-                <input type="text" v-model="newSeason.ano" class="form-control game-input text-center fs-3 fw-black text-warning" placeholder="EX: 2024 / 2025 = 2025" style="height: 60px;">
+                <input type="text" v-model="newSeason.ano" class="form-control game-input text-center fs-3 fw-black text-warning" placeholder="EX: 2026 / 2027 = 2027" style="height: 60px;">
               </div>
 
               <div class="row g-4">

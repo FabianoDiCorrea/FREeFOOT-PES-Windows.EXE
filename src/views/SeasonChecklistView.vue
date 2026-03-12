@@ -219,18 +219,23 @@ onActivated(loadAllData)
 
 watch(() => seasonStore.list, loadAllData, { deep: true })
 
-// Filtra anos com base na aba ativa (Agora simplificado, pois o formato é unificado)
+// Filtra anos com base na aba ativa: só aparece se tiver ALGO marcado
 const sortedYears = computed(() => {
-    return availableYears.value.filter(y => {
-        if (!y) return false
-        const val = y.toString()
+    return availableYears.value.filter(year => {
+        if (!year) return false
+        const val = year.toString()
         
         // Proteção contra anos malformados
         if (val.includes('(') || val.includes(')')) return false
 
-        // No novo sistema unificado, todos os anos aparecem em ambas as abas,
-        // mas o conteúdo (competições) dentro deles é que muda.
-        return true
+        // Verifica se há pelo menos UMA competição registrada para este ano NESTA ABA
+        const compsForRegion = getCompetitionsForRegion(activeTab.value)
+        const hasAnyRegistered = compsForRegion.some(comp => {
+            const status = getStatus(comp, year)
+            return status.registered
+        })
+
+        return hasAnyRegistered
     })
 })
 
@@ -398,8 +403,11 @@ const getStatus = (comp, year) => {
     const hasBracket = match.mundial && match.mundial.final && match.mundial.final.time1
     const hasTable = !!match.tabela || (isMataMata && hasBracket)
 
+    // Um registro só é considerado válido/visível se tiver dados reais
+    const isReallyRegistered = match.campeao || hasTable || hasValidTopScorer || hasValidLegacyScorer;
+
     return {
-        registered: true,
+        registered: !!isReallyRegistered,
         champion: match.campeao,
         id: match.id,
         hasTable,

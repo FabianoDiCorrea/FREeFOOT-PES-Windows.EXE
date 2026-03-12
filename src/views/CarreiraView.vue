@@ -53,7 +53,7 @@
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label x-small fw-bold text-secondary">TEMPORADA</label>
-              <input v-model="entryForm.temporada" type="text" class="form-control bg-dark text-white border-secondary" placeholder="Ex: 2025/2026">
+              <input v-model="entryForm.temporada" type="text" class="form-control bg-dark text-white border-secondary" placeholder="Ex: 2026 / 2027 = 2027">
             </div>
             <div class="col-md-3">
               <label class="form-label x-small fw-bold text-secondary">TIME</label>
@@ -153,7 +153,7 @@
 
                     <div class="text-end z-3">
                         <div class="header-main-h3 text-uppercase fw-black mb-2">
-                            {{ selectedEntry.temporada }}
+                            {{ normalizeYearStrict(selectedEntry.temporada) }}
                         </div>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold x-small" @click="editCurrentEntry">
@@ -174,7 +174,7 @@
                 <button v-for="(h, idx) in filteredHistory" :key="h.id" 
                         class="btn btn-sm" :class="selectedEntry?.id === h.id ? 'btn-warning' : 'btn-outline-secondary'"
                         @click="selectedEntry = h; careerIndex = idx">
-                    {{ h.temporada }}
+                    {{ normalizeYearStrict(h.temporada) }}
                 </button>
             </div>
         </div>
@@ -183,7 +183,7 @@
         <div class="col-xl-8 px-2">
             <div class="table-container p-0">
                 <!-- Tabela de Temporada -->
-                <div class="table-section-header text-center py-1 text-uppercase small fw-bold">{{ selectedEntry.temporada }}</div>
+                <div class="table-section-header text-center py-1 text-uppercase small fw-bold">{{ normalizeYearStrict(selectedEntry.temporada) }}</div>
                 <table class="career-table">
                     <thead>
                         <tr>
@@ -470,7 +470,7 @@ import { FEDERATIONS_DATA } from '../services/federations.data'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { dataSearchService } from '../services/dataSearch.service'
-import { getTrofeuPath, normalizeString } from '../services/utils'
+import { getTrofeuPath, normalizeString, normalizeYearStrict } from '../services/utils'
 
 const history = computed(() => careerStore.history)
 const selectedEntry = ref(null)

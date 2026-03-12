@@ -8,6 +8,8 @@ export const normalizeString = (str) => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
+        .replace(/\-/g, ' ') // Substitui hífens por espaços
+        .replace(/[^a-z0-9\s]/g, '') // Remove qualquer caractere especial, mantendo apenas letras, números e espaços
         .replace(/\bathletico\b/g, 'atletico')
         .replace(/\batletico-mg\b/g, 'atletico mineiro')
         .replace(/\batletico-pr\b/g, 'atletico paranaense')
@@ -16,6 +18,7 @@ export const normalizeString = (str) => {
         .replace(/\bbotafogo-sp\b/g, 'botafogo ribeirao preto')
         .replace(/\bbotafogo-pb\b/g, 'botafogo joao pessoa')
         .replace(/\bbotafogo-rj\b/g, 'botafogo')
+        .replace(/\s+/g, ' ') // Normaliza espaços extras
         .trim();
 };
 
