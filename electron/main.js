@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron';
+app.setName('FreeFootPES');
 import path from 'path';
 import { fileURLToPath } from 'url';
 

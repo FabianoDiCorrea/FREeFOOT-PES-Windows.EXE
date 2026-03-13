@@ -1,14 +1,5 @@
 export const CLUBS_DATA = [
   {
-    "id": 1,
-    "nome": "BRASIL",
-    "pais": "BRASIL",
-    "continente": "AMÉRICA DO SUL",
-    "escudo_url": "",
-    "bandeira_url": "https://a.imagem.app/oS16yW.png",
-    "federacao_logo": "https://a.imagem.app/B76ggb.png"
-  },
-  {
     "id": 2,
     "nome": "Avaí",
     "pais": "BRASIL",
@@ -688,15 +679,6 @@ export const CLUBS_DATA = [
     "pais": "Brasil",
     "continente": "AMÉRICA DO SUL",
     "escudo_url": "https://a.imagem.app/BEaLHT.png",
-    "bandeira_url": "https://a.imagem.app/oS16yW.png",
-    "federacao_logo": "https://a.imagem.app/B76ggb.png"
-  },
-  {
-    "id": 76,
-    "nome": "Altos",
-    "pais": "Brasil",
-    "continente": "AMÉRICA DO SUL",
-    "escudo_url": "https://a.imagem.app/BEatT3.png",
     "bandeira_url": "https://a.imagem.app/oS16yW.png",
     "federacao_logo": "https://a.imagem.app/B76ggb.png"
   },
