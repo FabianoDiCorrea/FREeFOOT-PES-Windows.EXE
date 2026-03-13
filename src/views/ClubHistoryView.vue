@@ -264,7 +264,7 @@ const getCachedUrl = (url) => {
 }
 
 const handleImgError = (e) => {
-  e.target.style.display = 'none'
+  // e.target.style.display = 'none' // Desativado para não sumir com a foto se o cache for lento
 }
 
 
@@ -527,7 +527,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
                  badgeClass: 'bg-info text-dark',
                  isMyCareer, // Usa a detecção da temporada
                  sortYear: getSeasonFinalYear(s.ano),
-                 trophyUrl: '/logos/competitions/artilheiro.png',
+                 trophyUrl: 'logos/competitions/artilheiro.png',
                  scFoto: sc.fotoUrl || sc.foto || sc.fotoJogador || null,
                  scNome: sc.nome
              })
@@ -616,7 +616,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
   // Cache Imagens
   for (const e of events) {
       if (e.scFoto && !e.scFoto.startsWith('data:') && !cachedLogos.value[e.scFoto]) {
-          imageCacheService.getLogo(e.scFoto).then(b64 => {
+          imageCacheService.getOrCache(e.scFoto).then(b64 => {
              if (b64) cachedLogos.value[e.scFoto] = b64
           })
       }
@@ -692,7 +692,7 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('sul-americana') || lowName.includes('sulamericana')) return getTrofeuPath('trofeu-sulamericana')
     if (lowName.includes('colombia') && lowName.includes('liga')) return getTrofeuPath('trofeu-liga-colombia')
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
-    if (lowName.includes('artilharia')) return '/logos/competitions/artilheiro.png'
+    if (lowName.includes('artilharia')) return 'logos/competitions/artilheiro.png'
 
     return `logos/competitions/${name.replace(/\s+/g, '-')}.png`
 }
@@ -877,8 +877,13 @@ watch(() => route.params.id, () => {
 }
 
 .photo-block img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: top;
+  border-radius: 10px;
+  position: relative;
+  z-index: 5;
 }
 
 .trophy-block {
