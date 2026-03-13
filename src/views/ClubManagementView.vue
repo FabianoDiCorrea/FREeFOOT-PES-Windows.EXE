@@ -181,7 +181,7 @@
             <h4 class="fw-black text-uppercase m-0">
               <i class="bi bi-pencil-square me-2"></i>{{ isNew ? 'CRIAR NOVO' : 'EDITAR' }} TIME
             </h4>
-            <button v-if="!isNew && isCustom(selectedClub.id)" @click="deleteClub" class="btn btn-outline-danger btn-sm">
+            <button v-if="!isNew" @click="deleteClub" class="btn btn-outline-danger btn-sm" title="Excluir Permanentemente">
               <i class="bi bi-trash"></i>
             </button>
           </div>
@@ -438,13 +438,21 @@ const handleExcelImport = (event) => {
       const firstSheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[firstSheetName]
       
+      // Perguntar se deseja Mesclar ou Substituir
+      const isFullSync = confirm("Deseja fazer uma SINCRONIZAÇÃO COMPLETA?\n\nOK: Substituir tudo pelo Excel (O que não estiver no Excel será APAGADO).\nCANCELAR: Apenas adicionar/atualizar times (Merge).")
+      
+      if (isFullSync) {
+          // No modo Full Sync, limpamos as customizações e a lista de exclusão antes de importar
+          // Isso garante que o Excel seja a fonte única de verdade
+          clubStore.customClubs = []
+          clubStore.deletedClubIds = []
+          await db.delete('custom_clubs')
+          await db.delete('deleted_club_ids')
+      }
+
       // Converter para JSON ignorando espaços vazios e garantindo cabeçalhos
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" })
       
-      let importedCount = 0
-      let updatedCount = 0
-      let errorCount = 0
-
       for (const row of jsonData) {
         // Mapeamento flexível de colunas (caso o usuário mude o nome da coluna ou a ordem)
         const clubData = {

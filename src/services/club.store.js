@@ -5,6 +5,7 @@ import { db } from './db'
 export const clubStore = reactive({
     list: [],
     customClubs: [], // Clubes salvos no IDB
+    deletedClubIds: [], // IDs de clubes que foram excluídos (inclusive nativos)
     needsExport: false, // Indica se há mudanças não exportadas para CSV
 
     /**
@@ -65,6 +66,7 @@ export const clubStore = reactive({
         this.loading = true;
         try {
             this.customClubs = await db.getAll('custom_clubs') || [];
+            this.deletedClubIds = await db.get('deleted_club_ids') || [];
             this.needsExport = await db.get('clubs_needs_export') || false;
 
             // Rotina de Reparo Profundo (v5.7.1)
@@ -85,9 +87,9 @@ export const clubStore = reactive({
                     }
                 });
 
-                // 2. Reparo de IDs (Força ISO-3 se for numérico ou científico)
+                // 2. Reparo de IDs (Apenas se for inválido - NaN, null, new)
                 const idStr = (club.id || '').toString();
-                if (!club.id || /^\d+$/.test(idStr) || idStr.includes('E+') || idStr === 'new' || idStr === 'null' || idStr.includes('NaN')) {
+                if (!club.id || idStr.includes('E+') || idStr === 'new' || idStr === 'null' || idStr.includes('NaN')) {
                     // Importante: Passamos repairedClubs para detectar colisões com IDs já gerados neste loop
                     club.id = this.generateIdForCountry(club.pais, repairedClubs);
                     clubChanged = true;
@@ -212,7 +214,11 @@ export const clubStore = reactive({
             }
         });
 
-        this.list = base;
+        // FILTRAGEM FINAL: Remove times que estão na lista de exclusão
+        this.list = base.filter(c => {
+            if (!c.id) return true;
+            return !this.deletedClubIds.includes(c.id.toString());
+        });
     },
 
     /**
@@ -226,12 +232,18 @@ export const clubStore = reactive({
         const qCountry = normalize(clubData.pais);
 
         // 1. Verificar se já existe (Deduplicação)
-        let existingIndex = this.customClubs.findIndex(c =>
-            normalize(c.nome) === qName && normalize(c.pais) === qCountry
-        );
+        // CRÍTICO: Se temos um ID, ele deve ser o mestre da edição (Editar Barcelonaa -> Barcelona)
+        let existingIndex = -1;
 
-        if (existingIndex === -1 && clubData.id) {
+        if (clubData.id && clubData.id !== 'new') {
             existingIndex = this.customClubs.findIndex(c => c.id.toString() === clubData.id.toString());
+        }
+
+        // Se não achou por ID, tenta por Nome+País (evita duplicar o mesmo time adicionado 2x)
+        if (existingIndex === -1) {
+            existingIndex = this.customClubs.findIndex(c =>
+                normalize(c.nome) === qName && normalize(c.pais) === qCountry
+            );
         }
 
         let clubToSave = { ...clubData };
@@ -245,6 +257,12 @@ export const clubStore = reactive({
                 clubToSave.id = this.generateIdForCountry(clubData.pais, this.customClubs);
             }
             this.customClubs.push(clubToSave);
+        }
+
+        // Se o time estava na lista de exclusão (ex: re-adicionado), remove de lá
+        if (clubToSave.id) {
+            this.deletedClubIds = this.deletedClubIds.filter(id => id !== clubToSave.id.toString());
+            await db.save('deleted_club_ids', this.deletedClubIds);
         }
 
         // Marcar que precisa de exportação
@@ -262,8 +280,22 @@ export const clubStore = reactive({
      * Remove um clube (apenas se for customizado).
      */
     async removeClub(clubId) {
-        this.customClubs = this.customClubs.filter(c => c.id !== clubId);
+        if (!clubId) return;
+        const idStr = clubId.toString();
+
+        // 1. Remove da lista de customizados (se estiver lá)
+        this.customClubs = this.customClubs.filter(c => c.id.toString() !== idStr);
         await db.save('custom_clubs', this.customClubs);
+
+        // 2. Adiciona à lista de exclusão (para sumir de vez, inclusive se for nativo)
+        if (!this.deletedClubIds.includes(idStr)) {
+            this.deletedClubIds.push(idStr);
+            await db.save('deleted_club_ids', this.deletedClubIds);
+        }
+
+        this.needsExport = true;
+        await db.save('clubs_needs_export', true);
+
         this.refreshList();
     },
 

@@ -705,7 +705,7 @@
             </div>
  
             <!-- SEÇÃO 1.5: PARTICIPANTES (SOLO PARA COMPETIÇÕES ESPECÍFICAS) -->
-            <div v-if="selectedCompetition?.modoRegistro === 'participantes'" class="form-section-premium mb-5">
+            <div v-if="selectedCompetition?.modoRegistro === 'participantes' || selectedCompetition?.tipo === 'Copa'" class="form-section-premium mb-5">
               <h4 class="text-success fw-black mb-3 text-uppercase"><i class="bi bi-people-fill me-2"></i>PARTICIPANTES</h4>
               
               <div class="row g-4 align-items-end mb-4">
@@ -778,14 +778,48 @@
                 placeholder="River Plate  Campeão&#10;Rosario Central  Vice&#10;Aldosivi  Semi&#10;Central Córdoba  Semi&#10;Instituto ACC  Quartas&#10;Banfield  Quartas&#10;Racing Club  Oitavas&#10;Patronato  16 Avos&#10;Arsenal de Sarandí  Pré-Copa"
               ></textarea>
 
-              <!-- Preview dos participantes importados com badge de fase -->
-              <div v-if="newSeason.participantes && newSeason.participantes.length > 0" class="copa-ranking-preview">
-                <div class="d-flex flex-wrap gap-2">
-                  <div v-for="(p, idx) in newSeason.participantes" :key="idx" class="copa-participant-chip" :class="getCopaBadgeClass(p.colocacao)">
-                    <TeamShield :teamName="p.nome" :size="16" borderless :filterCountry="newSeason.pais" />
-                    <span class="fw-bold x-small text-truncate" style="max-width: 120px;">{{ p.nome }}</span>
-                    <span class="badge rounded-pill x-small ms-1" :class="getCopaBadgeClass(p.colocacao)">{{ p.colocacao || '?' }}</span>
-                  </div>
+              <!-- AJUSTE MANUAL DE POSIÇÕES (FALLBACK) -->
+              <div class="mt-4 pt-4 border-top border-white border-opacity-5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <h6 class="text-warning fw-black text-uppercase small mb-0"><i class="bi bi-pencil-square me-2"></i>Ajuste Manual de Posições</h6>
+                </div>
+
+                <div v-if="newSeason.participantes && newSeason.participantes.length > 0" class="table-responsive rounded-3 border border-secondary border-opacity-10">
+                  <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="bg-black bg-opacity-50">
+                      <tr>
+                        <th class="x-small fw-black text-secondary ps-3">TIME</th>
+                        <th class="x-small fw-black text-secondary">POSIÇÃO / FASE</th>
+                        <th class="x-small fw-black text-secondary text-center" style="width: 50px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(p, idx) in newSeason.participantes" :key="idx" class="border-bottom border-white border-opacity-5">
+                        <td class="ps-3 py-2">
+                          <div class="d-flex align-items-center gap-2">
+                            <TeamShield :teamName="p.nome" :size="20" borderless :filterCountry="newSeason.pais" />
+                            <span class="fw-bold small">{{ p.nome }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <select v-model="p.colocacao" 
+                                  class="form-select form-select-sm fw-black x-small border-0 rounded-pill px-3" 
+                                  :class="getCopaBadgeClass(p.colocacao)"
+                                  @change="updateChampViceFromManual(p)">
+                            <option v-for="opt in PLACEMENTS_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+                          </select>
+                        </td>
+                        <td class="text-center">
+                          <button class="btn btn-link btn-sm text-danger opacity-50 hover-opacity-100 p-0" @click="removeParticipant(idx)">
+                            <i class="bi bi-trash-fill"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="text-center py-4 opacity-25 border border-secondary border-dashed rounded-3 small fw-bold">
+                  USE O TEXTAREA ACIMA OU ADICIONE TIMES PARA DEFINIR A CLASSIFICAÇÃO.
                 </div>
               </div>
             </div>
@@ -1779,6 +1813,8 @@ const CUP_PHASES = [
   { tokens: ['participante', 'participant'], label: 'Participante', priority: 9 },
 ]
 
+const PLACEMENTS_OPTIONS = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+
 const safeNormalize = (str) => {
   if (!str) return ''
   return str.toLowerCase().trim()
@@ -1811,6 +1847,15 @@ const getCopaBadgeClass = (colocacao) => {
   if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
   if (n.includes('elim') || n.includes('pre') || n.includes('pré')) return 'bg-secondary text-white'
   return 'bg-secondary text-white'
+}
+
+const updateChampViceFromManual = (p) => {
+  if (!p || !p.colocacao) return
+  if (p.colocacao === 'Campeão') {
+    newSeason.value.campeao = p.nome
+  } else if (p.colocacao === 'Vice') {
+    newSeason.value.vice = p.nome
+  }
 }
 
 // Agrupa participantes de copa por fase, ordenados por prioridade de eliminação
@@ -3639,6 +3684,16 @@ onActivated(async () => {
 .copa-team-chip:hover {
   background: rgba(255,255,255,0.12);
   border-color: rgba(255,255,255,0.2);
+}
+
+.hover-opacity-100:hover {
+  opacity: 1 !important;
+}
+
+.form-select.x-small {
+  font-size: 0.65rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 </style>
