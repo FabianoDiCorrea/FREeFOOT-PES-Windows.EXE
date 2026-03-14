@@ -92,10 +92,10 @@ export const INTERNATIONAL_COMPETITIONS = [
 ];
 
 export const CONCACAF_COMPETITIONS = [
-    // ESTADOS UNIDOS
-    { id: 301, nome: "Liga EUA", pais: "Estados Unidos", tipo: "Liga", modoRegistro: "liga", logo: './logos/competitions/liga-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-liga-eua' },
-    { id: 302, nome: "Copa EUA", pais: "Estados Unidos", tipo: "Copa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/copa-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-copa-eua' },
-    { id: 303, nome: "SuperCopa EUA", pais: "Estados Unidos", tipo: "Supercopa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/supercopa-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-supercopa-eua' },
+    // EUA
+    { id: 301, nome: "Liga EUA", pais: "EUA", tipo: "Liga", modoRegistro: "liga", logo: './logos/competitions/liga-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-liga-eua' },
+    { id: 302, nome: "Copa EUA", pais: "EUA", tipo: "Copa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/copa-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-copa-eua' },
+    { id: 303, nome: "SuperCopa EUA", pais: "EUA", tipo: "Supercopa", modoRegistro: "mata_mata_simples", logo: './logos/competitions/supercopa-eua.png', promovidos: 0, rebaixados: 0, trofeu: 'trofeu-supercopa-eua' },
 
     // MÉXICO
     { id: 304, nome: "Liga Mexicana", pais: "México", tipo: "Liga", modoRegistro: "liga", logo: './logos/competitions/liga-mexicana.png', promovidos: 0, rebaixados: 2, trofeu: 'trofeu-liga-mexicana' },

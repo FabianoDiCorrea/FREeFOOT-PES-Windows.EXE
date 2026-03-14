@@ -209,7 +209,7 @@ import { clubStore } from '../services/club.store'
 import { seasonService } from '../services/season.service'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
-import { getTrofeuPath, normalizeString, getSeasonFinalYear, clubSmartNormalize } from '../services/utils'
+import { getTrofeuPath, normalizeString, normalizeCountry, getSeasonFinalYear, clubSmartNormalize } from '../services/utils'
 import { dataSearchService } from '../services/dataSearch.service'
 import { imageCacheService } from '../services/imageCache.service'
 
@@ -239,7 +239,10 @@ const trophyMap = {
   'Melhor do Mundo (Técnico)': imgMelhorTecnico,
   'Melhor da Europa': imgMelhorEuropa,
   'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
-  'Melhor da CONCACAF': imgMelhorConcacaf
+  'Melhor da CONCACAF': imgMelhorConcacaf,
+  'Bola de Ouro': imgMelhorMundo,
+  'Chuteira de Ouro': 'logos/competitions/chuteira-de-ouro.png',
+  'Luva de Ouro': 'logos/competitions/luva-de-ouro.png'
 }
 const route = useRoute()
 const clubName = ref('')
@@ -302,7 +305,7 @@ const loadClubData = async () => {
 
   const clubNorm = normalizeString(clubName.value)
   const clubSmart = clubSmartNormalize(clubName.value)
-  const clubCountry = clubInfo.value?.pais ? normalizeString(clubInfo.value.pais) : null
+  const clubCountry = clubInfo.value?.pais ? normalizeCountry(clubInfo.value.pais) : null
 
   await loadTrophies(clubNorm, clubSmart, clubCountry)
   await loadTimeline(clubNorm, clubSmart, clubCountry)
@@ -329,7 +332,7 @@ const loadTrophies = async (clubNorm, clubSmart, clubCountry) => {
     }
 
     if (clubCountry && sPais) {
-        const sPaisNorm = normalizeString(sPais)
+        const sPaisNorm = normalizeCountry(sPais)
         if (sPaisNorm) { // Só filtra se a season tiver país definido para evitar falsos negativos
             const isInternational = ['MUNDO', 'EUROPA', 'AMERICA DO SUL', 'CONMEBOL', 'UEFA', 'INTERNACIONAL'].includes(sPaisNorm.toUpperCase())
             // Se a competição é nacional e o país não bate, pula
@@ -385,7 +388,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
       }
 
       if (clubCountry && sPais) {
-          const sPaisNorm = normalizeString(sPais)
+          const sPaisNorm = normalizeCountry(sPais)
           if (sPaisNorm) { // Só filtra se a season tiver país definido para evitar falsos negativos
               const isInternational = ['MUNDO', 'EUROPA', 'AMERICA DO SUL', 'CONMEBOL', 'UEFA', 'INTERNACIONAL'].includes(sPaisNorm.toUpperCase())
               // Se a competição é nacional e o país não bate, pula
@@ -539,7 +542,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
   awardsStore.list.forEach(aw => {
      // 0. Firewall de País para Prêmios
      if (clubCountry && aw.pais) {
-         const awPaisNorm = normalizeString(aw.pais)
+         const awPaisNorm = normalizeCountry(aw.pais)
          if (awPaisNorm !== clubCountry) return
      }
 

@@ -1,7 +1,7 @@
 {
   "name": "freefoot-pes21",
   "private": true,
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -13,13 +13,14 @@
   },
   "build": {
     "appId": "com.devduo.freefoot",
-    "productName": "FreeFoot-PES-v0.0.8",
+    "productName": "FreeFoot-PES",
     "directories": {
       "output": "dist-desktop"
     },
     "win": {
       "target": "portable",
-      "icon": "public/icon.png"
+      "icon": "public/icon.png",
+      "artifactName": "FreeFoot-PES.exe"
     },
     "files": [
       "dist/**/*",

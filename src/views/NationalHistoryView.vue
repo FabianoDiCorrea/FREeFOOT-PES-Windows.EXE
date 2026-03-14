@@ -94,6 +94,7 @@ import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { seasonStore } from '../services/season.store'
+import { normalizeCountry } from '../services/utils'
 import GamePanel from '../components/GamePanel.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
@@ -161,9 +162,8 @@ const loadData = async () => {
 
     const getStatsKey = (name) => {
         if (!name) return null;
-        const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        const target = norm(name);
-        return Object.keys(statsMap).find(key => norm(key) === target);
+        const target = normalizeCountry(name);
+        return Object.keys(statsMap).find(key => normalizeCountry(key) === target);
     };
 
     // 3. Processar Temporadas
@@ -174,8 +174,7 @@ const loadData = async () => {
         if (campeaoNorm) {
             // Verifica se a competição da temporada está entre as do continente ou é Copa do Mundo
             const matchedComp = nationalCompetitions.value.find(nc => {
-                const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-                return norm(nc.nome) === norm(compName);
+                return normalizeCountry(nc.nome) === normalizeCountry(compName);
             });
 
             if (matchedComp) {

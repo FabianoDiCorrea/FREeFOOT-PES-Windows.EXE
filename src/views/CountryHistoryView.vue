@@ -198,7 +198,7 @@ import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import { careerStore } from '../services/career.store'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
-import { getSeasonFinalYear } from '../services/utils'
+import { getSeasonFinalYear, normalizeString, normalizeCountry } from '../services/utils'
 import ClubTrophyModal from '../components/ClubTrophyModal.vue'
 
 const route = useRoute()
@@ -222,8 +222,8 @@ const navigateToClubHistory = (name) => {
 
 const isRelegationCountry = computed(() => {
   if (!countryName.value) return false
-  const p = countryName.value.toLowerCase().trim()
-  return p === 'brasil' || p === 'argentina' || p === 'inglaterra'
+  const p = normalizeCountry(countryName.value)
+  return p === 'brasil' || p === 'argentina' || p === 'inglaterra' || p === 'eua'
 })
 
 // Helpers e Cache
@@ -261,10 +261,9 @@ const getCompetitionInfo = (compName) => {
 
 
 const getFederationByCountry = (cName) => {
-  const norm = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() || ""
-  const target = norm(cName)
+  const target = normalizeCountry(cName)
   for (const continent of ALL_COMPETITIONS_DATA) {
-    if (continent.paises.some(p => norm(p.nome) === target)) {
+    if (continent.paises.some(p => normalizeCountry(p.nome) === target)) {
       return continent.continente
     }
   }
@@ -372,7 +371,7 @@ const loadData = async () => {
         
         if (isCountryEntry && !c.escudo_url) return false;
         
-        return c.pais && normalizeName(c.pais) === normalizeName(pNome);
+        return c.pais && normalizeCountry(c.pais) === normalizeCountry(pNome);
     });
     
     const statsMap = {};

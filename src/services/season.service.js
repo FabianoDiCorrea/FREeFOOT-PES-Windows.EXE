@@ -1,6 +1,7 @@
 import { competitionStore } from './competition.store';
 import { db } from './db';
 import { CLUBS_DATA } from '../data/clubs.data';
+import { normalizeCountry } from './utils';
 
 const STORAGE_KEY_SEASONS = 'temporadas';
 
@@ -26,11 +27,11 @@ export const seasonService = {
         }
 
         const cName = normalize(targetCompetition);
-        const cCountry = targetCountry ? normalize(targetCountry) : null;
+        const cCountry = targetCountry ? normalizeCountry(targetCountry) : null;
 
         return seasons.filter(s => {
             const sName = normalize(s.competitionName);
-            let sCountry = s.pais ? normalize(s.pais) : null;
+            let sCountry = s.pais ? normalizeCountry(s.pais) : null;
 
             // 0. Inferência de País (Smart Fix para dados legados sem país)
             if (!sCountry) {
