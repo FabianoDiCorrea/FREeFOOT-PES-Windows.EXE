@@ -368,6 +368,11 @@ const loadData = async (compOverride = null) => {
         const isSeasonRecopa = sName.includes('recopa');
         if (isTargetRecopa !== isSeasonRecopa) return false; // Se um é recopa e o outro não, barra.
 
+        // 2.5 PROTEÇÃO COPA VS SUPERCOPA
+        const isTargetSuper = targetName.includes('super');
+        const isSeasonSuper = sName.includes('super');
+        if (isTargetSuper !== isSeasonSuper) return false; // Se um é super e o outro não, barra.
+
         // 3. Match de Nome
         if (sName === targetName) return true;
         
@@ -378,7 +383,12 @@ const loadData = async (compOverride = null) => {
         if (sName.includes(targetName) || targetName.includes(sName)) {
             // Bloqueio de sub-strings curtas demais ou divisões
             if (sName.length <= 5 && sName !== targetName) return false;
-            if ((sName.includes('serie b') || sName.includes('serie a')) && sName !== targetName) return false;
+            
+            // Garantir que Série A não entre em Série B e vice-versa via substring
+            const isTargetB = targetName.includes('serie b');
+            const isSeasonB = sName.includes('serie b');
+            if (isTargetB !== isSeasonB) return false;
+
             return true;
         }
 

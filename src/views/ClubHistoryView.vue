@@ -663,9 +663,15 @@ const getCompetitionInfo = (name, country = null) => {
         ...INTERNATIONAL_DATA
     ]
 
-    // Busca exata ou por substring
+    // Busca exata ou por substring segura
     return allComps.find(c => {
         const cNome = normalizeString(c.nome)
+        
+        // Proteção contra match parcial de Copa vs Supercopa
+        const isTargetSuper = lowName.includes('super');
+        const isCompSuper = cNome.includes('super');
+        if (isTargetSuper !== isCompSuper) return false;
+
         const isMatch = cNome === lowName || lowName.includes(cNome)
         if (!isMatch) return false
         
@@ -690,8 +696,10 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('brasileirao') && lowName.includes('serie a')) return getTrofeuPath('trofeu-brasileirao-serie-a')
     if (lowName.includes('brasileirao') && lowName.includes('serie b')) return getTrofeuPath('trofeu-brasileirao-serie-b')
     if (lowName.includes('brasileirao')) return getTrofeuPath('trofeu-brasileirao-serie-a')
-    if (lowName.includes('copa do brasil')) return getTrofeuPath('trofeu-copa-do-brasil')
-    if (lowName.includes('libertadores')) return getTrofeuPath('trofeu-libertadores')
+    if (lowName.includes('copa do brasil') && !lowName.includes('super')) return getTrofeuPath('trofeu-copa-do-brasil')
+    if (lowName.includes('supercopa do brasil')) return getTrofeuPath('trofeu-supercopa-do-brasil')
+    if (lowName.includes('libertadores') && !lowName.includes('recopa')) return getTrofeuPath('trofeu-libertadores')
+    if (lowName.includes('recopa') && lowName.includes('libertadores')) return getTrofeuPath('trofeu-recopa-sulamericana')
     if (lowName.includes('sul-americana') || lowName.includes('sulamericana')) return getTrofeuPath('trofeu-sulamericana')
     if (lowName.includes('colombia') && lowName.includes('liga')) return getTrofeuPath('trofeu-liga-colombia')
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
