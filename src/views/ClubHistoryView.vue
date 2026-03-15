@@ -56,13 +56,14 @@
       <!-- COLUNA LATERAL: SALA DE TROFÉUS -->
       <div class="col-lg-4 col-xl-3">
         <GamePanel customClass="h-100 border-gold-glow">
-           <div class="p-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+           <div class="p-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center justify-content-between header-trophies-link" @click="$router.push(`/clube/${encodeURIComponent(clubName)}/trofeus`)" style="cursor: pointer;">
               <h5 class="m-0 fw-black text-warning text-uppercase ls-1">
                  <i class="bi bi-trophy-fill me-2"></i>SALA DE TROFÉUS
               </h5>
+              <i class="bi bi-box-arrow-up-right text-warning opacity-50"></i>
            </div>
 
-           <div class="p-3 custom-scrollbar" style="max-height: 700px;">
+           <div class="p-3 custom-scrollbar list-scroll-area">
               <div v-if="trophies.length === 0" class="text-center py-5 opacity-25">
                  <i class="bi bi-trophy display-1"></i>
                  <p class="mt-2 fw-bold">NENHUM TÍTULO</p>
@@ -96,7 +97,7 @@
                <div class="small opacity-50 fw-bold">DADOS AGRUPADOS POR TEMPORADA</div>
             </div>
 
-            <div class="timeline-scroll-container p-4 custom-scrollbar" style="max-height: 700px; background: rgba(0,0,0,0.2);">
+            <div class="timeline-scroll-container p-4 custom-scrollbar list-scroll-area" style="background: rgba(0,0,0,0.2);">
                <div v-if="timelineEvents.length === 0" class="text-center py-5">
                   <i class="bi bi-map opacity-10 display-1 mb-3 d-block"></i>
                   <h4 class="text-secondary text-uppercase fw-black">Registros não localizados</h4>
@@ -107,9 +108,9 @@
                   <div v-for="(yearGroup, idx) in timelineEvents" :key="idx" class="timeline-year-block d-flex gap-4 mb-5 animate-slide-up">
                      
                      <!-- DATA -->
-                      <div class="timeline-date-side text-end py-2" style="width: 120px; flex-shrink: 0;">
-                         <div class="opacity-50 fw-bold x-small">{{ yearGroup.year.includes('=') ? yearGroup.year.split('=')[0].trim() : '' }}</div>
-                         <div class="display-5 fw-black text-white-glow">{{ yearGroup.shortYear }}</div>
+                      <div class="timeline-date-side text-end py-2" style="width: 140px; flex-shrink: 0;">
+                         <div class="fw-black text-white-glow ls-n1 line-height-1" style="font-size: 1.5rem;">{{ yearGroup.year.includes('=') ? yearGroup.year.split('=') [0].trim() : yearGroup.year }}</div>
+                         
                       </div>
 
                      <!-- TRILHA -->
@@ -298,7 +299,7 @@ const loadClubData = async () => {
   await seasonStore.loadAll()
   if (careerStore.history.length === 0) await careerStore.loadAll()
   if (awardsStore.list.length === 0) await awardsStore.loadAll()
-  if (clubStore.list.length === 0) await clubStore.loadAll()
+  if (clubStore.list.length === 0) await clubStore.init()
 
   clubInfo.value = clubStore.list.find(c => normalizeString(c.nome) === normalizeString(clubName.value)) || 
                    dataSearchService.findClub(clubName.value)
@@ -797,6 +798,19 @@ watch(() => route.params.id, () => {
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 1px;
+}
+
+.list-scroll-area {
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+}
+
+.header-trophies-link:hover h5 {
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+}
+
+.line-height-1 {
+  line-height: 1;
 }
 
 .trophy-thumb {
