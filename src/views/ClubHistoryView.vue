@@ -56,13 +56,14 @@
       <!-- COLUNA LATERAL: SALA DE TROFÉUS -->
       <div class="col-lg-4 col-xl-3">
         <GamePanel customClass="h-100 border-gold-glow">
-           <div class="p-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+           <div class="p-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center justify-content-between header-trophies-link" @click="$router.push(`/clube/${encodeURIComponent(clubName)}/trofeus`)" style="cursor: pointer;">
               <h5 class="m-0 fw-black text-warning text-uppercase ls-1">
                  <i class="bi bi-trophy-fill me-2"></i>SALA DE TROFÉUS
               </h5>
+              <i class="bi bi-box-arrow-up-right text-warning opacity-50"></i>
            </div>
 
-           <div class="p-3 custom-scrollbar" style="max-height: 700px;">
+           <div class="p-3 custom-scrollbar list-scroll-area">
               <div v-if="trophies.length === 0" class="text-center py-5 opacity-25">
                  <i class="bi bi-trophy display-1"></i>
                  <p class="mt-2 fw-bold">NENHUM TÍTULO</p>
@@ -96,7 +97,7 @@
                <div class="small opacity-50 fw-bold">DADOS AGRUPADOS POR TEMPORADA</div>
             </div>
 
-            <div class="timeline-scroll-container p-4 custom-scrollbar" style="max-height: 700px; background: rgba(0,0,0,0.2);">
+            <div class="timeline-scroll-container p-4 custom-scrollbar list-scroll-area" style="background: rgba(0,0,0,0.2);">
                <div v-if="timelineEvents.length === 0" class="text-center py-5">
                   <i class="bi bi-map opacity-10 display-1 mb-3 d-block"></i>
                   <h4 class="text-secondary text-uppercase fw-black">Registros não localizados</h4>
@@ -107,9 +108,9 @@
                   <div v-for="(yearGroup, idx) in timelineEvents" :key="idx" class="timeline-year-block d-flex gap-4 mb-5 animate-slide-up">
                      
                      <!-- DATA -->
-                      <div class="timeline-date-side text-end py-2" style="width: 120px; flex-shrink: 0;">
-                         <div class="opacity-50 fw-bold x-small">{{ yearGroup.year.includes('=') ? yearGroup.year.split('=')[0].trim() : '' }}</div>
-                         <div class="display-5 fw-black text-white-glow">{{ yearGroup.shortYear }}</div>
+                      <div class="timeline-date-side text-end py-2" style="width: 140px; flex-shrink: 0;">
+                         <div class="fw-black text-white-glow ls-n1 line-height-1" style="font-size: 1.5rem;">{{ yearGroup.year.includes('=') ? yearGroup.year.split('=') [0].trim() : yearGroup.year }}</div>
+                         
                       </div>
 
                      <!-- TRILHA -->
@@ -209,7 +210,7 @@ import { clubStore } from '../services/club.store'
 import { seasonService } from '../services/season.service'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
-import { getTrofeuPath, normalizeString, getSeasonFinalYear, clubSmartNormalize } from '../services/utils'
+import { getTrofeuPath, normalizeString, normalizeCountry, getSeasonFinalYear, clubSmartNormalize } from '../services/utils'
 import { dataSearchService } from '../services/dataSearch.service'
 import { imageCacheService } from '../services/imageCache.service'
 
@@ -239,7 +240,10 @@ const trophyMap = {
   'Melhor do Mundo (Técnico)': imgMelhorTecnico,
   'Melhor da Europa': imgMelhorEuropa,
   'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
-  'Melhor da CONCACAF': imgMelhorConcacaf
+  'Melhor da CONCACAF': imgMelhorConcacaf,
+  'Bola de Ouro': imgMelhorMundo,
+  'Chuteira de Ouro': 'logos/competitions/chuteira-de-ouro.png',
+  'Luva de Ouro': 'logos/competitions/luva-de-ouro.png'
 }
 const route = useRoute()
 const clubName = ref('')
@@ -295,14 +299,14 @@ const loadClubData = async () => {
   await seasonStore.loadAll()
   if (careerStore.history.length === 0) await careerStore.loadAll()
   if (awardsStore.list.length === 0) await awardsStore.loadAll()
-  if (clubStore.list.length === 0) await clubStore.loadAll()
+  if (clubStore.list.length === 0) await clubStore.init()
 
   clubInfo.value = clubStore.list.find(c => normalizeString(c.nome) === normalizeString(clubName.value)) || 
                    dataSearchService.findClub(clubName.value)
 
   const clubNorm = normalizeString(clubName.value)
   const clubSmart = clubSmartNormalize(clubName.value)
-  const clubCountry = clubInfo.value?.pais ? normalizeString(clubInfo.value.pais) : null
+  const clubCountry = clubInfo.value?.pais ? normalizeCountry(clubInfo.value.pais) : null
 
   await loadTrophies(clubNorm, clubSmart, clubCountry)
   await loadTimeline(clubNorm, clubSmart, clubCountry)
@@ -329,7 +333,7 @@ const loadTrophies = async (clubNorm, clubSmart, clubCountry) => {
     }
 
     if (clubCountry && sPais) {
-        const sPaisNorm = normalizeString(sPais)
+        const sPaisNorm = normalizeCountry(sPais)
         if (sPaisNorm) { // Só filtra se a season tiver país definido para evitar falsos negativos
             const isInternational = ['MUNDO', 'EUROPA', 'AMERICA DO SUL', 'CONMEBOL', 'UEFA', 'INTERNACIONAL'].includes(sPaisNorm.toUpperCase())
             // Se a competição é nacional e o país não bate, pula
@@ -385,7 +389,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
       }
 
       if (clubCountry && sPais) {
-          const sPaisNorm = normalizeString(sPais)
+          const sPaisNorm = normalizeCountry(sPais)
           if (sPaisNorm) { // Só filtra se a season tiver país definido para evitar falsos negativos
               const isInternational = ['MUNDO', 'EUROPA', 'AMERICA DO SUL', 'CONMEBOL', 'UEFA', 'INTERNACIONAL'].includes(sPaisNorm.toUpperCase())
               // Se a competição é nacional e o país não bate, pula
@@ -539,7 +543,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
   awardsStore.list.forEach(aw => {
      // 0. Firewall de País para Prêmios
      if (clubCountry && aw.pais) {
-         const awPaisNorm = normalizeString(aw.pais)
+         const awPaisNorm = normalizeCountry(aw.pais)
          if (awPaisNorm !== clubCountry) return
      }
 
@@ -660,9 +664,15 @@ const getCompetitionInfo = (name, country = null) => {
         ...INTERNATIONAL_DATA
     ]
 
-    // Busca exata ou por substring
+    // Busca exata ou por substring segura
     return allComps.find(c => {
         const cNome = normalizeString(c.nome)
+        
+        // Proteção contra match parcial de Copa vs Supercopa
+        const isTargetSuper = lowName.includes('super');
+        const isCompSuper = cNome.includes('super');
+        if (isTargetSuper !== isCompSuper) return false;
+
         const isMatch = cNome === lowName || lowName.includes(cNome)
         if (!isMatch) return false
         
@@ -687,8 +697,10 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('brasileirao') && lowName.includes('serie a')) return getTrofeuPath('trofeu-brasileirao-serie-a')
     if (lowName.includes('brasileirao') && lowName.includes('serie b')) return getTrofeuPath('trofeu-brasileirao-serie-b')
     if (lowName.includes('brasileirao')) return getTrofeuPath('trofeu-brasileirao-serie-a')
-    if (lowName.includes('copa do brasil')) return getTrofeuPath('trofeu-copa-do-brasil')
-    if (lowName.includes('libertadores')) return getTrofeuPath('trofeu-libertadores')
+    if (lowName.includes('copa do brasil') && !lowName.includes('super')) return getTrofeuPath('trofeu-copa-do-brasil')
+    if (lowName.includes('supercopa do brasil')) return getTrofeuPath('trofeu-supercopa-do-brasil')
+    if (lowName.includes('libertadores') && !lowName.includes('recopa')) return getTrofeuPath('trofeu-libertadores')
+    if (lowName.includes('recopa') && lowName.includes('libertadores')) return getTrofeuPath('trofeu-recopa-sulamericana')
     if (lowName.includes('sul-americana') || lowName.includes('sulamericana')) return getTrofeuPath('trofeu-sulamericana')
     if (lowName.includes('colombia') && lowName.includes('liga')) return getTrofeuPath('trofeu-liga-colombia')
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
@@ -786,6 +798,19 @@ watch(() => route.params.id, () => {
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 1px;
+}
+
+.list-scroll-area {
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+}
+
+.header-trophies-link:hover h5 {
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+}
+
+.line-height-1 {
+  line-height: 1;
 }
 
 .trophy-thumb {

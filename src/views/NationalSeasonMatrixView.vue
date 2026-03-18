@@ -137,7 +137,7 @@ import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
-import { normalizeYearStrict } from '../services/utils'
+import { normalizeYearStrict, normalizeCountry } from '../services/utils'
 import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
@@ -147,6 +147,7 @@ const continentId = computed(() => route.params.id)
 
 const sortYear = ref('')
 const sortSlot = ref('')
+const normalize = (s) => normalizeCountry(s)
 
 const countrySlots = ref([])
 
@@ -197,7 +198,6 @@ const processedMatrix = computed(() => {
     const teamsSet = new Set()
     const namesMap = {}
 
-    const normalize = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() || ""
     const fedUrl = FEDERATIONS_DATA[continentId.value]?.logo;
 
     if (!seasonStore.list || seasonStore.list.length === 0) {
@@ -205,7 +205,7 @@ const processedMatrix = computed(() => {
     }
 
     // 1. Identificar seleções do continente
-    const continentTeamsNormalized = NATIONAL_TEAMS_DATA.filter(t => t.continente === fedUrl).map(t => normalize(t.nome));
+    const continentTeamsNormalized = NATIONAL_TEAMS_DATA.filter(t => t.continente === fedUrl).map(t => normalizeCountry(t.nome));
 
     seasonStore.list.forEach(season => {
         // Verifica se a temporada tem dados de tabela e nome de competição
@@ -308,6 +308,7 @@ const getRankFromExtra = (extra) => {
 const getRank = (team, season, slot) => {
   const result = matrixData.value[team]?.[season]?.[slot.key]
   if (!result) return ''
+  const rank = result.rank
   if (rank === 1) return '🏆 1º'
   if (rank === 2) return '🥈 2º'
   if (rank === 4) return '4º'

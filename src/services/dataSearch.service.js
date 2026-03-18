@@ -1,6 +1,6 @@
 import { clubStore } from './club.store';
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data';
-import { normalizeString } from './utils';
+import { normalizeString, normalizeCountry } from './utils';
 
 export const dataSearchService = {
     /**
@@ -23,16 +23,16 @@ export const dataSearchService = {
     findClubByCountry(name, country) {
         if (!name || !country) return null;
         const search = normalizeString(name);
-        const searchCountry = normalizeString(country);
+        const searchCountry = normalizeCountry(country);
         const list = clubStore.list.length > 0 ? clubStore.list : [];
 
         // 1. Busca exata no país correto
-        const exactInCountry = list.find(c => normalizeString(c.nome) === search && normalizeString(c.pais) === searchCountry);
+        const exactInCountry = list.find(c => normalizeString(c.nome) === search && normalizeCountry(c.pais) === searchCountry);
         if (exactInCountry) return exactInCountry;
 
         // 2. Busca parcial no país correto (Ex: "Barcelona" -> "Barcelona SC" se estiver no Equador)
         const partialInCountry = list.find(c =>
-            normalizeString(c.pais) === searchCountry &&
+            normalizeCountry(c.pais) === searchCountry &&
             (normalizeString(c.nome).startsWith(search) || search.startsWith(normalizeString(c.nome)))
         );
         if (partialInCountry) return partialInCountry;
@@ -49,7 +49,7 @@ export const dataSearchService = {
         const search = normalizeString(name);
 
         const exactMatch = NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome) === search) ||
-            NATIONAL_TEAMS_DATA.find(n => normalizeString(n.pais) === search);
+            NATIONAL_TEAMS_DATA.find(n => normalizeCountry(n.pais) === normalizeCountry(search));
 
         if (exactMatch || exactOnly) return exactMatch;
 
@@ -61,9 +61,9 @@ export const dataSearchService = {
      */
     getClubsByCountry(countryName) {
         if (!countryName) return [];
-        const search = normalizeString(countryName);
+        const search = normalizeCountry(countryName);
         const list = clubStore.list.length > 0 ? clubStore.list : [];
-        return list.filter(c => normalizeString(c.pais) === search);
+        return list.filter(c => normalizeCountry(c.pais) === search);
     },
 
     /**

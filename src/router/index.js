@@ -22,6 +22,7 @@ const router = createRouter({
         { path: '/sala-de-trofeus', name: 'trophy-room', component: () => import('../views/TrophyRoomView.vue') },
         { path: '/clubes', name: 'club-management', component: () => import('../views/ClubManagementView.vue') },
         { path: '/clube/:id/historico', name: 'club-history', component: () => import('../views/ClubHistoryView.vue') },
+        { path: '/clube/:id/trofeus', name: 'club-trophies', component: () => import('../views/ClubTrophyRoomView.vue') },
     ],
 });
 

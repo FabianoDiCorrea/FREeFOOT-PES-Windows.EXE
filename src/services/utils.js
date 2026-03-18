@@ -23,6 +23,21 @@ export const normalizeString = (str) => {
 };
 
 /**
+ * Normalização unificada para países.
+ * Especialmente importante para converter "Estados Unidos" -> "EUA".
+ */
+export const normalizeCountry = (country) => {
+    if (!country) return '';
+    const norm = normalizeString(country);
+
+    if (norm === 'estados unidos' || norm === 'united states' || norm === 'usa') {
+        return 'eua';
+    }
+
+    return norm;
+};
+
+/**
  * Normalização inteligente específica para clubes:
  * Remove sufixos regionais (mineiro, carioca, paulista, etc) 
  * e abreviações comuns (EC, FC, SAF, etc).

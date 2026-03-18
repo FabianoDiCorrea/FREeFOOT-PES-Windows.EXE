@@ -843,8 +843,8 @@
               <p class="text-secondary small mb-3">Cole aqui o conteúdo da tabela final da competição.</p>
               <textarea v-model="newSeason.tabela" class="form-control game-textarea" rows="8" placeholder="Cole a tabela aqui..."></textarea>
               
-              <!-- SEÇÃO ESPECIAL: PROMOÇÃO PLAYOFF (ARGENTINA B) -->
-              <div v-if="isArgentinaB" class="mt-4 p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3">
+              <!-- SEÇÃO ESPECIAL: PROMOÇÃO PLAYOFF (BRASILEIRÃO SÉRIE B) -->
+              <div v-if="hasPlayoffPromotion" class="mt-4 p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3">
                 <h6 class="text-success fw-black text-uppercase small mb-2"><i class="bi bi-arrow-up-circle-fill me-2"></i>Promoção via Playoff (3 ao 6)</h6>
                 <p class="x-small opacity-75 mb-3">Selecione os 2 times que subiram via Playoff:</p>
                 
@@ -1008,7 +1008,7 @@ import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { seasonStore } from '../services/season.store'
 import { clubStore } from '../services/club.store'
-import { getSeasonFinalYear, getTrofeuPath, getNextSeasonYear } from '../services/utils'
+import { getSeasonFinalYear, getTrofeuPath, getNextSeasonYear, normalizeCountry } from '../services/utils'
 import { CLUBS_DATA } from '../data/clubs.data'
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
 import { db } from '../services/db'
@@ -1391,9 +1391,9 @@ const removeParticipant = (index) => {
   newSeason.value.participantes.splice(index, 1);
 }
 
-const isArgentinaB = computed(() => {
+const hasPlayoffPromotion = computed(() => {
   const name = selectedCompetition.value?.nome;
-  return (name === 'Primera Nacional' || name === 'Liga Argentina Série B'); 
+  return (name === 'Brasileirão Série B'); 
 })
 
 const playoffCandidates = computed(() => {

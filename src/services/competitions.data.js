@@ -99,9 +99,9 @@ export const CONCACAF_DATA = {
     logo_continente: "https://1000marcas.net/wp-content/uploads/2020/03/Logo-Concacaf.png",
     paises: [
         {
-            nome: "Estados Unidos",
+            nome: "EUA",
             bandeira: "https://flagcdn.com/w80/us.png",
-            competicoes: CONCACAF_COMPETITIONS.filter(c => c.pais === "Estados Unidos")
+            competicoes: CONCACAF_COMPETITIONS.filter(c => c.pais === "EUA")
         },
         {
             nome: "México",
@@ -114,7 +114,8 @@ export const CONCACAF_DATA = {
             competicoes: CONCACAF_COMPETITIONS.filter(c => c.pais === "Costa Rica")
         }
     ],
-    continentais: []
+    continentais: INTERNATIONAL_COMPETITIONS.filter(c => c.pais === "América do Norte"),
+    internacionais: INTERNATIONAL_COMPETITIONS.filter(c => c.pais === "Mundo")
 };
 
 export const ALL_COMPETITIONS_DATA = [SOUTH_AMERICA_DATA, EUROPE_DATA, CONCACAF_DATA];

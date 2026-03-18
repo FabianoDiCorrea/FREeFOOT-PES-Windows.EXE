@@ -171,7 +171,9 @@ import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
-import { normalizeYearStrict } from '../services/utils'
+import { normalizeYearStrict, normalizeString, normalizeCountry } from '../services/utils'
+
+const normalize = (s) => normalizeString(s)
 
 const route = useRoute()
 const countryId = computed(() => route.params.id)
@@ -194,10 +196,9 @@ const isRelegationCountry = computed(() => {
 })
 
 const getFederationByCountry = (cName) => {
-  const norm = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() || ""
-  const target = norm(cName)
+  const target = normalizeCountry(cName)
   for (const continent of RAW_DATA) {
-    if (continent.paises.some(p => norm(p.nome) === target)) {
+    if (continent.paises.some(p => normalizeCountry(p.nome) === target)) {
       return continent.continente
     }
   }
@@ -205,9 +206,9 @@ const getFederationByCountry = (cName) => {
 }
 
 const mainLeagueLogo = computed(() => {
-  const countryIdVal = countryId.value?.toLowerCase()
+  const target = normalizeCountry(countryId.value)
   for (const continent of RAW_DATA) {
-    const p = continent.paises.find(p => p.nome.toLowerCase() === countryIdVal)
+    const p = continent.paises.find(p => normalizeCountry(p.nome) === target)
     if (p) {
       const liga = p.competicoes.find(c => c.tipo === 'Liga')
       return liga?.logo || null
@@ -254,8 +255,9 @@ const setupSlots = () => {
   ]
 
   // 2. Buscar ligas deste país no sistema
+  const target = normalizeCountry(countryId.value)
   for (const continent of RAW_DATA) {
-     const p = continent.paises.find(p => p.nome.toLowerCase() === countryIdVal)
+     const p = continent.paises.find(p => normalizeCountry(p.nome) === target)
      if (p) {
        leaguesFound = p.competicoes.filter(c => c.tipo === 'Liga')
        break
@@ -276,9 +278,10 @@ const setupSlots = () => {
   })
 
   // Adicionar Copas Nacionais
+  const targetC = normalizeCountry(countryId.value)
   let cupsFound = []
   for (const continent of RAW_DATA) {
-    const p = continent.paises.find(p => p.nome.toLowerCase() === countryIdVal)
+    const p = continent.paises.find(p => normalizeCountry(p.nome) === targetC)
     if (p) {
       cupsFound = (p.competicoes || []).filter(c => c.tipo === 'Copa')
       break
@@ -286,7 +289,7 @@ const setupSlots = () => {
   }
   cupsFound.forEach(copa => {
     slots.push({
-      key: `cup_${copa.nome.replace(/\s+/g, '_')}`,
+      key: `cup_${normalize(copa.nome).replace(/\s+/g, '_')}`,
       label: 'Copa',
       type: 'cup',
       meta: copa
@@ -307,8 +310,7 @@ const processedMatrix = computed(() => {
   const clubNameMap = {} // Mapa: Normalizado -> Raw (Mantém o primeiro nome "bonito" encontrado)
   
   // Normalização profunda para evitar erros de case/acentos/espaços extras
-  const normalize = (s) => s?.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').trim() || ""
-  const countryIdVal = normalize(countryId.value)
+  const countryIdVal = normalizeCountry(countryId.value)
 
   if (!seasonStore.list || seasonStore.list.length === 0) {
     return { data, seasons: [], clubs: [], empty: true }
@@ -316,7 +318,7 @@ const processedMatrix = computed(() => {
 
   // 1. Identificar clubes do país (Normalizado) incluindo os Customizados
   const countryClubsNamesNormalized = clubStore.list.filter(c => 
-    normalize(c.pais) === countryIdVal
+    normalizeCountry(c.pais) === countryIdVal
   ).map(c => normalize(c.nome))
 
   if (countryClubsNamesNormalized.length === 0) {
@@ -339,7 +341,7 @@ const processedMatrix = computed(() => {
     if (!season.competitionName) return
     
     // Bloqueio de País: Só processa temporadas que pertencem ao país da Matriz ou são continentais/mundiais.
-    const seasonCountry = normalize(season.pais || '')
+    const seasonCountry = normalizeCountry(season.pais || '')
     const isInternational = !seasonCountry || 
                            ['continente', 'mundial', 'internacional', 'america do sul', 'europa', 'america do norte', 'asia', 'oceania', 'africa'].includes(seasonCountry)
     if (!isInternational && seasonCountry !== countryIdVal) return
@@ -366,7 +368,7 @@ const processedMatrix = computed(() => {
       // Verificação flexível: Se o clube está no banco de dados, deve ser deste país.
       // Se não está no banco, permitimos (provavelmente é um time de divisões inferiores ou novo).
       const clubInStore = clubStore.list.find(c => normalize(c.nome) === clubNameNorm)
-      if (clubInStore && normalize(clubInStore.pais) !== countryIdVal) return
+      if (clubInStore && normalizeCountry(clubInStore.pais) !== countryIdVal) return
 
       // Determinar Slot
       let slotKey = null
@@ -476,12 +478,12 @@ const processedMatrix = computed(() => {
           
           // Smart-match: tenta encontrar o clube no PAÍS CORRETO (Prioridade Total)
           // 1. Busca exata no país
-          let bestClub = clubStore.list.find(c => normalize(c.nome) === pNorm && normalize(c.pais) === countryIdVal)
+          let bestClub = clubStore.list.find(c => normalize(c.nome) === pNorm && normalizeCountry(c.pais) === countryIdVal)
           
           // 2. Se for uma copa nacional e não achou no país, tenta o smart-match local
           if (!bestClub && isThisCup) {
             bestClub = clubStore.list.find(c => 
-              normalize(c.pais) === countryIdVal && 
+              normalizeCountry(c.pais) === countryIdVal && 
               (normalize(c.nome).startsWith(pNorm) || pNorm.startsWith(normalize(c.nome)))
             )
           }
@@ -489,7 +491,7 @@ const processedMatrix = computed(() => {
           // 3. Bloqueio de Intrusos: Se achou match exato em OUTRO país e nada no atual, ignora na Matriz Nacional
           if (!bestClub && isThisCup) {
               const foreignMatch = clubStore.list.find(c => normalize(c.nome) === pNorm)
-              if (foreignMatch && normalize(foreignMatch.pais) !== countryIdVal) return
+              if (foreignMatch && normalizeCountry(foreignMatch.pais) !== countryIdVal) return
           }
 
           // Usa a chave normalizada do clube encontrado para mergear com dados de liga
