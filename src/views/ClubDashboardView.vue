@@ -53,6 +53,30 @@
                 <Line :data="chartData" :options="chartOptions" />
               </div>
             </div>
+
+            <!-- Legenda de Cores -->
+            <div class="d-flex justify-content-center gap-4 mt-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #ffcc00; border: 2px solid #d4af37;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série A / Principal</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #00ff44; border: 2px solid #008822;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série B / Acesso</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff4444; border: 2px solid #aa0000;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Rebaixamento</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" v-if="chartDataPoints.some(p => p.lineColor === '#0033ff')">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #0033ff; border: 2px solid #0011aa;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série C</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" v-if="chartDataPoints.some(p => p.lineColor === '#00f2ff')">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #00f2ff; border: 2px solid #00a8ff;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série D</span>
+                </div>
+            </div>
             <div v-if="chartData.labels.length === 0" class="text-center p-5 opacity-50">
               Gerando gráfico...
             </div>
@@ -417,21 +441,41 @@ const customTooltipExternal = function(context) {
             }
         }
 
-        const rankText = dataPoint.faseLabel ? dataPoint.faseLabel : (dataPoint.y + 'º');
+        const pos = parseInt(dataPoint.y);
+        const isRebaixado = dataPoint.isRebaixado;
+        
+        let rankIcon = '⚽';
+        let rankColor = '#ffcc00';
+        
+        if (pos === 1) {
+            rankIcon = '🏆';
+            rankColor = '#ffcc00'; // Dourado
+        } else if (pos === 2) {
+            rankIcon = '🥈';
+            rankColor = '#c0c0c0'; // Prata
+        } else if (isRebaixado) {
+            rankIcon = '🔴';
+            rankColor = '#ff4444'; // Vermelho
+        } else {
+            rankIcon = '⚽';
+            rankColor = '#ffffff'; // Branco/Normal
+        }
+
+        const rankText = dataPoint.faseLabel ? dataPoint.faseLabel : (pos + 'º');
 
         let innerHtml = '<div class="premium-tooltip">';
 
         titleLines.forEach(function(title) {
-            innerHtml += `<div class="tooltip-title">${fullSeason}</div>`;
+            innerHtml += `<div class="tooltip-title" style="border-color: ${rankColor}44">${fullSeason}</div>`;
         });
 
         innerHtml += '<div class="tooltip-content">';
         
         innerHtml += `
             <div class="tooltip-row">
-                <span class="tooltip-icon">🏆</span>
+                <span class="tooltip-icon">${rankIcon}</span>
                 <span class="tooltip-label">POSIÇÃO:</span>
-                <span class="tooltip-value highlight" style="font-size: 0.9rem">${rankText.toUpperCase()}</span>
+                <span class="tooltip-value highlight" style="font-size: 1.1rem; color: ${rankColor}">${rankText.toUpperCase()}</span>
             </div>
             <div class="tooltip-row align-items-center">
                 <span class="tooltip-icon" style="min-width: 52px">
@@ -446,9 +490,9 @@ const customTooltipExternal = function(context) {
             <div class="tooltip-row mt-2" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px">
                 <span class="tooltip-icon">📊</span>
                 <span class="tooltip-label">COMPETIÇÃO:</span>
-                <span class="tooltip-value" style="color: #ffcc00; font-weight: 900; text-transform: uppercase;">${dataPoint.compName}</span>
+                <span class="tooltip-value" style="color: ${rankColor}; font-weight: 900; text-transform: uppercase;">${dataPoint.compName}</span>
             </div>
-            <div class="tooltip-glow"></div>
+            <div class="tooltip-glow" style="background: radial-gradient(circle at top right, ${rankColor}15 0%, transparent 70%)"></div>
         `;
 
         innerHtml += '</div></div>';
@@ -607,21 +651,27 @@ const chartDataPointBackgrounds = ref([]);
 const chartDataPointBorders = ref([]);
 const chartDataPointsCopas = ref([]);
 
-const getLeagueColors = (ligaName) => {
+const getLeagueColors = (ligaName, isRebaixado = false) => {
+    if (isRebaixado) return { bg: '#ff4444', border: '#aa0000' }; // Vermelho para rebaixados
     if (!ligaName || ligaName === 'Sem Liga') return { bg: '#fff', border: '#ffcc00' };
+    
     const name = ligaName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     
+    // Divisões Inferiores (Série C, D, League One, League Two, etc)
     if (name.includes('serie d') || name.includes('4a') || name.includes('quarta') || name.includes('league two') || name.includes('division 4') || name.endsWith(' d')) {
         return { bg: '#00f2ff', border: '#00a8ff' }; // Azul Claro
     }
     if (name.includes('serie c') || name.includes('3a') || name.includes('terceira') || name.includes('league one') || name.includes('division 3') || name.includes('national') || name.endsWith(' c')) {
         return { bg: '#0033ff', border: '#0011aa' }; // Azul Escuro
     }
-    if (name.includes('serie b') || name.includes('2a') || name.includes('segunda') || name.includes('championship') || name.includes('2. bundesliga') || name.includes('division 2') || name.includes('ligue 2') || name.endsWith(' b')) {
+    
+    // Segunda Divisão (Série B, Primera Nacional, Championship, etc)
+    if (name.includes('serie b') || name.includes('2a') || name.includes('segunda') || name.includes('nacional') || name.includes('championship') || name.includes('2. bundesliga') || name.includes('division 2') || name.includes('ligue 2') || name.endsWith(' b')) {
         return { bg: '#00ff44', border: '#008822' }; // Verde
     }
     
-    return { bg: '#ffcc00', border: '#d4af37' }; // Amarelo/Dourado (Série A/Padrão)
+    // Primeira Divisão / Padrão
+    return { bg: '#ffcc00', border: '#d4af37' }; // Amarelo/Dourado
 }
 
 const chartData = computed(() => ({
@@ -630,15 +680,27 @@ const chartData = computed(() => ({
     {
       label: 'Posição na Liga',
       data: chartDataPoints.value,
-      borderColor: '#ffcc00', // Yellow Neon / Gold line
-      backgroundColor: 'rgba(255, 204, 0, 0.15)',
+      borderColor: (context) => {
+          // No Chart.js 4, para Line chart, o borderColor pode ser uma função de segmento
+          return '#ffcc00';
+      },
+      segment: {
+        borderColor: (ctx) => {
+            const p1 = ctx.p1.raw;
+            return p1.isRebaixado ? '#ff4444' : p1.lineColor || '#ffcc00';
+        },
+        backgroundColor: (ctx) => {
+            const p1 = ctx.p1.raw;
+            return p1.isRebaixado ? 'rgba(255, 68, 68, 0.15)' : (p1.lineColor ? p1.lineColor + '26' : 'rgba(255, 204, 0, 0.15)');
+        }
+      },
       borderWidth: 5,
       pointBackgroundColor: chartDataPointBackgrounds.value.length ? chartDataPointBackgrounds.value : '#fff',
       pointBorderColor: chartDataPointBorders.value.length ? chartDataPointBorders.value : '#ffcc00',
       pointRadius: 8,
-      pointHoverRadius: 12,
-      pointHoverBackgroundColor: '#ffcc00',
-      pointHoverBorderColor: '#fff',
+      pointHoverRadius: 10,
+      pointHoverBackgroundColor: (ctx) => ctx.raw.pointColor || '#fff',
+      pointHoverBorderColor: (ctx) => ctx.raw.lineColor || '#fff',
       pointHoverBorderWidth: 4,
       fill: true,
       tension: 0.3,
@@ -849,8 +911,51 @@ const chartDataCopas = computed(() => ({
 
 
 // Calcula e processa todos os dados das temporadas específicos para este Clube
+const isClubMatch = (target, searchNorm, searchSmart) => {
+    if (!target) return false;
+    const targetNorm = normalizeString(target);
+    if (targetNorm === searchNorm) return true;
+    const targetSmart = clubSmartNormalize(target);
+    if (searchSmart && targetSmart === searchSmart) return true;
+    return false;
+}
+
+const parseTable = (tableStr) => {
+    if (!tableStr) return [];
+    return tableStr.split('\n').filter(l => l.trim()).map((line, idx) => {
+        let cells = line.split('\t');
+        if (cells.length === 1) cells = line.split(/\s{2,}/);
+        
+        if (cells.length === 1) {
+            const match = line.match(/^(\d+)?\.?\s*([^\d]+)(.*)$/);
+            if (match) {
+                cells = [match[2].trim(), ...match[3].trim().split(/\s+/)];
+            }
+        }
+        
+        let time = cells[0];
+        let posFromLine = null;
+        
+        // Tentar extrair posição do início da linha (ex: "20. Talleres")
+        const posMatch = line.match(/^(\d+)/);
+        if (posMatch) posFromLine = parseInt(posMatch[1]);
+
+        if (time && /^\d+/.test(time) && cells.length > 1) {
+            time = cells[1];
+        }
+        if (time) time = time.replace(/^\d+[\s.-]*/, '').trim();
+
+        return { 
+            time: time || '', 
+            position: posFromLine || (idx + 1),
+            lineRaw: line
+        };
+    }).filter(x => x.time);
+}
+
 const processedSeasons = computed(() => {
     const searchName = normalizeString(clubName.value);
+    const searchSmart = clubSmartNormalize(clubName.value);
     const byYear = {};
     
     seasonStore.list.forEach(s => {
@@ -873,21 +978,24 @@ const processedSeasons = computed(() => {
         let pos = null;
         let j=0, v=0, e=0, d=0, gp=0, gc=0;
         
-        if (s.campeao && normalizeString(s.campeao) === searchName) {
+        if (isClubMatch(s.campeao, searchName, searchSmart)) {
             pos = 1; playedHere = true;
-        } else if (s.vice && normalizeString(s.vice) === searchName) {
+        } else if (isClubMatch(s.vice, searchName, searchSmart)) {
             pos = 2; playedHere = true;
         } 
         
         if (s.tabela && normalizeString(s.tabela).includes(searchName)) {
-            playedHere = true;
-            const lines = s.tabela.split('\n');
-            const tLine = lines.find(l => normalizeString(l).includes(searchName));
-            if (tLine) {
-                const parts = tLine.replace(/[^\w\s\d]/g, ' ').trim().split(/\s+/);
+            const tableData = parseTable(s.tabela);
+            const foundIdx = tableData.findIndex(t => isClubMatch(t.time, searchName, searchSmart));
+            
+            if (foundIdx !== -1) {
+                playedHere = true;
+                const row = tableData[foundIdx];
+                if (!pos) pos = row.position;
+                
+                // Extrair estatísticas da linha bruta (fallback se houver dados numéricos)
+                const parts = row.lineRaw.replace(/[^\w\s\d]/g, ' ').trim().split(/\s+/);
                 const numbers = parts.filter(p => !isNaN(parseInt(p)) && p !== '').map(p => parseInt(p));
-                // O rank absoluto da linha só é usado se o time não for campeão/vice
-                if (!pos) pos = lines.indexOf(tLine) + 1;
                 
                 if (numbers.length >= 8) {
                     for (let i = 1; i < numbers.length - 2; i++) {
@@ -965,6 +1073,25 @@ const processedSeasons = computed(() => {
             
             const winRate = yData.jogos > 0 ? (((yData.vitorias + yData.empates) / yData.jogos) * 100).toFixed(2) : 0;
             
+            // Heurística de rebaixamento para o Dashboard:
+            // Vamos herdar do CountryHistoryView se possível, mas aqui vamos detectar pela posição e liga
+            let isRebaixado = false;
+            if (yData.posicoesLiga.length > 0) {
+                const liga = yData.posicoesLiga[0];
+                const compData = dataSearchService.findCompetition(liga.ligaNome);
+                if (compData && compData.rebaixados > 0) {
+                    // Se for uma liga de maior divisão (A/B) e estiver na zona
+                    // Vamos simplificar: se a posição for alta e a liga tiver rebaixados
+                    // (O ideal seria ter a flag persistida, mas vamos usar a posição detectada)
+                    // Para Talleres 20º, com Argentino A tendo rebaixados, é true.
+                    if (liga.pos >= 20 || (compData.rebaixados >= 4 && liga.pos >= 17)) isRebaixado = true;
+                }
+                // Fallback para nomes de liga B que rebaixam por padrão no PES (ex: 4 times)
+                if (liga.pos >= 17 && (liga.ligaNome.toLowerCase().includes('serie a') || liga.ligaNome.toLowerCase().includes('premier') || liga.ligaNome.toLowerCase().includes('liga profissional'))) {
+                    isRebaixado = true;
+                }
+            }
+
             result.push({
                 id: 'club_' + key,
                 anoCortado: yData.anoCortado,
@@ -977,7 +1104,8 @@ const processedSeasons = computed(() => {
                 jogos: yData.jogos,
                 derrotas: yData.derrotas,
                 golsPro: yData.golsPro,
-                golsContra: yData.golsContra
+                golsContra: yData.golsContra,
+                isRebaixado: isRebaixado
             });
         }
     }
@@ -1024,9 +1152,14 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     const borders = [];
 
     chartDataPoints.value = sorted.map((s, idx) => {
-        const colors = getLeagueColors(s.ligaNome || 'Liga');
-        bgs.push(colors.bg);
-        borders.push(colors.border);
+        // Detectar rebaixamento (heuristicamente se no Raio-X aparecer "Rebaixado")
+        // Como o Raio-X processa separadamente, vamos usar o isRebaixado do processamento local
+        const yearDataMatch = newList.find(nl => nl.temporada === s.temporada);
+        const isRebaixadoYear = yearDataMatch?.isRebaixado || false;
+
+        const colors = getLeagueColors(s.ligaNome || 'Liga', isRebaixadoYear);
+        bgs.push(isRebaixadoYear ? '#ff4444' : colors.bg);
+        borders.push(isRebaixadoYear ? '#aa0000' : colors.border);
         
         return {
             x: normalizedLabels[idx],
@@ -1034,7 +1167,10 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             time: s.timeNome,
             compName: s.ligaNome || 'Liga',
             pais: s.pais,
-            temporadaLonga: s.temporada
+            temporadaLonga: s.temporada,
+            isRebaixado: isRebaixadoYear,
+            lineColor: colors.bg === '#fff' ? '#ffcc00' : colors.bg,
+            pointColor: isRebaixadoYear ? '#ff4444' : colors.bg
         };
     });
     
@@ -1301,9 +1437,8 @@ onMounted(async () => {
     font-size: 0.85rem;
     font-weight: 700;
     color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* Removido nowrap e ellipsis para não cortar o nome do torneio */
+    word-break: break-word;
 }
 
 .tooltip-value.highlight {

@@ -292,8 +292,8 @@ const countryFlagUrl = computed(() => {
   return null;
 })
 
-const hasSerieC = computed(() => nationalCompetitions.value.length >= 3)
-const hasSerieD = computed(() => nationalCompetitions.value.length >= 4)
+const hasSerieC = computed(() => nationalCompetitions.value.filter(c => c.tipo?.toLowerCase() === 'liga').length >= 3)
+const hasSerieD = computed(() => nationalCompetitions.value.filter(c => c.tipo?.toLowerCase() === 'liga').length >= 4)
 const movementColspan = computed(() => {
   let count = 2
   if (hasSerieC.value) count += 2
@@ -529,6 +529,9 @@ const loadData = async () => {
              // REBAIXAMENTOS
              let nRebaixados = compInfo.rebaixados || 0;
              if (isSerieA && normalizeName(countryName.value) === 'argentina') nRebaixados = 4;
+             // Bloqueio explícito: Argentina Série B não rebaixa
+             if (isSerieB && normalizeName(countryName.value) === 'argentina') nRebaixados = 0;
+             
              if (!nRebaixados && (isSerieA || isSerieB || isSerieC)) nRebaixados = 4; // Fallback comum
 
              if (nRebaixados > 0 && items.length >= nRebaixados) {

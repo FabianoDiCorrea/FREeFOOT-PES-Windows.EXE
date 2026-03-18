@@ -1,5 +1,11 @@
 import { clubStore } from './club.store';
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data';
+import {
+    SOUTH_AMERICA_COMPETITIONS,
+    UEFA_COMPETITIONS,
+    INTERNATIONAL_COMPETITIONS,
+    CONCACAF_COMPETITIONS
+} from '../data/competitions.data';
 import { normalizeString, normalizeCountry } from './utils';
 
 export const dataSearchService = {
@@ -54,6 +60,22 @@ export const dataSearchService = {
         if (exactMatch || exactOnly) return exactMatch;
 
         return NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome).includes(search));
+    },
+
+    /**
+     * Busca uma competição pelo nome.
+     */
+    findCompetition(name) {
+        if (!name) return null;
+        const search = normalizeString(name);
+        const allComps = [
+            ...SOUTH_AMERICA_COMPETITIONS,
+            ...UEFA_COMPETITIONS,
+            ...INTERNATIONAL_COMPETITIONS,
+            ...CONCACAF_COMPETITIONS
+        ];
+        return allComps.find(c => normalizeString(c.nome) === search) ||
+            allComps.find(c => normalizeString(c.nome).includes(search));
     },
 
     /**
