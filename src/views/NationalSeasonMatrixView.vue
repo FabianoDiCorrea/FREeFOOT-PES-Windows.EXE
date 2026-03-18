@@ -83,10 +83,12 @@
         <tbody>
           <tr v-for="team in sortedTeams" :key="team" class="club-row-xl">
             <!-- COLUNA FIXA: SELEÇÃO -->
-            <td class="sticky-club club-info-cell border-all px-2">
+            <td class="sticky-club club-info-cell border-all px-2 cursor-pointer"
+                @click="$router.push(`/selecao/${teamNames[team] || team}/historico`)"
+                title="Ver Histórico da Seleção">
               <div class="d-flex align-items-center gap-2">
                 <NationalFlag :countryName="teamNames[team] || team" :size="20" />
-                <span class="club-name-text d-flex align-items-center gap-1">
+                <span class="club-name-text d-flex align-items-center gap-1 text-hover-info text-decoration-underline-hover">
                   {{ teamNames[team] || team }}
                 </span>
               </div>

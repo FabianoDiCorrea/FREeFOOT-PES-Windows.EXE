@@ -39,7 +39,10 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2 ms-auto">
+        <div class="d-flex gap-2 ms-auto align-items-center">
+           <button @click="$router.push('/clube/' + encodeURIComponent(clubName) + '/estatisticas')" class="btn btn-info btn-lg text-dark fw-bold px-4 ms-3 shadow border-0 rounded-pill fs-6 heartbeat-hover me-4">
+              <i class="bi bi-bar-chart-fill me-2 bg-dark text-info p-1 rounded-circle"></i> ESTATÍSTICAS
+           </button>
            <div class="stat-box-gold">
               <div class="val">{{ totalChampion }}</div>
               <div class="lbl">TÍTULOS</div>

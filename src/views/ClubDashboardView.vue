@@ -3,24 +3,20 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 px-2">
       <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-outline-secondary btn-sm" @click="$router.push('/carreira')">
+        <button class="btn btn-outline-secondary btn-sm" @click="$router.back()">
           <i class="bi bi-arrow-left"></i> VOLTAR
         </button>
-        <h2 class="m-0 text-info"><i class="bi bi-bar-chart-fill me-2"></i>MINHAS ESTATÍSTICAS</h2>
+        <h2 class="m-0 text-info"><i class="bi bi-bar-chart-fill me-2"></i>ESTATÍSTICAS: {{ clubName }}</h2>
 
-        <!-- Abas de Filtro de Contexto (Global) -->
-        <div class="bg-dark rounded p-1 ms-3 d-flex gap-1 border border-secondary border-opacity-50">
-          <button @click="contextType = 'clube'" class="btn btn-sm" :class="contextType === 'clube' ? 'btn-light fw-bold text-dark' : 'btn-dark text-white-50'">CLUBES</button>
-          <button @click="contextType = 'selecao'" class="btn btn-sm" :class="contextType === 'selecao' ? 'btn-light fw-bold text-dark' : 'btn-dark text-white-50'">SELEÇÕES</button>
-        </div>
+        <!-- Aba extraída -->
       </div>
       <LogoFREeFOOT />
     </div>
 
-    <div v-if="filteredHistory.length === 0" class="text-center p-5 opacity-50">
+    <div v-if="processedSeasons.length === 0" class="text-center p-5 opacity-50">
       <i class="bi bi-inbox fs-1 mb-3 d-block"></i>
-      <h4>Nenhum dado encontrado para {{ contextType === 'clube' ? 'Clubes' : 'Seleções' }}</h4>
-      <p>Você precisa registrar temporadas na sua carreira para ver os gráficos e recordes aqui.</p>
+      <h4>Nenhum dado encontrado para {{ clubName }}</h4>
+      <p>Nenhuma temporada com dados deste clube foi localizada no Universo atual.</p>
     </div>
 
     <div v-else class="dashboard-wrapper">
@@ -69,7 +65,7 @@
         <div class="col-12">
           <GamePanel>
             <h4 class="text-info text-uppercase fw-bold mb-4">
-              <i class="bi bi-trophy-fill"></i> Histórico de Copas (Apenas Copas Nacionais / Seleções)
+              <i class="bi bi-trophy-fill"></i> Histórico de Copas (Apenas Copas Nacionais)
             </h4>
             
             <!-- Altura ajustada de 400 para 450 para caber os 8 números com folga e padding -->
@@ -340,6 +336,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { Line } from 'vue-chartjs';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import GamePanel from '../components/GamePanel.vue';
@@ -348,7 +345,6 @@ import LogoFREeFOOT from '../components/LogoFREeFOOT.vue';
 import TeamShield from '../components/TeamShield.vue';
 import NationalFlag from '../components/NationalFlag.vue';
 import { awardsStore } from '../services/awards.store';
-import { careerStore } from '../services/career.store';
 import { seasonStore } from '../services/season.store';
 import { clubStore } from '../services/club.store';
 
@@ -359,10 +355,10 @@ import { normalizeYearStrict, normalizeString, clubSmartNormalize } from '../ser
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+const route = useRoute();
+const clubName = ref(decodeURIComponent(route.params.id || ''));
 const contextType = ref('clube');
 const activeTab = ref('timeline');
-
-const history = computed(() => careerStore.history)
 
 // Configuração do Gráfico
 // Definição Customizada do Tooltip para ser reaproveitado em ambos os gráficos
@@ -607,7 +603,26 @@ const chartOptionsCopas = {
 
 const labels = ref([]);
 const chartDataPoints = ref([]);
+const chartDataPointBackgrounds = ref([]);
+const chartDataPointBorders = ref([]);
 const chartDataPointsCopas = ref([]);
+
+const getLeagueColors = (ligaName) => {
+    if (!ligaName || ligaName === 'Sem Liga') return { bg: '#fff', border: '#ffcc00' };
+    const name = ligaName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    if (name.includes('serie d') || name.includes('4a') || name.includes('quarta') || name.includes('league two') || name.includes('division 4') || name.endsWith(' d')) {
+        return { bg: '#00f2ff', border: '#00a8ff' }; // Azul Claro
+    }
+    if (name.includes('serie c') || name.includes('3a') || name.includes('terceira') || name.includes('league one') || name.includes('division 3') || name.includes('national') || name.endsWith(' c')) {
+        return { bg: '#0033ff', border: '#0011aa' }; // Azul Escuro
+    }
+    if (name.includes('serie b') || name.includes('2a') || name.includes('segunda') || name.includes('championship') || name.includes('2. bundesliga') || name.includes('division 2') || name.includes('ligue 2') || name.endsWith(' b')) {
+        return { bg: '#00ff44', border: '#008822' }; // Verde
+    }
+    
+    return { bg: '#ffcc00', border: '#d4af37' }; // Amarelo/Dourado (Série A/Padrão)
+}
 
 const chartData = computed(() => ({
   labels: labels.value,
@@ -615,11 +630,11 @@ const chartData = computed(() => ({
     {
       label: 'Posição na Liga',
       data: chartDataPoints.value,
-      borderColor: '#ffcc00', // Yellow Neon / Gold
+      borderColor: '#ffcc00', // Yellow Neon / Gold line
       backgroundColor: 'rgba(255, 204, 0, 0.15)',
       borderWidth: 5,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: '#ffcc00',
+      pointBackgroundColor: chartDataPointBackgrounds.value.length ? chartDataPointBackgrounds.value : '#fff',
+      pointBorderColor: chartDataPointBorders.value.length ? chartDataPointBorders.value : '#ffcc00',
       pointRadius: 8,
       pointHoverRadius: 12,
       pointHoverBackgroundColor: '#ffcc00',
@@ -702,7 +717,17 @@ const interCharts = computed(() => {
                 intFaseStr = 'Campeão';
                 intPos = 1;
                 played = true;
-            } else if (inter.tabela && normalizeString(inter.tabela).includes(hTimeNorm)) {
+            } 
+            else if (inter.participantes && inter.participantes.some(p => normalizeString(p.nome) === hTimeNorm)) {
+                const part = inter.participantes.find(p => normalizeString(p.nome) === hTimeNorm);
+                const rank = getCupRank(part.colocacao);
+                if (rank) {
+                    intFaseStr = part.colocacao;
+                    intPos = rank;
+                    played = true;
+                }
+            }
+            else if (inter.tabela && normalizeString(inter.tabela).includes(hTimeNorm)) {
                 const lines = inter.tabela.split('\n');
                 const teamLineRaw = lines.find(l => normalizeString(l).includes(hTimeNorm));
                 if (teamLineRaw) {
@@ -744,29 +769,15 @@ const interCharts = computed(() => {
     });
 
     const charts = [];
-    
-    const getLeagueColors = (ligaName) => {
-        if (!ligaName) return '#ffcc00';
-        const name = ligaName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        
-        if (name.includes('serie d') || name.includes('4a') || name.includes('quarta') || name.includes('league two') || name.includes('division 4') || name.endsWith(' d')) {
-            return '#00f2ff'; // Azul Claro
-        }
-        if (name.includes('serie c') || name.includes('3a') || name.includes('terceira') || name.includes('league one') || name.includes('division 3') || name.includes('national') || name.endsWith(' c')) {
-            return '#0033ff'; // Azul Escuro
-        }
-        if (name.includes('serie b') || name.includes('2a') || name.includes('segunda') || name.includes('championship') || name.includes('2. bundesliga') || name.includes('division 2') || name.includes('ligue 2') || name.endsWith(' b')) {
-            return '#00ff44'; // Verde
-        }
-        
-        return '#ffcc00'; // Amarelo/Dourado (Série A/Elite Padrão)
-    };
+    const colors = ['#0d6efd', '#d63384', '#198754', '#ffc107', '#0dcaf0', '#fd7e14'];
+    let colorIndex = 0;
 
     for (const [compName, dataPoints] of Object.entries(compsFound)) {
         const fullDataArray = Array(sorted.length).fill(null);
         dataPoints.forEach(dp => fullDataArray[dp.idx] = dp);
         
-        const color = getLeagueColors(compName);
+        const color = colors[colorIndex % colors.length];
+        colorIndex++;
 
         // clone base options to set dynamic y-axis color
         const options = JSON.parse(JSON.stringify(baseInterOptions));
@@ -836,142 +847,141 @@ const chartDataCopas = computed(() => ({
   ]
 }));
 
-// Retorna apenas a história do tipo ativo
-const filteredHistory = computed(() => {
-    return (history.value || []).filter(h => h && h.tipo === contextType.value)
-})
 
-// Calcula e processa todos os dados das temporadas
+// Calcula e processa todos os dados das temporadas específicos para este Clube
 const processedSeasons = computed(() => {
-    return filteredHistory.value.map(entry => {
-        const h = JSON.parse(JSON.stringify(entry));
-        
-        let j = h.liga?.jogos || 0;
-        let v = h.liga?.vitorias || 0;
-        let e = h.liga?.empates || 0;
-        let p = h.liga?.posicao || 0;
-        let gp = h.liga?.golsPro || 0;
-        let gc = h.liga?.golsContra || 0;
-
-        // Busca agressiva pelo nome real da competição (mesmo que j > 0)
-        let realCompName = h.liga?.nome || '';
-        const searchYear = h.temporada; // ex: "2027" ou "2026 / 2027 = 2027"
-
-        if ((!realCompName || realCompName.toLowerCase() === 'liga') && seasonStore.list.length > 0) {
-            const hYearNorm = normalizeYearStrict(h.temporada);
-            const hTimeNorm = normalizeString(h.timeNome);
-
-            const matching = seasonStore.list.find(s => {
-                const sYearNorm = normalizeYearStrict(s.ano);
-                if (sYearNorm !== hYearNorm) return false;
-
-                const sTabelaNorm = normalizeString(s.tabela || '');
-                return sTabelaNorm.includes(hTimeNorm);
-            });
-            
-            if (matching) {
-                realCompName = matching.competitionName;
-                if (!h.liga) h.liga = {};
-                h.liga.nome = matching.competitionName;
-            }
+    const searchName = normalizeString(clubName.value);
+    const byYear = {};
+    
+    seasonStore.list.forEach(s => {
+        const year = s.ano;
+        const normalizedYear = normalizeYearStrict(year);
+        if (!byYear[normalizedYear]) {
+            byYear[normalizedYear] = { 
+                anoCortado: normalizedYear, 
+                temporada: year, 
+                timeNome: clubName.value, 
+                pais: '', 
+                posicoesLiga: [],
+                hasAnyData: false,
+                jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0
+            };
         }
-
-        // Tentar preencher estatísticas se estiverem vazias
-        if (j === 0 && seasonStore.list.length > 0) {
-            const timeNome = h.timeNome;
-            const temporada = h.temporada;
-            const matching = seasonStore.list.find(s => 
-                (normalizeYearStrict(s.ano) === normalizeYearStrict(temporada)) && 
-                s.tabela && s.tabela.toLowerCase().includes(timeNome.toLowerCase())
-            );
-            if (matching) {
-                const lines = matching.tabela.split('\n');
-                const teamLine = lines.find(l => l.toLowerCase().includes(timeNome.toLowerCase()));
-                if (teamLine) {
-                    const parts = teamLine.replace(/[^\w\s\d]/g, ' ').trim().split(/\s+/);
-                    const numbers = parts.filter(p => !isNaN(parseInt(p)) && p !== '').map(p => parseInt(p));
-                    if (numbers.length >= 8) {
-                        p = lines.indexOf(teamLine) + 1;
-                        for (let i = 1; i < numbers.length - 2; i++) {
-                             if (numbers[i-1] === numbers[i] + numbers[i+1] + (numbers[i+2] || 0)) {
-                                 j = numbers[i-1];
-                                 v = numbers[i];
-                                 e = numbers[i+1];
-                                 // Extração de Gols (GP e GC costumam vir após D nos datasets padrão)
-                                 // Buscamos GP e GC (dois números seguintes após Derrotas)
-                                 if (numbers[i+3] !== undefined) gp = numbers[i+3];
-                                 if (numbers[i+4] !== undefined) gc = numbers[i+4];
-                                 break;
-                             }
+        
+        // Match club in this competition
+        let playedHere = false;
+        let pos = null;
+        let j=0, v=0, e=0, d=0, gp=0, gc=0;
+        
+        if (s.campeao && normalizeString(s.campeao) === searchName) {
+            pos = 1; playedHere = true;
+        } else if (s.vice && normalizeString(s.vice) === searchName) {
+            pos = 2; playedHere = true;
+        } 
+        
+        if (s.tabela && normalizeString(s.tabela).includes(searchName)) {
+            playedHere = true;
+            const lines = s.tabela.split('\n');
+            const tLine = lines.find(l => normalizeString(l).includes(searchName));
+            if (tLine) {
+                const parts = tLine.replace(/[^\w\s\d]/g, ' ').trim().split(/\s+/);
+                const numbers = parts.filter(p => !isNaN(parseInt(p)) && p !== '').map(p => parseInt(p));
+                // O rank absoluto da linha só é usado se o time não for campeão/vice
+                if (!pos) pos = lines.indexOf(tLine) + 1;
+                
+                if (numbers.length >= 8) {
+                    for (let i = 1; i < numbers.length - 2; i++) {
+                         if (numbers[i-1] === numbers[i] + numbers[i+1] + (numbers[i+2] || 0)) {
+                             j = numbers[i-1]; v = numbers[i]; e = numbers[i+1]; d = numbers[i+2] || 0;
+                             if (numbers[i+3] !== undefined) gp = numbers[i+3];
+                             if (numbers[i+4] !== undefined) gc = numbers[i+4];
+                             break;
+                         }
+                    }
+                }
+                
+                // Fallback Agressivo: Se a tabela tiver formatação corrompida / Sem coluna J
+                if (j === 0 && numbers.length >= 4) {
+                    // Padrão Brasileiro: Pos, Pts, J, V, E, D, GP, GC, SG
+                    // OU: Pos, J, V, E, D, GP, GC, SG, Pts
+                    // Vamos deduzir V, E, D pelas posições 2, 3 e 4 da linha
+                    if (numbers.length >= 6) {
+                        const sumOfPos234 = numbers[2] + numbers[3] + numbers[4];
+                        if (numbers[1] === sumOfPos234 || numbers[1] > sumOfPos234) {
+                            // Assumimos que Pos 1 é Pontos/Jogos e Pos 2, 3, 4 são V,E,D
+                            j = numbers[1] >= sumOfPos234 ? numbers[1] : sumOfPos234;
+                            v = numbers[2]; e = numbers[3]; d = numbers[4];
+                            gp = numbers[5] || 0; gc = numbers[6] || 0;
+                        } else {
+                            // Chute cego no padrão cru V, E, D
+                            v = numbers[1]; e = numbers[2]; d = numbers[3];
+                            j = v + e + d;
+                            gp = numbers[4] || 0; gc = numbers[5] || 0;
                         }
-                        // Fallback se não achou GP/GC via checksum J=V+E+D
-                        if (gp === 0 && gc === 0 && numbers.length >= 8) {
-                            gp = numbers[numbers.length - 4] || 0;
-                            gc = numbers[numbers.length - 3] || 0;
-                        }
-                        
-                        // Fallback Agressivo: Se a tabela tiver formatação corrompida / Sem coluna J
-                        if (j === 0 && numbers.length >= 4) {
-                            if (numbers.length >= 6) {
-                                const sumOfPos234 = numbers[2] + numbers[3] + numbers[4];
-                                if (numbers[1] === sumOfPos234 || numbers[1] > sumOfPos234) {
-                                    j = numbers[1] >= sumOfPos234 ? numbers[1] : sumOfPos234;
-                                    v = numbers[2]; e = numbers[3]; d = numbers[4];
-                                    gp = numbers[5] || 0; gc = numbers[6] || 0;
-                                } else {
-                                    v = numbers[1]; e = numbers[2]; d = numbers[3];
-                                    j = v + e + d;
-                                    gp = numbers[4] || 0; gc = numbers[5] || 0;
-                                }
-                            } else {
-                                v = numbers[1] || 0; e = numbers[2] || 0; d = numbers[3] || 0;
-                                j = v + e + d;
-                            }
-                        }
+                    } else {
+                        v = numbers[1] || 0; e = numbers[2] || 0; d = numbers[3] || 0;
+                        j = v + e + d;
                     }
                 }
             }
         }
-
-        // Lookup de País automático se estiver vazio
-        let finalPais = h.pais || '';
-        if (!finalPais && clubStore.list.length > 0) {
-            const clubInfo = clubStore.list.find(c => c.nome.toLowerCase() === h.timeNome.toLowerCase());
-            if (clubInfo) finalPais = clubInfo.pais;
-        }
-
-        const winRate = j > 0 ? (((v + e) / j) * 100).toFixed(2) : 0;
         
-        // Posição: Sincronizada > Rank Final manual
-        const finalP = p || parseInt(h.rankFinal) || 0;
-
-        // Verificar se a competição é realmente uma liga/divisão
-        const compNome = (realCompName || h.liga?.nome || (finalP ? 'Liga' : '')).toLowerCase();
-        const isLiga = compNome.match(/liga|serie|série|division|ligue|bundesliga|premiership|primera|eredivisie|primeira|campeonato|eliminatórias|brasileirão|camp/);
-        
-        let posFinal = (isLiga && finalP) ? finalP : null; 
-        
-        // Extrai apenas o ano (ex: "2026") de strings longas
-        let shortYear = h.temporada;
-        if (shortYear.includes('=')) {
-           shortYear = shortYear.split('=')[1].trim()
-        } else if (shortYear.includes('/')) {
-           shortYear = shortYear.split('/')[1].trim()
-        }
-
-        return {
-            ...h,
-            id: h.id,
-            pais: finalPais,
-            anoCortado: shortYear,
-            rate: parseFloat(winRate),
-            jogos: j,
-            derrotas: h.liga?.derrotas || (j - v - e) || 0,
-            posicaoTimeline: posFinal,
-            golsPro: gp,
-            golsContra: gc
+        if (playedHere) {
+             byYear[normalizedYear].hasAnyData = true;
+             
+             const cNameLower = (s.competitionName || '').toLowerCase();
+             const isInter = cNameLower.includes('libertadores') || cNameLower.includes('sul-americana') || cNameLower.includes('champions') || cNameLower.includes('europa') || cNameLower.includes('concacaf') || cNameLower.includes('mundial') || cNameLower.includes('recopa') || cNameLower.includes('supercopa da uefa');
+             
+             if (!s.isCup && !isInter) {
+                 byYear[normalizedYear].posicoesLiga.push({ pos, ligaNome: s.competitionName || 'Liga' });
+                 if(!byYear[normalizedYear].pais && s.pais) byYear[normalizedYear].pais = s.pais;
+                 
+                 byYear[normalizedYear].jogos += j;
+                 byYear[normalizedYear].vitorias += v;
+                 byYear[normalizedYear].empates += e;
+                 byYear[normalizedYear].derrotas += d;
+                 byYear[normalizedYear].golsPro += gp;
+                 byYear[normalizedYear].golsContra += gc;
+             }
         }
     });
+
+    const result = [];
+    for (const key of Object.keys(byYear).sort((a,b) => parseInt(a) - parseInt(b))) {
+        const yData = byYear[key];
+        if (yData.hasAnyData) {
+            let finalPos = null;
+            let finalLiga = 'Sem Liga';
+            if (yData.posicoesLiga.length > 0) {
+                 finalPos = yData.posicoesLiga[0].pos;
+                 finalLiga = yData.posicoesLiga[0].ligaNome;
+            }
+            
+            let finalPais = yData.pais;
+            if (!finalPais) {
+                 const clubMatch = clubStore.list.find(c => c.nome.toLowerCase() === clubName.value.toLowerCase());
+                 if (clubMatch) finalPais = clubMatch.pais;
+            }
+            
+            const winRate = yData.jogos > 0 ? (((yData.vitorias + yData.empates) / yData.jogos) * 100).toFixed(2) : 0;
+            
+            result.push({
+                id: 'club_' + key,
+                anoCortado: yData.anoCortado,
+                temporada: yData.temporada,
+                timeNome: yData.timeNome,
+                pais: finalPais || 'Desconhecido',
+                posicaoTimeline: finalPos,
+                ligaNome: finalLiga,
+                rate: parseFloat(winRate),
+                jogos: yData.jogos,
+                derrotas: yData.derrotas,
+                golsPro: yData.golsPro,
+                golsContra: yData.golsContra
+            });
+        }
+    }
+    return result;
 });
 
 const getCupRank = (fase) => {
@@ -1009,39 +1019,27 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     for (let i = 0; i < padCount; i++) finalLabels.push(' '.repeat(i + 1));
 
     labels.value = finalLabels;
-    
-    
 
+    const bgs = [];
+    const borders = [];
 
     chartDataPoints.value = sorted.map((s, idx) => {
-        // Encontrar o nome real da competição se o store estiver vivo
-        let realCompName = s.liga?.nome;
-        const normYear = normalizedLabels[idx];
+        const colors = getLeagueColors(s.ligaNome || 'Liga');
+        bgs.push(colors.bg);
+        borders.push(colors.border);
         
-        if (!realCompName || realCompName.toLowerCase() === 'liga') {
-            const hYearNorm = normalizeYearStrict(s.temporada);
-            const hTimeNorm = normalizeString(s.timeNome);
-
-            const match = seasonStore.list.find(season => {
-                const sYearNorm = normalizeYearStrict(season.ano);
-                if (sYearNorm !== hYearNorm) return false;
-
-                // Match de Time: Busca exata ou parcial normalizada na tabela
-                const sTabelaNorm = normalizeString(season.tabela || '');
-                return sTabelaNorm.includes(hTimeNorm);
-            });
-            if (match) realCompName = match.competitionName;
-        }
-
         return {
-            x: normYear,
+            x: normalizedLabels[idx],
             y: s.posicaoTimeline,
             time: s.timeNome,
-            compName: realCompName || s.liga?.nome || 'Liga',
+            compName: s.ligaNome || 'Liga',
             pais: s.pais,
             temporadaLonga: s.temporada
         };
     });
+    
+    chartDataPointBackgrounds.value = bgs;
+    chartDataPointBorders.value = borders;
 
     chartDataPointsCopas.value = sorted.map((s, idx) => {
         const normYear = normalizedLabels[idx];
@@ -1058,21 +1056,28 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             const sYearNorm = normalizeYearStrict(season.ano);
             if (sYearNorm !== hYearNorm) return false;
             const cName = (season.competitionName || '').toLowerCase();
-            // Limitar a copas nacionais / copas do mundo (ignorando as de ligas/continentais exclusivas)
-            return cName.includes('copa') && !cName.includes('libertadores') && !cName.includes('sul-americana') && !cName.includes('champions') && !cName.includes('mundial de clubes');
+            return cName.includes('copa') && !cName.includes('supercopa') && !cName.includes('libertadores') && !cName.includes('sul-americana') && !cName.includes('champions') && !cName.includes('mundial de clubes');
         });
 
         for (const copa of copasDaTemporada) {
             let extra = '';
 
-            // 1. Campeão
             if (copa.campeao && normalizeString(copa.campeao) === hTimeNorm) {
                 copaFaseStr = 'Campeão';
                 copaName = copa.competitionName;
                 copaPos = 1;
                 break;
             } 
-            // 2. Na tabela
+            else if (copa.participantes && copa.participantes.some(p => normalizeString(p.nome) === hTimeNorm)) {
+                const part = copa.participantes.find(p => normalizeString(p.nome) === hTimeNorm);
+                const rank = getCupRank(part.colocacao);
+                if (rank) {
+                    copaFaseStr = part.colocacao;
+                    copaName = copa.competitionName;
+                    copaPos = rank;
+                    break;
+                }
+            }
             else if (copa.tabela && normalizeString(copa.tabela).includes(hTimeNorm)) {
                 const lines = copa.tabela.split('\n');
                 const teamLineRaw = lines.find(l => normalizeString(l).includes(hTimeNorm));
@@ -1111,7 +1116,6 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     });
 }, { immediate: true });
 
-
 // Top 3 Calculators
 const top3WinRates = computed(() => {
     return [...processedSeasons.value].filter(s => s.jogos >= 1).sort((a,b) => b.rate - a.rate).slice(0,3);
@@ -1143,58 +1147,37 @@ const top3MaisDerrotas = computed(() => {
 
 const myTopScorers = computed(() => {
     let results = [];
-    const historyEntries = filteredHistory.value;
+    const searchName = clubName.value.toLowerCase().trim();
     
     seasonStore.list.forEach(season => {
-        // Obter artilheiros da temporada
         const scorers = season.topScorers || (season.artilheiro && season.artilheiro.nome ? [season.artilheiro] : []);
         scorers.forEach(scorer => {
-            const scorerTeam = scorer.clube || scorer.clubeArtilheiro;
-            
-            // Verifica se o user estava gerenciando na mesma temporada e mesmo clube/seleção
-            const managerEntry = historyEntries.find(h => {
-                const sameSeason = (h.temporada.includes(season.ano) || season.ano.includes(h.temporada));
-                const sameTeam = h.timeNome.toLowerCase().trim() === scorerTeam?.toLowerCase().trim();
-                return sameSeason && sameTeam;
-            });
-
-            if (managerEntry) {
+            const scorerTeam = (scorer.clube || scorer.clubeArtilheiro || '').toLowerCase().trim();
+            if (scorerTeam === searchName) {
                 results.push({
                     nome: scorer.nome,
                     gols: scorer.gols || '?',
-                    clube: scorerTeam,
-                    pais: managerEntry.pais,
+                    clube: scorer.clube || scorer.clubeArtilheiro,
+                    pais: clubStore.list.find(c => c.nome.toLowerCase() === searchName)?.pais || '',
                     temporada: season.ano,
-                    campeonato: season.nome // Nome da liga/copa
+                    campeonato: season.nome || season.competitionName
                 });
             }
         });
     });
     
-    // Sort by gols descending (limit 5)
     return results.sort((a,b) => (parseInt(b.gols) || 0) - (parseInt(a.gols) || 0)).slice(0, 5);
 });
 
 const myAwardedPlayers = computed(() => {
-    const historyEntries = filteredHistory.value;
+    const searchName = clubName.value.toLowerCase().trim();
     return awardsStore.list.filter(award => {
-        return historyEntries.some(h => {
-            // Separa os anos para dar match exato ou flexível
-            const hYear = h.temporada;
-            const aYear = award.season;
-            const sameSeason = (hYear.includes(aYear) || aYear.includes(hYear));
-            
-            const isTargetTeam = contextType.value === 'clube' ? 
-                h.timeNome.toLowerCase().trim() === award.clube?.toLowerCase().trim() : 
-                h.timeNome.toLowerCase().trim() === award.nacionalidade?.toLowerCase().trim();
-
-            return sameSeason && isTargetTeam;
-        });
+        return (award.clube || award.nacionalidade || '').toLowerCase().trim() === searchName;
     }).sort((a, b) => b.season.localeCompare(a.season));
 });
 
 onMounted(async () => {
-    await careerStore.loadAll();
+    
     await seasonStore.loadAll();
     await awardsStore.loadAll();
     await clubStore.init(); // O método correto é init(), não loadAll()

@@ -106,10 +106,12 @@
         <tbody>
           <tr v-for="club in sortedClubs" :key="club" class="club-row-xl">
             <!-- COLUNA FIXA: CLUBE -->
-            <td class="sticky-club club-info-cell border-all px-2">
+            <td class="sticky-club club-info-cell border-all px-2 cursor-pointer" 
+                @click="$router.push(`/clube/${clubNames[club] || club}/historico`)"
+                title="Ver Raio-X do Clube">
               <div class="d-flex align-items-center gap-2">
                 <TeamShield :teamName="clubNames[club] || club" :size="20" />
-                <span class="club-name-text d-flex align-items-center gap-1">
+                <span class="club-name-text d-flex align-items-center gap-1 text-hover-info text-decoration-underline-hover">
                   {{ clubNames[club] || club }}
                 </span>
               </div>
