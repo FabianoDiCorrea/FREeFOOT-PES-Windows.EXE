@@ -69,14 +69,15 @@ export const clubStore = reactive({
             this.deletedClubIds = await db.get('deleted_club_ids') || [];
             this.needsExport = await db.get('clubs_needs_export') || false;
 
-            // Rotina de Reparo Profundo (v5.7.1)
-            let hasRepair = false;
-            const repairedClubs = [];
+            // NOVO: Sanitização e Deduplicação Preventiva (v5.9.0)
+            const normalize = (s) => (s || '').toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const unique = new Map();
+            let hasChanges = false;
 
             for (const club of this.customClubs) {
                 let clubChanged = false;
 
-                // 1. Sanitização de Caracteres (Ã% -> É, Ã± -> ñ)
+                // 1. Sanitização
                 const fields = ['nome', 'pais', 'continente'];
                 fields.forEach(f => {
                     const original = club[f] || '';
@@ -87,22 +88,34 @@ export const clubStore = reactive({
                     }
                 });
 
-                // 2. Reparo de IDs (Apenas se for inválido - NaN, null, new)
+                // 2. Reparo de IDs (Apenas se for inválido)
                 const idStr = (club.id || '').toString();
                 if (!club.id || idStr.includes('E+') || idStr === 'new' || idStr === 'null' || idStr.includes('NaN')) {
-                    // Importante: Passamos repairedClubs para detectar colisões com IDs já gerados neste loop
-                    club.id = this.generateIdForCountry(club.pais, repairedClubs);
+                    club.id = this.generateIdForCountry(club.pais, Array.from(unique.values()));
                     clubChanged = true;
                 }
 
-                repairedClubs.push(club);
-                if (clubChanged) hasRepair = true;
+                if (clubChanged) hasChanges = true;
+
+                // 3. Deduplicação por ID (O último vence em caso de conflito no Map)
+                unique.set(club.id.toString(), club);
             }
 
-            if (hasRepair) {
-                this.customClubs = repairedClubs;
+            // Segunda passada: remover duplicatas por Nome+País que tenham IDs diferentes
+            const finalUnique = new Map();
+            for (const club of unique.values()) {
+                const nameKey = `${normalize(club.nome)}|${normalize(club.pais)}`;
+                if (!finalUnique.has(nameKey)) {
+                    finalUnique.set(nameKey, club);
+                } else {
+                    hasChanges = true; // Removemos uma duplicata de nome com ID diferente
+                }
+            }
+
+            if (hasChanges) {
+                this.customClubs = Array.from(finalUnique.values());
                 await db.save('custom_clubs', this.customClubs);
-                console.log('Sanitização e Reparo de IDs v5.8.0 aplicados com sucesso.');
+                console.log('Limpeza automática de duplicatas v5.9.0 concluída.');
             }
 
             this.refreshList();
@@ -231,15 +244,13 @@ export const clubStore = reactive({
         const qName = normalize(clubData.nome);
         const qCountry = normalize(clubData.pais);
 
-        // 1. Verificar se já existe (Deduplicação)
-        // CRÍTICO: Se temos um ID, ele deve ser o mestre da edição (Editar Barcelonaa -> Barcelona)
+        // 1. PRIORIDADE MÁXIMA: Identificação por ID Estrito
         let existingIndex = -1;
-
         if (clubData.id && clubData.id !== 'new') {
             existingIndex = this.customClubs.findIndex(c => c.id.toString() === clubData.id.toString());
         }
 
-        // Se não achou por ID, tenta por Nome+País (evita duplicar o mesmo time adicionado 2x)
+        // 2. BACKUP: Se não achou por ID, tenta por Nome+País (evita duplicar o mesmo time adicionado via planilha sem ID)
         if (existingIndex === -1) {
             existingIndex = this.customClubs.findIndex(c =>
                 normalize(c.nome) === qName && normalize(c.pais) === qCountry
