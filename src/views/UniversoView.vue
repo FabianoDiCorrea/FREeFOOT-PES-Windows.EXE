@@ -158,10 +158,10 @@
                               </div>
 
                               <div class="stars-display d-flex align-items-center gap-1 ms-1">
-                                <span class="stars-individual text-warning lh-1">{{ getIndividualStars(countTitles(s.campeao, s.ano)) }}</span>
+                                <span class="stars-individual text-warning lh-1" style="font-size: 1.1rem;">{{ getIndividualStars(countTitles(s.campeao, s.ano)) }}</span>
                                 <span v-if="getGroupedStars(countTitles(s.campeao, s.ano))" class="text-secondary opacity-50 x-small fw-bold">+</span>
-                                <div v-if="getGroupedStars(countTitles(s.campeao, s.ano))" class="group-star-badge">
-                                  ⭐ {{ getGroupedStars(countTitles(s.campeao, s.ano)) }}
+                                <div v-if="getGroupedStars(countTitles(s.campeao, s.ano))" class="group-star-badge d-flex align-items-center gap-1">
+                                  <i class="bi bi-star-fill text-warning"></i> {{ getGroupedStars(countTitles(s.campeao, s.ano)) }}
                                 </div>
                               </div>
                             </div>
@@ -200,10 +200,10 @@
                               </div>
 
                               <div v-if="s.vice" class="vices-display d-flex align-items-center gap-1 ms-1 opacity-50">
-                                <span class="vices-individual lh-1">{{ getIndividualVices(countVices(s.vice, s.ano)) }}</span>
+                                <span class="vices-individual lh-1 d-flex gap-1" v-html="getIndividualVices(countVices(s.vice, s.ano))"></span>
                                 <span v-if="getGroupedVices(countVices(s.vice, s.ano))" class="text-secondary opacity-50 x-small fw-bold">+</span>
-                                <div v-if="getGroupedVices(countVices(s.vice, s.ano))" class="group-star-badge" style="background: rgba(192, 192, 192, 0.1); border-color: rgba(192, 192, 192, 0.2); color: #a0a0a0;">
-                                  🥈 {{ getGroupedVices(countVices(s.vice, s.ano)) }}
+                                <div v-if="getGroupedVices(countVices(s.vice, s.ano))" class="group-star-badge d-flex align-items-center gap-1" style="background: rgba(192, 192, 192, 0.1); border-color: rgba(192, 192, 192, 0.2); color: #a0a0a0;">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> {{ getGroupedVices(countVices(s.vice, s.ano)) }}
                                 </div>
                               </div>
                             </div>
@@ -1639,7 +1639,7 @@ const countTitles = (teamName, seasonStr) => {
 
 const getIndividualStars = (titles) => {
   const remaining = titles % 5
-  return '⭐'.repeat(remaining)
+  return '★'.repeat(remaining)
 }
 
 const getGroupedStars = (titles) => {
@@ -1663,7 +1663,7 @@ const countVices = (teamName, seasonStr) => {
 
 const getIndividualVices = (vices) => {
   const remaining = vices % 5
-  return '🥈'.repeat(remaining)
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>'.repeat(remaining)
 }
 
 const getGroupedVices = (vices) => {

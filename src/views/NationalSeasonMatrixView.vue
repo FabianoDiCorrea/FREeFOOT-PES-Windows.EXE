@@ -103,7 +103,7 @@
                       getCellBackground(team, season, slot), 
                       { 'last-of-season': isLastSlot(slot) }
                     ]">
-                   <span class="cell-rank-text">{{ getRank(team, season, slot) }}</span>
+                   <span class="cell-rank-text d-flex align-items-center justify-content-center gap-1" v-html="getRank(team, season, slot)"></span>
                 </td>
             </template>
           </tr>
@@ -312,7 +312,7 @@ const getRank = (team, season, slot) => {
   if (!result) return ''
   const rank = result.rank
   if (rank === 1) return '🏆 1º'
-  if (rank === 2) return '🥈 2º'
+  if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
   if (rank === 4) return '4º'
   if (rank === 8) return '8º'
   if (rank === 16) return '16º'

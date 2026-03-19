@@ -36,8 +36,8 @@
           <div class="row g-0 border-top border-secondary border-opacity-10">
             <!-- CAMPEÃO -->
             <div class="col-md-6 border-end border-secondary border-opacity-10 p-2 text-center bg-transparent">
-              <div class="mb-1 small text-warning lh-1">
-                {{ '⭐'.repeat(seasonCountTitles) }}
+              <div class="mb-1 text-warning lh-1" style="font-size: 1.3rem;">
+                {{ '★'.repeat(seasonCountTitles) }}
               </div>
 
               <!-- BLOCO CAMPEÃO PADRONIZADO -->
@@ -96,8 +96,8 @@
                 <NationalFlag :countryName="getClubInfo(season.vice).pais" :forceUrl="getClubInfo(season.vice).bandeira" :size="12" />
                 <span class="fw-bold x-small">{{ getClubInfo(season.vice).pais }}</span>
               </div>
-              <div class="mt-1 small opacity-50 lh-1">
-                {{ '🥈'.repeat(seasonCountVices) }}
+              <div class="mt-1 small opacity-50 lh-1 d-flex gap-1 justify-content-center flex-wrap">
+                <svg v-for="i in seasonCountVices" :key="'v'+i" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>
               </div>
             </div>
           </div>
@@ -175,7 +175,7 @@
     </div>
 
     <!-- CONTEÚDO PRINCIPAL: TABELA + ARTILHARIA (SIDE-BY-SIDE SEM VÁCUO) -->
-    <div class="d-flex flex-wrap gap-2 align-items-start">
+    <div class="d-flex gap-2 align-items-start" :class="competitionInfo?.modoRegistro === 'liga' ? 'flex-nowrap w-100 overflow-x-auto overflow-y-hidden' : 'flex-wrap'">
       
       <!-- LADO ESQUERDO: TABELA (AMPLIADA SÓ NA SUL-AMERICANA) -->
       <div v-if="(competitionInfo?.modoRegistro === 'liga' && season.tabela) || competitionInfo?.modoRegistro === 'participantes'" 
@@ -237,7 +237,9 @@
                   <!-- 1. Ícone de Troféu/Medalha -->
                   <div class="trophy-icon-container">
                     <span v-if="p.colocacao === 'CAMPEÃO'" class="trophy-icon gold">🏆</span>
-                    <span v-else-if="p.colocacao === 'VICE'" class="trophy-icon silver">🥈</span>
+                    <span v-else-if="p.colocacao === 'VICE'" class="trophy-icon silver d-flex align-items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>
+                    </span>
                   </div>
                   
                   <!-- 2. Logo Libertadores (Indicador) -->

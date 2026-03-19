@@ -57,6 +57,49 @@
                 <Line :data="chartData" :options="chartOptions" />
               </div>
             </div>
+            <!-- Legenda de Cores -->
+            <div class="d-flex justify-content-center gap-4 mt-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #0066ff; border: 2px solid #0044cc;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série A / Principal</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; border-radius: 4px; background: #00ff44; border: 2px solid #008822;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série B / Acesso</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" v-if="chartDataPoints.some(p => p.lineColor === '#ffffff')">
+                    <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid #ffffff; filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série C</span>
+                </div>
+                <div class="d-flex align-items-center gap-2" v-if="chartDataPoints.some(p => p.lineColor === '#00f2ff')">
+                    <div style="width: 12px; height: 12px; transform: rotate(45deg); background: #00f2ff; border: 2px solid #00a8ff;"></div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Série D</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 12px; height: 12px; position: relative;">
+                         <div style="position: absolute; width: 14px; height: 2px; background: #ff4444; top: 5px; left: -1px; transform: rotate(45deg);"></div>
+                         <div style="position: absolute; width: 14px; height: 2px; background: #ff4444; top: 5px; left: -1px; transform: rotate(-45deg);"></div>
+                    </div>
+                    <span class="x-small fw-bold text-white-50 text-uppercase">Rebaixamento</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-3 border-start border-secondary ps-4">
+                    <div style="display: flex; gap: 15px;">
+                       <div class="d-flex align-items-center gap-2">
+                           <div style="width: 12px; height: 12px; background: #ffcc00; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+                           <span class="x-small fw-bold text-warning text-uppercase">Campeão (Ouro)</span>
+                       </div>
+                       <div class="d-flex align-items-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+                               <path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/>
+                               <path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/>
+                               <circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/>
+                               <text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text>
+                           </svg>
+                           <span class="x-small fw-bold text-uppercase" style="color: #c0c0c0;">Vice (Prata)</span>
+                       </div>
+                    </div>
+                </div>
+            </div>
             <div v-if="chartData.labels.length === 0" class="text-center p-5 opacity-50">
               Gerando gráfico...
             </div>
@@ -421,21 +464,41 @@ const customTooltipExternal = function(context) {
             }
         }
 
-        const rankText = dataPoint.faseLabel ? dataPoint.faseLabel : (dataPoint.y + 'º');
+        const pos = parseInt(dataPoint.y);
+        const isRebaixado = dataPoint.isRebaixado;
+        
+        let rankIcon = '⚽';
+        let rankColor = '#ffcc00';
+        
+        if (pos === 1) {
+            rankIcon = '🏆';
+            rankColor = '#ffcc00'; // Dourado
+        } else if (pos === 2) {
+            rankIcon = '🥈';
+            rankColor = '#c0c0c0'; // Prata
+        } else if (isRebaixado) {
+            rankIcon = '🔴';
+            rankColor = '#ff4444'; // Vermelho
+        } else {
+            rankIcon = '⚽';
+            rankColor = '#ffffff'; // Branco/Normal
+        }
+
+        const rankText = dataPoint.faseLabel ? dataPoint.faseLabel : (pos + 'º');
 
         let innerHtml = '<div class="premium-tooltip">';
 
         titleLines.forEach(function(title) {
-            innerHtml += `<div class="tooltip-title">${fullSeason}</div>`;
+            innerHtml += `<div class="tooltip-title" style="border-color: ${dataPoint.lineColor || rankColor}44">${fullSeason}</div>`;
         });
 
         innerHtml += '<div class="tooltip-content">';
         
         innerHtml += `
             <div class="tooltip-row">
-                <span class="tooltip-icon">🏆</span>
+                <span class="tooltip-icon">${rankIcon}</span>
                 <span class="tooltip-label">POSIÇÃO:</span>
-                <span class="tooltip-value highlight" style="font-size: 0.9rem">${rankText.toUpperCase()}</span>
+                <span class="tooltip-value highlight" style="font-size: 1.1rem; color: ${rankColor}">${rankText.toUpperCase()}</span>
             </div>
             <div class="tooltip-row align-items-center">
                 <span class="tooltip-icon" style="min-width: 52px">
@@ -450,9 +513,9 @@ const customTooltipExternal = function(context) {
             <div class="tooltip-row mt-2" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px">
                 <span class="tooltip-icon">📊</span>
                 <span class="tooltip-label">COMPETIÇÃO:</span>
-                <span class="tooltip-value" style="color: #ffcc00; font-weight: 900; text-transform: uppercase;">${dataPoint.compName}</span>
+                <span class="tooltip-value" style="color: ${dataPoint.lineColor || rankColor}; font-weight: 900; text-transform: uppercase;">${dataPoint.compName}</span>
             </div>
-            <div class="tooltip-glow"></div>
+            <div class="tooltip-glow" style="background: radial-gradient(circle at top right, ${dataPoint.lineColor || rankColor}15 0%, transparent 70%)"></div>
         `;
 
         innerHtml += '</div></div>';
@@ -607,7 +670,40 @@ const chartOptionsCopas = {
 
 const labels = ref([]);
 const chartDataPoints = ref([]);
+const chartDataPointBackgrounds = ref([]);
+const chartDataPointBorders = ref([]);
+const chartDataPointStyles = ref([]);
+const chartDataPointRadii = ref([]);
 const chartDataPointsCopas = ref([]);
+
+const starImgObj = new Image(26, 26);
+starImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" fill="#ffcc00" stroke="#b8860b" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
+
+const viceImgObj = new Image(26, 26);
+viceImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>');
+
+const getLeagueColors = (ligaName, isRebaixado = false) => {
+    if (isRebaixado) return { bg: '#ff4444', border: '#aa0000', style: 'crossRot' }; // Vermelho para rebaixados
+    if (!ligaName || ligaName === 'Sem Liga') return { bg: '#0066ff', border: '#0044cc', style: 'circle' };
+    
+    const name = ligaName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // Divisões Inferiores (Série C, D, League One, League Two, etc)
+    if (name.includes('serie d') || name.includes('4a') || name.includes('quarta') || name.includes('league two') || name.includes('division 4') || name.endsWith(' d')) {
+        return { bg: '#00f2ff', border: '#00a8ff', style: 'rectRot' }; // Ciano
+    }
+    if (name.includes('serie c') || name.includes('3a') || name.includes('terceira') || name.includes('league one') || name.includes('division 3') || name.includes('national') || name.endsWith(' c')) {
+        return { bg: '#ffffff', border: '#dddddd', style: 'triangle' }; // Branco
+    }
+    
+    // Segunda Divisão (Série B, Primera Nacional, Championship, etc)
+    if (name.includes('serie b') || name.includes('2a') || name.includes('segunda') || name.includes('nacional') || name.includes('championship') || name.includes('2. bundesliga') || name.includes('division 2') || name.includes('ligue 2') || name.endsWith(' b')) {
+        return { bg: '#00ff44', border: '#008822', style: 'rectRounded' }; // Verde
+    }
+    
+    // Primeira Divisão / Padrão
+    return { bg: '#0066ff', border: '#0044cc', style: 'circle' }; // Azul Escuro Principal
+}
 
 const chartData = computed(() => ({
   labels: labels.value,
@@ -615,15 +711,33 @@ const chartData = computed(() => ({
     {
       label: 'Posição na Liga',
       data: chartDataPoints.value,
-      borderColor: '#ffcc00', // Yellow Neon / Gold
-      backgroundColor: 'rgba(255, 204, 0, 0.15)',
+      borderColor: '#0066ff',
+      segment: {
+        borderColor: (ctx) => {
+            const p1 = ctx.p1.raw;
+            return p1.isRebaixado ? '#ff4444' : p1.lineColor || '#0066ff';
+        },
+        backgroundColor: (ctx) => {
+            const p1 = ctx.p1.raw;
+            return p1.isRebaixado ? 'rgba(255, 68, 68, 0.15)' : (p1.lineColor ? p1.lineColor + '26' : 'rgba(0, 102, 255, 0.15)');
+        },
+        borderDash: (ctx) => {
+            const p0 = ctx.p0.raw;
+            const p1 = ctx.p1.raw;
+            if (p0 && p1 && p0.compName !== p1.compName) {
+                return [6, 6];
+            }
+            return undefined;
+        }
+      },
       borderWidth: 5,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: '#ffcc00',
-      pointRadius: 8,
-      pointHoverRadius: 12,
-      pointHoverBackgroundColor: '#ffcc00',
-      pointHoverBorderColor: '#fff',
+      pointBackgroundColor: chartDataPointBackgrounds.value.length ? chartDataPointBackgrounds.value : '#fff',
+      pointBorderColor: chartDataPointBorders.value.length ? chartDataPointBorders.value : '#0066ff',
+      pointStyle: chartDataPointStyles.value.length ? chartDataPointStyles.value : 'circle',
+      pointRadius: chartDataPointRadii.value.length ? chartDataPointRadii.value : 8,
+      pointHoverRadius: 10,
+      pointHoverBackgroundColor: (ctx) => ctx.raw.pointColor || '#fff',
+      pointHoverBorderColor: (ctx) => ctx.raw.lineColor || '#fff',
       pointHoverBorderWidth: 4,
       fill: true,
       tension: 0.3,
@@ -1013,6 +1127,11 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     
 
 
+    const bgs = [];
+    const borders = [];
+    const styles = [];
+    const radii = [];
+
     chartDataPoints.value = sorted.map((s, idx) => {
         // Encontrar o nome real da competição se o store estiver vivo
         let realCompName = s.liga?.nome;
@@ -1033,15 +1152,59 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             if (match) realCompName = match.competitionName;
         }
 
+        const compNameFound = realCompName || s.liga?.nome || 'Liga';
+        
+        // Em Career, não temos isRebaixado direto. Vamos usar heurística simples (>=17) se for Liga
+        let isRebaixadoYear = false;
+        if (s.posicaoTimeline >= 17) {
+            const lowerName = compNameFound.toLowerCase();
+            if (lowerName.includes('serie a') || lowerName.includes('serie b') || lowerName.includes('premier') || lowerName.includes('primeira')) {
+                isRebaixadoYear = true;
+            }
+        }
+
+        const colors = getLeagueColors(compNameFound, isRebaixadoYear);
+        
+        let finalBg = isRebaixadoYear ? '#ff4444' : colors.bg;
+        let finalBorder = isRebaixadoYear ? '#aa0000' : colors.border;
+        let finalStyle = isRebaixadoYear ? 'crossRot' : colors.style;
+        let finalRadius = 8;
+        
+        if (s.posicaoTimeline === 1) {
+             finalBg = '#ffcc00'; // Ouro/Dourado (Campeão)
+             finalBorder = '#d4af37';
+             finalStyle = 'star';
+             finalRadius = 20;
+        } else if (s.posicaoTimeline === 2) {
+             finalBg = '#c0c0c0'; // Prata/Medalha de 2
+             finalBorder = '#808080';
+             finalStyle = viceImgObj;
+             finalRadius = 13;
+        }
+
+        bgs.push(finalBg);
+        borders.push(finalBorder);
+        styles.push(finalStyle);
+        radii.push(finalRadius);
+
         return {
             x: normYear,
             y: s.posicaoTimeline,
             time: s.timeNome,
-            compName: realCompName || s.liga?.nome || 'Liga',
+            compName: compNameFound,
             pais: s.pais,
-            temporadaLonga: s.temporada
+            temporadaLonga: s.temporada,
+            isRebaixado: isRebaixadoYear,
+            lineColor: colors.bg === '#fff' ? '#0066ff' : colors.bg,
+            pointColor: finalBg,
+            pointStyle: finalStyle
         };
     });
+    
+    chartDataPointBackgrounds.value = bgs;
+    chartDataPointBorders.value = borders;
+    chartDataPointStyles.value = styles;
+    chartDataPointRadii.value = radii;
 
     chartDataPointsCopas.value = sorted.map((s, idx) => {
         const normYear = normalizedLabels[idx];

@@ -127,7 +127,7 @@
                       { 'last-of-season': isLastSlot(slot) },
                       { 'intl-column-bg intl-slot-width': slot.type === 'intl' }
                     ]">
-                   <span class="cell-rank-text">{{ getRank(club, season, slot) }}</span>
+                   <span class="cell-rank-text d-flex align-items-center justify-content-center gap-1" v-html="getRank(club, season, slot)"></span>
                 </td>
             </template>
           </tr>
@@ -740,14 +740,13 @@ const getRank = (club, season, slot) => {
     return '🏆 1º'
   }
 
-  // Caso Especial: Vice com Acesso
   if (slot.type === 'league' && rank === 2 && result.isAccess && slot.label !== 'A') {
-    return '🥈 2º'
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
   }
 
   // Vice Geral
   if (slot.type === 'league' && rank === 2) {
-    return '🥈 2º'
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
   }
 
   // Rebaixamento (Seta para baixo) - Apenas para países selecionados
@@ -770,13 +769,13 @@ const getRank = (club, season, slot) => {
     if (n.includes('pre') || n.includes('pré')) return 'PRÉ-COPA';
     
     if (rank === 1) return '🏆 CAMPEÃO'
-    if (rank === 2) return '🥈 VICE'
+    if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
     return result.colocacao || 'PART.'
   }
 
   if (slot.type === 'intl') {
     if (rank === 1) return '🏆 CAMPEÃO'
-    if (rank === 2) return '🥈 VICE'
+    if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
     if (rank === 3) return '🥉 3º LUGAR'
     if (rank === 4) return '4º LUGAR'
     if (rank === 4) return 'SEMIFINAL' // Compatibilidade com outras comps

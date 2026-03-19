@@ -912,11 +912,11 @@ const formatStars = (count) => {
     const ones = count % 5
     
     let result = ''
-    if (tens > 0) result += `${tens * 10}x⭐ `
-    if (fives > 0) result += `${fives * 5}x⭐ `
-    if (ones > 0) result += '⭐'.repeat(ones)
+    if (tens > 0) result += `${tens * 10}x★ `
+    if (fives > 0) result += `${fives * 5}x★ `
+    if (ones > 0) result += '★'.repeat(ones)
     
-    return result.trim()
+    return result.trim() || '★'
 }
 
 // Agrupar títulos por competição (incluindo automáticos e manuais)
