@@ -16,7 +16,7 @@
       </div>
 
       <div class="position-relative z-1 d-flex flex-wrap align-items-center gap-4">
-        <div class="club-shield-wrap p-2 bg-dark bg-opacity-50 rounded-circle border border-gold-glow">
+        <div class="club-shield-wrap p-2">
           <TeamShield :teamName="clubName" :size="120" borderless />
         </div>
         
@@ -112,8 +112,7 @@
                      
                      <!-- DATA -->
                       <div class="timeline-date-side text-end py-2" style="width: 140px; flex-shrink: 0;">
-                         <div class="fw-black text-white-glow ls-n1 line-height-1" style="font-size: 1.5rem;">{{ yearGroup.year.includes('=') ? yearGroup.year.split('=') [0].trim() : yearGroup.year }}</div>
-                         
+                         <div class="fw-black text-white-glow ls-n1 line-height-1" style="font-size: 1.5rem;">{{ yearGroup.year }}</div>
                       </div>
 
                      <!-- TRILHA -->

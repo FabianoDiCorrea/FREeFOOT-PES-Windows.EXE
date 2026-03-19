@@ -16,7 +16,17 @@
       </div>
       
       <!-- FILTROS EXPERT -->
-      <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-1 rounded border border-white border-opacity-10">
+      <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-1 rounded border border-white border-opacity-10 flex-wrap">
+        <span class="small fw-bold text-info ms-2 opacity-75">EXIBIR:</span>
+        <select v-model="filterColumn" class="form-select form-select-sm expert-select w-auto text-warning fw-bold border-warning">
+          <option value="ALL">TODAS AS COMPETIÇÕES</option>
+          <option v-for="slot in countrySlots" :key="'filter_'+slot.key" :value="slot.key">
+            APENAS {{ slot.label }}
+          </option>
+        </select>
+        
+        <div class="vr bg-white opacity-25 mx-1" style="width: 2px;"></div>
+
         <span class="small fw-bold text-info ms-2 opacity-75">ORDENAR POR:</span>
         <select v-model="sortYear" class="form-select form-select-sm expert-select w-auto">
           <option value="">ALFABÉTICA</option>
@@ -50,7 +60,7 @@
             <th rowspan="3" class="sticky-club first-col-header bg-black text-center border-all">
               SELEÇÃO
             </th>
-            <th v-for="season in sortedSeasons" :key="'s'+season" :colspan="countrySlots.length" class="season-group-header border-all text-center">
+            <th v-for="season in sortedSeasons" :key="'s'+season" :colspan="visibleCountrySlots.length" class="season-group-header border-all text-center">
               {{ season }}
             </th>
           </tr>
@@ -58,7 +68,7 @@
           <!-- LINHA 2: LOGOS / TÍTULOS DE COMPETIÇÃO -->
           <tr>
             <template v-for="season in sortedSeasons" :key="'l'+season">
-              <th v-for="slot in countrySlots" :key="season+slot.key+'_logo'" class="bg-liga-header border-all text-center py-2" :class="{ 'bg-intl-header': slot.type === 'intl' }">
+              <th v-for="slot in visibleCountrySlots" :key="season+slot.key+'_logo'" class="bg-liga-header border-all text-center py-2" :class="{ 'bg-intl-header': slot.type === 'intl' }">
                 <div class="d-flex flex-column align-items-center gap-1">
                   <img :src="slot.logo" class="liga-header-logo" v-if="slot.logo" />
                   <span class="header-main-label" v-else>{{ slot.label }}</span>
@@ -70,7 +80,7 @@
           <!-- LINHA 3: SUB-DIVISÕES -->
           <tr>
             <template v-for="season in sortedSeasons" :key="'sd'+season">
-              <th v-for="slot in countrySlots" :key="season+slot.key" class="slot-header border-all text-center px-0" 
+              <th v-for="slot in visibleCountrySlots" :key="season+slot.key" class="slot-header border-all text-center px-0" 
                   :class="[
                     { 'last-of-season': isLastSlot(slot) }
                   ]">
@@ -96,7 +106,7 @@
 
             <!-- CÉLULAS DE DADOS -->
             <template v-for="season in sortedSeasons" :key="team+season">
-                <td v-for="slot in countrySlots" 
+                <td v-for="slot in visibleCountrySlots" 
                     :key="team+season+slot.key" 
                     class="matrix-xl-cell border-all text-center"
                     :class="[
@@ -149,9 +159,15 @@ const continentId = computed(() => route.params.id)
 
 const sortYear = ref('')
 const sortSlot = ref('')
+const filterColumn = ref('ALL')
 const normalize = (s) => normalizeCountry(s)
 
 const countrySlots = ref([])
+
+const visibleCountrySlots = computed(() => {
+  if (filterColumn.value === 'ALL') return countrySlots.value
+  return countrySlots.value.filter(s => s.key === filterColumn.value)
+})
 
 const federationLogo = computed(() => {
   if (!continentId.value) return null;

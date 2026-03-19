@@ -19,7 +19,17 @@
       </div>
       
       <!-- FILTROS EXPERT -->
-      <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-1 rounded border border-white border-opacity-10">
+      <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-1 rounded border border-white border-opacity-10 flex-wrap">
+        <span class="small fw-bold text-info ms-2 opacity-75">EXIBIR:</span>
+        <select v-model="filterColumn" class="form-select form-select-sm expert-select w-auto text-warning fw-bold border-warning">
+          <option value="ALL">TODAS AS COMPETIÇÕES</option>
+          <option v-for="slot in countrySlots" :key="'filter_'+slot.key" :value="slot.key">
+            APENAS {{ slot.type === 'league' ? 'SÉRIE ' + slot.label : (slot.meta?.nome || slot.name || slot.label) }}
+          </option>
+        </select>
+        
+        <div class="vr bg-white opacity-25 mx-1" style="width: 2px;"></div>
+
         <span class="small fw-bold text-info ms-2 opacity-75">ORDENAR POR:</span>
         <select v-model="sortYear" class="form-select form-select-sm expert-select w-auto">
           <option value="">ALFABÉTICA</option>
@@ -56,7 +66,7 @@
             <th rowspan="3" class="sticky-club first-col-header bg-black text-center border-all">
               CLUBE
             </th>
-            <th v-for="season in sortedSeasons" :key="'s'+season" :colspan="countrySlots.length" class="season-group-header border-all text-center">
+            <th v-for="season in sortedSeasons" :key="'s'+season" :colspan="visibleCountrySlots.length" class="season-group-header border-all text-center">
               {{ season }}
             </th>
           </tr>
@@ -65,7 +75,7 @@
           <tr>
             <template v-for="season in sortedSeasons" :key="'l'+season">
               <!-- LIGA NACIONAL -->
-              <th :colspan="ligaSlotsCount" class="bg-liga-header border-all text-center py-2">
+              <th v-if="ligaSlotsCount > 0" :colspan="ligaSlotsCount" class="bg-liga-header border-all text-center py-2">
                 <div class="d-flex flex-column align-items-center gap-1">
                   <img v-if="mainLeagueLogo" :src="mainLeagueLogo" class="liga-header-logo" />
                   <span class="header-main-label" v-else>LIGA SÉRIE</span>
@@ -80,7 +90,7 @@
                 </div>
               </th>
               <!-- INTERNACIONAIS -->
-              <th v-for="intl in intlSlots" :key="season+intl.id" class="bg-intl-header border-all text-center py-1">
+              <th v-for="intl in intlSlots.filter(i => visibleCountrySlots.some(s => s.key === i.key))" :key="season+intl.id" class="bg-intl-header border-all text-center py-1">
                 <div class="d-flex flex-column align-items-center">
                   <img :src="intl.logo" class="intl-header-logo" v-tooltip="intl.name" />
                   <span class="intl-header-minor">{{ intl.shortName }}</span>
@@ -92,7 +102,7 @@
           <!-- LINHA 3: SUB-DIVISÕES (A, B, C, D...) -->
           <tr>
             <template v-for="season in sortedSeasons" :key="'sd'+season">
-              <th v-for="slot in countrySlots" :key="season+slot.key" class="slot-header border-all text-center px-0" 
+              <th v-for="slot in visibleCountrySlots" :key="season+slot.key" class="slot-header border-all text-center px-0" 
                   :class="[
                     { 'last-of-season': isLastSlot(slot) },
                     { 'intl-column-bg intl-slot-width': slot.type === 'intl' }
@@ -119,7 +129,7 @@
 
             <!-- CÉLULAS DE DADOS -->
             <template v-for="season in sortedSeasons" :key="club+season">
-                <td v-for="slot in countrySlots" 
+                <td v-for="slot in visibleCountrySlots" 
                     :key="club+season+slot.key" 
                     class="matrix-xl-cell border-all text-center"
                     :class="[
@@ -187,10 +197,16 @@ const countryName = computed(() => {
 
 const sortYear = ref('')
 const sortSlot = ref('league_A')
+const filterColumn = ref('ALL')
 
 // CONFIGURAÇÃO DE SLOTS (COLUNAS)
 const countrySlots = ref([])
 const intlSlots = ref([])
+
+const visibleCountrySlots = computed(() => {
+  if (filterColumn.value === 'ALL') return countrySlots.value
+  return countrySlots.value.filter(s => s.key === filterColumn.value)
+})
 
 const isRelegationCountry = computed(() => {
   const c = countryName.value?.toLowerCase().trim()
@@ -219,8 +235,8 @@ const mainLeagueLogo = computed(() => {
   return null
 })
 
-const ligaSlotsCount = computed(() => countrySlots.value.filter(s => s.type === 'league').length)
-const cupSlots = computed(() => countrySlots.value.filter(s => s.type === 'cup'))
+const ligaSlotsCount = computed(() => visibleCountrySlots.value.filter(s => s.type === 'league').length)
+const cupSlots = computed(() => visibleCountrySlots.value.filter(s => s.type === 'cup'))
 
 const setupSlots = () => {
   const slots = []

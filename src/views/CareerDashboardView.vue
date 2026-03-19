@@ -160,10 +160,10 @@
                 <div v-for="(rec, i) in top3WinRates" :key="'win'+i" class="record-item d-flex align-items-center justify-content-between p-2 rounded bg-dark border-start border-4 border-success">
                    <div class="d-flex align-items-center gap-3">
                       <div class="fw-black text-white-50 small pe-1">{{ i + 1 }}º</div>
-                      <div class="position-relative">
+                      <div class="d-flex align-items-center gap-2">
                          <TeamShield v-if="contextType === 'clube'" :teamName="rec.timeNome" :size="38" />
                          <div v-else class="text-secondary"><i class="bi bi-globe fs-4"></i></div>
-                         <NationalFlag :countryName="rec.pais" :size="14" class="position-absolute bottom-0 end-0 border border-dark rounded-circle" v-if="rec.pais" />
+                         <NationalFlag :countryName="rec.pais" :size="18" class="shadow-sm rounded-1" v-if="rec.pais" />
                       </div>
                       <div class="d-flex flex-column" style="line-height: 1.2">
                         <span class="fw-bold text-white fs-6">{{ rec.timeNome }}</span>
@@ -184,10 +184,10 @@
                 <div v-for="(rec, i) in bottom3WinRates" :key="'loss'+i" class="record-item d-flex align-items-center justify-content-between p-2 rounded bg-dark border-start border-4 border-danger opacity-75">
                    <div class="d-flex align-items-center gap-3">
                       <div class="fw-black text-white-50 small pe-1">{{ i + 1 }}º</div>
-                      <div class="position-relative">
+                      <div class="d-flex align-items-center gap-2">
                          <TeamShield v-if="contextType === 'clube'" :teamName="rec.timeNome" :size="38" />
                          <div v-else class="text-secondary"><i class="bi bi-globe fs-4"></i></div>
-                         <NationalFlag :countryName="rec.pais" :size="14" class="position-absolute bottom-0 end-0 border border-dark rounded-circle" v-if="rec.pais" />
+                         <NationalFlag :countryName="rec.pais" :size="18" class="shadow-sm rounded-1" v-if="rec.pais" />
                       </div>
                       <div class="d-flex flex-column" style="line-height: 1.2">
                         <span class="fw-bold text-white fs-6">{{ rec.timeNome }}</span>
@@ -319,29 +319,57 @@
       <!-- ABA: AWARDS -->
       <div v-if="activeTab === 'awards'" class="row g-4 px-2">
         <!-- Artilheiros -->
-        <div class="col-md-6">
+        <!-- Artilheiros (Largura Total para caber o formato horizontal) -->
+        <div class="col-12">
             <GamePanel>
                 <h5 class="text-warning fw-bold text-uppercase mb-3"><i class="bi bi-person-badge-fill"></i> Nossos Maiores Artilheiros</h5>
                 <div v-if="myTopScorers.length === 0" class="text-center p-4 opacity-50 small">
                     Nenhum artilheiro registrado nos seus times para esta categoria.
                 </div>
-                <div class="d-flex flex-column gap-1" v-else>
-                    <div v-for="(scorer, i) in myTopScorers" :key="'scr'+i" class="record-item d-flex align-items-center justify-content-between p-2 rounded bg-dark border-start border-3 border-warning">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="fw-black text-white-50 small pe-1">{{ i + 1 }}º</div>
-                            <div class="position-relative">
-                               <TeamShield v-if="contextType === 'clube'" :teamName="scorer.clube" :size="32" borderless />
-                               <div v-else class="text-secondary"><i class="bi bi-person-badge fs-4"></i></div>
-                               <NationalFlag :countryName="scorer.pais" :size="12" class="position-absolute bottom-0 end-0 border border-dark rounded-circle" v-if="scorer.pais" />
+                <div class="d-flex flex-wrap gap-3" v-else>
+                    <div v-for="(scorer, i) in myTopScorers" :key="'scr'+i" class="col-12 col-xxl-6">
+                        <div class="premium-scorer-card-h h-100">
+                          <div class="scorer-h-glow"></div>
+                          <div class="d-flex align-items-center w-100 h-100 position-relative z-2">
+                            <!-- TROFÉU E RANKING -->
+                            <div class="scorer-trophy-box-h position-relative text-center d-flex flex-column align-items-center justify-content-center" style="width: 130px;">
+                              <h1 class="text-white-50 fw-black opacity-25 m-0 lh-1" style="font-size: 2.5rem; position: absolute; top: 10px; left: 10px;">{{ i + 1 }}º</h1>
+                              <img src="/logos/competitions/artilheiro.png" alt="Troféu" style="height: 60px; z-index: 2; margin-top: 15px;">
                             </div>
-                            <div class="d-flex flex-column" style="line-height: 1.1">
-                                <span class="fw-bold text-white fs-6 uppercase">{{ scorer.nome }}</span>
-                                <span class="x-small text-secondary fw-bold text-uppercase">{{ scorer.clube }} • {{ scorer.campeonato }} ({{ normalizeYearStrict(scorer.temporada) }})</span>
+
+                            <!-- FOTO -->
+                            <div class="scorer-photo-h" :class="{ 'cursor-pointer': scorer.foto }" @click="scorer.foto ? openPhotoZoom(scorer.foto) : null" style="width: 120px;">
+                              <img v-if="scorer.foto" :src="getCachedUrl(scorer.foto)" class="player-img">
+                              <div v-else class="sc-placeholder-h"><i class="bi bi-person"></i></div>
                             </div>
-                        </div>
-                        <div class="text-end">
-                            <h4 class="m-0 fw-black text-warning">{{ scorer.gols }}</h4>
-                            <div class="x-small text-secondary fw-bold opa-50" style="font-size: 0.5rem">GOLS</div>
+
+                            <!-- INFO -->
+                            <div class="scorer-info-h pe-2" style="flex: 1; min-width: 0; overflow: hidden;">
+                              <div class="d-flex flex-column justify-content-center h-100">
+                                <h3 class="scorer-name-h fs-4 text-white text-truncate">{{ scorer.nome }}</h3>
+                                <div class="scorer-pos-h">{{ scorer.campeonato }} ({{ normalizeYearStrict(scorer.temporada) }})</div>
+                              </div>
+                            </div>
+
+                            <!-- NACIONALIDADE E CLUBE -->
+                            <div class="scorer-club-h d-none d-md-flex">
+                              <div class="v-divider-h"></div>
+                              <div class="d-flex align-items-center justify-content-center gap-2 px-3">
+                                <NationalFlag v-if="scorer.pais" :countryName="scorer.pais" :size="38" class="rounded-circle shadow" />
+                                <div class="club-shield-h-wrap d-flex align-items-center justify-content-center" v-if="contextType === 'clube'">
+                                  <TeamShield :teamName="scorer.clube" :size="38" borderless />
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- GOLS -->
+                            <div class="scorer-goals-h ms-auto px-4 border-start border-secondary border-opacity-10">
+                              <div class="d-flex flex-column align-items-center">
+                                <h2 class="m-0 fw-black text-warning" style="font-size: 2.2rem; text-shadow: 0 0 15px rgba(255, 193, 7, 0.4);">{{ scorer.gols }}</h2>
+                                <div class="x-small text-white fw-bold ls-1">GOLS</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                     </div>
                 </div>
@@ -349,27 +377,48 @@
         </div>
 
         <!-- Prêmios Individuais (Melhor do Mundo, Europa, etc) -->
-        <div class="col-md-6">
+        <div class="col-12">
             <GamePanel>
-                <h5 class="text-info fw-bold text-uppercase mb-3"><i class="bi bi-trophy-fill"></i> Jogadores Premiados Sob Seu Comando</h5>
+                <h5 class="text-info fw-bold text-uppercase mb-3"><i class="bi bi-trophy-fill"></i> Prêmios Individuais de Maior Destaque</h5>
                 <div v-if="myAwardedPlayers.length === 0" class="text-center p-4 opacity-50 small">
                     Nenhum jogador dos seus elencos recebeu prêmios individuais de Destaque até o momento.
                 </div>
-                <div class="d-flex flex-column gap-1" v-else>
-                    <div v-for="(award, i) in myAwardedPlayers" :key="'awd'+i" class="record-item d-flex align-items-center justify-content-between p-2 rounded bg-dark border-start border-3 border-info">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="position-relative">
-                               <TeamShield v-if="contextType === 'clube'" :teamName="award.clube" :size="32" borderless />
-                               <NationalFlag v-if="contextType === 'selecao' || award.nacionalidade" :countryName="award.nacionalidade" :size="12" class="position-absolute bottom-0 end-0 border border-dark rounded-circle" />
+                <div class="d-flex flex-wrap gap-3" v-else>
+                    <div v-for="(award, i) in myAwardedPlayers" :key="'awd'+i" class="col-12 col-xxl-6">
+                        <div class="premium-scorer-card-h h-100" style="border-color: rgba(23, 162, 184, 0.3);">
+                          <div class="scorer-h-glow" style="background: radial-gradient(circle at 0% 50%, rgba(23, 162, 184, 0.15) 0%, transparent 70%);"></div>
+                          <div class="d-flex align-items-center w-100 h-100 position-relative z-2">
+                            <!-- PRÊMIO ICON -->
+                            <div class="scorer-trophy-box-h position-relative text-center d-flex flex-column align-items-center justify-content-center" style="width: 130px; background: rgba(23, 162, 184, 0.1);">
+                              <img :src="getAwardTrophy(award.tipo)" alt="Troféu" style="max-height: 80px; max-width: 90%; filter: drop-shadow(0 0 15px rgba(23, 162, 184, 0.8));">
                             </div>
-                            <div class="d-flex flex-column" style="line-height: 1.1">
-                                <span class="fw-bold text-white fs-6 uppercase">{{ award.nome }}</span>
-                                <span class="x-small text-info fw-black text-uppercase">{{ award.tipo }} {{ award.posicao !== '1º' ? '('+award.posicao+')' : '' }}</span>
-                                <span class="x-small text-secondary fw-bold">{{ normalizeYearStrict(award.season) }}</span>
+
+                            <!-- FOTO (Se houver futuramente) ou Ícone Genérico -->
+                            <div class="scorer-photo-h" :class="{ 'cursor-pointer': award.foto }" @click="award.foto ? openPhotoZoom(award.foto) : null" style="width: 100px; background: rgba(0,0,0,0.6);">
+                              <img v-if="award.foto" :src="getCachedUrl(award.foto)" class="player-img">
+                              <div v-else class="sc-placeholder-h text-info opacity-25"><i class="bi bi-person-fill"></i></div>
                             </div>
-                        </div>
-                        <div class="text-end text-info opacity-75">
-                           <i class="bi bi-award fs-3"></i>
+
+                            <!-- INFO -->
+                            <div class="scorer-info-h pe-2" style="flex: 1; min-width: 0; overflow: hidden;">
+                              <div class="d-flex flex-column justify-content-center h-100">
+                                <h3 class="scorer-name-h fs-4 text-white text-truncate">{{ award.nome }}</h3>
+                                <div class="fw-black text-info text-uppercase ls-1" style="font-size: 0.8rem;">{{ award.tipo }} {{ award.posicao !== '1º' ? '('+award.posicao+')' : '' }}</div>
+                                <div class="text-white-50 small fw-bold mt-1">{{ normalizeYearStrict(award.season) }}</div>
+                              </div>
+                            </div>
+
+                            <!-- NACIONALIDADE E CLUBE -->
+                            <div class="scorer-club-h d-none d-md-flex">
+                              <div class="v-divider-h"></div>
+                              <div class="d-flex align-items-center justify-content-center gap-2 px-3">
+                                <NationalFlag v-if="contextType === 'selecao' || award.nacionalidade" :countryName="award.nacionalidade" :size="38" class="rounded-circle shadow" />
+                                <div class="club-shield-h-wrap d-flex align-items-center justify-content-center" v-if="contextType === 'clube'">
+                                  <TeamShield :teamName="award.clube" :size="38" borderless />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                     </div>
                 </div>
@@ -377,6 +426,16 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- PHOTO ZOOM MODAL -->
+    <div v-if="showPhotoZoom" class="photo-zoom-overlay" @click.self="showPhotoZoom = false">
+      <div class="zoom-content-container">
+        <button class="btn-close-zoom" @click="showPhotoZoom = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <img :src="getCachedUrl(zoomedPhotoUrl)" class="zoomed-image-full">
+      </div>
     </div>
   </div>
 </template>
@@ -399,6 +458,8 @@ import { dataSearchService } from '../services/dataSearch.service';
 import { FEDERATIONS_DATA } from '../services/federations.data';
 import { normalizeYearStrict, normalizeString, clubSmartNormalize } from '../services/utils';
 
+import { imageCacheService } from '../services/imageCache.service';
+
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -406,6 +467,58 @@ const contextType = ref('clube');
 const activeTab = ref('timeline');
 
 const history = computed(() => careerStore.history)
+
+// Modal de Foto
+const showPhotoZoom = ref(false);
+const zoomedPhotoUrl = ref('');
+const cachedPhotos = ref({});
+
+const openPhotoZoom = (url) => {
+  if (!url) return;
+  zoomedPhotoUrl.value = url;
+  showPhotoZoom.value = true;
+};
+
+const getCachedUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('data:')) return url;
+  if (!cachedPhotos.value[url]) {
+      imageCacheService.getOrCache(url).then(b64 => {
+         if (b64) cachedPhotos.value[url] = b64;
+      });
+  }
+  return cachedPhotos.value[url] || url;
+};
+
+import imgMelhorMundo from '../assets/trofeus/individuais/melhor_do_mundo.png'
+import imgMelhorTecnico from '../assets/trofeus/individuais/melhor_tecnico_mundo.png'
+import imgMelhorEuropa from '../assets/trofeus/individuais/melhor_da_europa.png'
+import imgMelhorAmerica from '../assets/trofeus/individuais/melhor_da_america.png'
+import imgMelhorConcacaf from '../assets/trofeus/individuais/melhor_da_concacaf.png'
+
+const trophyMap = {
+  'Melhor do Mundo': imgMelhorMundo,
+  'Melhor do Mundo (Técnico)': imgMelhorTecnico,
+  'Melhor da Europa': imgMelhorEuropa,
+  'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
+  'Melhor da CONCACAF': imgMelhorConcacaf,
+  'Bola de Ouro': imgMelhorMundo,
+  'Chuteira de Ouro': '/logos/competitions/chuteira-de-ouro.png',
+  'Luva de Ouro': '/logos/competitions/luva-de-ouro.png'
+}
+
+const getAwardTrophy = (awardType) => {
+  if (!awardType) return imgMelhorMundo;
+  for (const key in trophyMap) {
+      if (awardType.includes(key) || key.includes(awardType)) {
+          return trophyMap[key];
+      }
+  }
+  if (awardType.includes('Técnico')) return imgMelhorTecnico;
+  if (awardType.includes('América')) return imgMelhorAmerica;
+  if (awardType.includes('Europa')) return imgMelhorEuropa;
+  return imgMelhorMundo; // fallback padrão
+}
 
 // Configuração do Gráfico
 // Definição Customizada do Tooltip para ser reaproveitado em ambos os gráficos
@@ -676,11 +789,13 @@ const chartDataPointStyles = ref([]);
 const chartDataPointRadii = ref([]);
 const chartDataPointsCopas = ref([]);
 
-const starImgObj = new Image(26, 26);
-starImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26" fill="#ffcc00" stroke="#b8860b" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>');
+const starImgObj = new Image(32, 32);
+const starSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#ffcc00" stroke="#b8860b" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+starImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(starSvg);
 
-const viceImgObj = new Image(26, 26);
-viceImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>');
+const viceImgObj = new Image(36, 36);
+const viceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg>`;
+viceImgObj.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(viceSvg);
 
 const getLeagueColors = (ligaName, isRebaixado = false) => {
     if (isRebaixado) return { bg: '#ff4444', border: '#aa0000', style: 'crossRot' }; // Vermelho para rebaixados
@@ -1173,7 +1288,7 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
         if (s.posicaoTimeline === 1) {
              finalBg = '#ffcc00'; // Ouro/Dourado (Campeão)
              finalBorder = '#d4af37';
-             finalStyle = 'star';
+             finalStyle = starImgObj;
              finalRadius = 20;
         } else if (s.posicaoTimeline === 2) {
              finalBg = '#c0c0c0'; // Prata/Medalha de 2
@@ -1324,6 +1439,7 @@ const myTopScorers = computed(() => {
             if (managerEntry) {
                 results.push({
                     nome: scorer.nome,
+                    foto: scorer.fotoUrl || scorer.foto || scorer.fotoJogador || null,
                     gols: scorer.gols || '?',
                     clube: scorerTeam,
                     pais: managerEntry.pais,
@@ -1353,7 +1469,12 @@ const myAwardedPlayers = computed(() => {
 
             return sameSeason && isTargetTeam;
         });
-    }).sort((a, b) => b.season.localeCompare(a.season));
+    })
+    .map(award => ({
+        ...award,
+        foto: award.fotoUrl || award.fotoJogador || award.foto || null
+    }))
+    .sort((a, b) => b.season.localeCompare(a.season));
 });
 
 onMounted(async () => {
@@ -1395,6 +1516,135 @@ onMounted(async () => {
 .record-item:hover {
     transform: translateX(5px);
 }
+
+/* PREMIUM SCORER CARD CSS */
+.premium-scorer-card-h {
+  height: 110px;
+  background: rgba(10, 15, 25, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.scorer-h-glow {
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 300px;
+  background: radial-gradient(circle at 0% 50%, rgba(255, 193, 7, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.scorer-trophy-box-h {
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.scorer-photo-h {
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.player-img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+}
+
+.sc-placeholder-h {
+  font-size: 3rem;
+  opacity: 0.1;
+  margin-bottom: 5px;
+}
+
+.scorer-name-h {
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -0.5px;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+}
+
+.scorer-pos-h {
+  font-weight: 900;
+  font-size: 0.75rem;
+  color: #58ccff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.v-divider-h {
+  width: 1px;
+  height: 60px;
+  background: rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.scorer-nat-h, .scorer-club-h {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.club-name-h {
+  font-weight: 900;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.club-shield-h-wrap {
+  background: rgba(255,255,255,0.03);
+  padding: 5px;
+  border-radius: 10px;
+}
+
+/* Photo Zoom Modal */
+.photo-zoom-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(15px);
+  z-index: 3000;
+  display: flex; align-items: center; justify-content: center; padding: 40px;
+}
+
+.zoom-content-container {
+  position: relative;
+  max-width: 90vw; max-height: 90vh;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 12px; overflow: hidden; background: #000;
+}
+
+.zoomed-image-full {
+  max-width: 100%; max-height: 90vh; object-fit: contain;
+}
+
+.btn-close-zoom {
+  position: absolute; top: 20px; right: 20px;
+  background: rgba(255,255,255,0.1); border: none; color: white;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; z-index: 3010;
+}
+.btn-close-zoom:hover { background: #ff4136; transform: rotate(90deg); }
+
+.cursor-pointer { cursor: pointer; }
 </style>
 
 <style>
