@@ -110,13 +110,16 @@
                    class="trofeu-hist" 
                    alt="Troféu"
                    @error="e => e.target.style.display='none'">
-              <TeamShield :teamName="s.campeao" :size="24" borderless :season="s.ano" class="cursor-pointer" @click="navigateToClubHistory(s.campeao)" />
-              <div class="d-flex flex-column lh-1">
-                <span class="fw-bold text-uppercase name-champion d-flex align-items-center">
-                    {{ s.campeao }}
-                    <i v-if="careerStore.isUserTeam(s.campeao, s.ano)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 1.1rem;"></i>
-                    <span v-if="maiorCampeao && s.campeao === maiorCampeao.nome" class="ms-1" title="Rei de Copas">👑</span>
-                </span>
+                <div v-if="competition.tipo === 'Seleção'" class="d-flex align-items-center me-1">
+                    <NationalFlag :countryName="s.campeao" :size="16" class="rounded-circle shadow-sm" />
+                </div>
+                <TeamShield :teamName="s.campeao" :size="24" borderless :season="s.ano" :isNational="competition.tipo === 'Seleção'" noFlagFallback class="cursor-pointer" @click="navigateToClubHistory(s.campeao)" />
+                <div class="d-flex flex-column lh-1">
+                  <span class="fw-bold text-uppercase name-champion d-flex align-items-center">
+                      {{ s.campeao }}
+                      <i v-if="careerStore.isUserTeam(s.campeao, s.ano, competition.nome)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 1.1rem;"></i>
+                      <span v-if="maiorCampeao && s.campeao === maiorCampeao.nome" class="ms-1" title="Rei de Copas">👑</span>
+                  </span>
                 <div v-if="isInternational && getClubInfo(s.campeao)" class="d-flex align-items-center gap-1 opacity-50 mt-1">
                     <template v-if="competition.modoRegistro === 'mundial'">
                         <img :src="getClubInfo(s.campeao).federacaoLogo" style="height: 8px; width: auto;" />
@@ -133,11 +136,14 @@
           <!-- VICE -->
           <div class="col-2">
             <div class="d-flex align-items-center gap-2 opacity-75" v-if="s.vice">
-              <TeamShield :teamName="s.vice" :size="20" borderless :season="s.ano" class="cursor-pointer" @click="navigateToClubHistory(s.vice)" />
+              <div v-if="competition.tipo === 'Seleção'" class="d-flex align-items-center">
+                  <NationalFlag :countryName="s.vice" :size="14" class="rounded-circle shadow-sm" />
+              </div>
+              <TeamShield :teamName="s.vice" :size="20" borderless :season="s.ano" :isNational="competition.tipo === 'Seleção'" noFlagFallback class="cursor-pointer" @click="navigateToClubHistory(s.vice)" />
               <div class="d-flex flex-column lh-1" style="min-width: 0;">
                 <span class="text-secondary small fw-bold text-uppercase text-truncate d-flex align-items-center gap-1">
                   {{ s.vice }}
-                  <i v-if="s.vice && careerStore.isUserTeam(s.vice, s.ano)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1.1rem;"></i>
+                  <i v-if="s.vice && careerStore.isUserTeam(s.vice, s.ano, competition.nome)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1.1rem;"></i>
                 </span>
                 <div v-if="isInternational && getClubInfo(s.vice)" class="d-flex align-items-center gap-1 opacity-50 mt-1">
                   <template v-if="competition.modoRegistro === 'mundial'">
@@ -162,10 +168,13 @@
                 </div>
                 <div class="extra-names-wrap">
                   <div v-for="(t, tidx) in s.promovidosList" :key="tidx" class="extra-team-item">
-                    <TeamShield :teamName="t" :size="16" borderless :season="s.ano" />
+                    <div v-if="competition.tipo === 'Seleção'" class="d-flex align-items-center me-1">
+                        <NationalFlag :countryName="t" :size="12" class="rounded-circle" />
+                    </div>
+                    <TeamShield :teamName="t" :size="16" borderless :season="s.ano" :isNational="competition.tipo === 'Seleção'" noFlagFallback />
                     <span class="name text-truncate d-flex align-items-center gap-1">
                       {{ t }}
-                      <i v-if="careerStore.isUserTeam(t, s.ano)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.9rem;"></i>
+                      <i v-if="careerStore.isUserTeam(t, s.ano, competition.nome)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.9rem;"></i>
                     </span>
                     <span v-if="tidx < s.promovidosList.length - 1" class="sep">•</span>
                   </div>
@@ -179,10 +188,13 @@
                 </div>
                 <div class="extra-names-wrap">
                   <div v-for="(t, tidx) in s.rebaixadosList" :key="tidx" class="extra-team-item">
-                    <TeamShield :teamName="t" :size="16" borderless :season="s.ano" />
+                    <div v-if="competition.tipo === 'Seleção'" class="d-flex align-items-center me-1">
+                        <NationalFlag :countryName="t" :size="12" class="rounded-circle" />
+                    </div>
+                    <TeamShield :teamName="t" :size="16" borderless :season="s.ano" :isNational="competition.tipo === 'Seleção'" noFlagFallback />
                     <span class="name text-truncate d-flex align-items-center gap-1">
                       {{ t }}
-                      <i v-if="careerStore.isUserTeam(t, s.ano)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.9rem;"></i>
+                      <i v-if="careerStore.isUserTeam(t, s.ano, competition.nome)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.9rem;"></i>
                     </span>
                     <span v-if="tidx < s.rebaixadosList.length - 1" class="sep">•</span>
                   </div>

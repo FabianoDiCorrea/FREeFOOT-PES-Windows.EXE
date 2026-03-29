@@ -51,27 +51,34 @@
                        src="/logos/competitions/classdaliberta.png" 
                        class="lib-indicator-large me-3" 
                        title="Vindo da Libertadores" />
-                  <TeamShield :teamName="season.campeao" :size="100" borderless class="escudo-campeao" :season="season.ano" />
-                </div>
+                    <!-- EXIBIÇÃO DUPLA PARA SELEÇÕES NO CAMPEÃO -->
+                    <div v-if="isNationalCompetition" class="d-flex align-items-center me-3 border-end border-white border-opacity-10 pe-3">
+                      <NationalFlag :countryName="season.campeao" :size="50" class="rounded-circle shadow-lg" />
+                    </div>
+                    <TeamShield :teamName="season.campeao" :size="100" borderless class="escudo-campeao" :season="season.ano" isNational />
+                 </div>
 
-                <div class="text-start info-campeao">
-                  <h5 class="fw-black text-uppercase mb-0 lh-1 d-flex align-items-center gap-2" style="font-size: 1.4rem;">
-                    {{ season.campeao }}
-                    <i v-if="careerStore.isUserTeam(season.campeao, season.ano)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1.1rem;"></i>
-                  </h5>
-                  <div class="text-secondary small fw-bold text-uppercase mt-1" style="font-size: 0.8rem;">CAMPEÃO — {{ season.ano }}</div>
-                </div>
-              </div>
+                 <div class="text-start info-campeao">
+                   <h5 class="fw-black text-uppercase mb-0 lh-1 d-flex align-items-center gap-2" style="font-size: 1.4rem;">
+                     {{ season.campeao }}
+                     <transition name="pulse" appear>
+                       <i v-if="careerStore.isUserTeam(season.campeao, season.ano, season.competitionName)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1.2rem;"></i>
+                     </transition>
+                   </h5>
+                   <div class="text-secondary small fw-bold text-uppercase mt-1" style="font-size: 0.8rem;">CAMPEÃO — {{ season.ano }}</div>
+                 </div>
+               </div>
 
-              <div v-if="isInternational && getClubInfo(season.campeao)" class="d-flex justify-content-center align-items-center gap-2 mt-2">
-                <template v-if="competitionInfo?.modoRegistro === 'mundial'">
-                   <img :src="getClubInfo(season.campeao).federacaoLogo" style="height: 14px; width: auto; object-fit: contain;" />
-                   <span class="fw-bold x-small">{{ getClubInfo(season.campeao).federacao }}</span>
-                   <span class="opacity-25 mx-1">|</span>
-                </template>
-                <NationalFlag :countryName="getClubInfo(season.campeao).pais" :forceUrl="getClubInfo(season.campeao).bandeira" :size="14" />
-                <span class="fw-bold x-small">{{ getClubInfo(season.campeao).pais }}</span>
-              </div>
+               <!-- Remover info extra de clubes se for seleção -->
+               <div v-if="!isNationalCompetition && isInternational && getClubInfo(season.campeao)" class="d-flex justify-content-center align-items-center gap-2 mt-2">
+                 <template v-if="competitionInfo?.modoRegistro === 'mundial'">
+                    <img :src="getClubInfo(season.campeao).federacaoLogo" style="height: 14px; width: auto; object-fit: contain;" />
+                    <span class="fw-bold x-small">{{ getClubInfo(season.campeao).federacao }}</span>
+                    <span class="opacity-25 mx-1">|</span>
+                 </template>
+                 <NationalFlag :countryName="getClubInfo(season.campeao).pais" :forceUrl="getClubInfo(season.campeao).bandeira" :size="14" />
+                 <span class="fw-bold x-small">{{ getClubInfo(season.campeao).pais }}</span>
+               </div>
             </div>
 
             <!-- VICE -->
@@ -81,13 +88,19 @@
                      src="/logos/competitions/classdaliberta.png" 
                      class="lib-indicator-medium" 
                      title="Vindo da Libertadores" />
-                <TeamShield :teamName="season.vice" :size="80" borderless :season="season.ano" />
+              <!-- EXIBIÇÃO DUPLA PARA SELEÇÕES NO VICE -->
+                <div v-if="isNationalCompetition" class="d-flex align-items-center me-2">
+                  <NationalFlag :countryName="season.vice" :size="40" class="rounded-circle shadow" />
+                </div>
+                <TeamShield :teamName="season.vice" :size="80" borderless :season="season.ano" isNational />
               </div>
               <h6 class="fw-bold text-uppercase text-secondary mb-0 small d-flex align-items-center justify-content-center gap-2">
                 {{ season.vice || 'SEM VICE' }}
-                <i v-if="season.vice && careerStore.isUserTeam(season.vice, season.ano)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1.1rem;"></i>
+                <i v-if="season.vice && careerStore.isUserTeam(season.vice, season.ano, season.competitionName)" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 1rem;"></i>
               </h6>
-              <div v-if="isInternational && season.vice && getClubInfo(season.vice)" class="d-flex justify-content-center align-items-center gap-2">
+              
+              <!-- Remover info extra de clubes se for seleção -->
+              <div v-if="!isNationalCompetition && isInternational && season.vice && getClubInfo(season.vice)" class="d-flex justify-content-center align-items-center gap-2">
                 <template v-if="competitionInfo?.modoRegistro === 'mundial'">
                    <img :src="getClubInfo(season.vice).federacaoLogo" style="height: 12px; width: auto; object-fit: contain;" />
                    <span class="fw-bold x-small">{{ getClubInfo(season.vice).federacao }}</span>
@@ -164,8 +177,12 @@
               <div class="copa-phase-row mb-2">
                 <span class="copa-phase-badge me-2" :class="phase.badgeClass">{{ phase.label }}</span>
                 <span v-for="(p, pi) in phase.teams" :key="pi" class="copa-team-chip me-1 mb-1">
-                  <TeamShield :teamName="p.nome" :size="18" borderless :filterCountry="season.pais" />
-                  <span class="x-small fw-bold">{{ p.nome }}</span>
+                  <div v-if="isNationalCompetition" class="d-flex align-items-center me-1">
+                    <NationalFlag :countryName="p.nome" :size="16" class="rounded-circle" />
+                  </div>
+                  <TeamShield :teamName="p?.nome || p" :size="18" borderless :filterCountry="season.pais" :isNational="isNationalCompetition" noFlagFallback />
+                  <span class="x-small fw-bold">{{ p?.nome || p }}</span>
+                  <i v-if="careerStore.isUserTeam(p?.nome || p, season.ano, season.competitionName)" class="bi bi-controller text-neon-green ms-1" style="font-size: 0.65rem;"></i>
                 </span>
               </div>
             </template>
@@ -196,6 +213,7 @@
             :data="parsedTable" 
             :promotedCount="competitionStats.promoted"
             :relegationCount="competitionStats.relegated"
+            :qualifiedCount="competitionStats.qualified"
             :playoffPromotedTeams="season.promovidosPlayoff || []"
             :season="season.ano"
             :country="season.pais"
@@ -217,7 +235,7 @@
                   <div class="h-team">EQUIPE</div>
                 </div>
                 <div class="h-stats">
-                  <div class="h-slant country">PAÍS</div>
+                  <div v-if="!isNationalCompetition" class="h-slant country">PAÍS</div>
                   <div class="h-slant pos">POSIÇÃO</div>
                 </div>
               </div>
@@ -250,18 +268,29 @@
                          title="Vindo da Libertadores" />
                   </div>
 
-                  <!-- 3. Escudo -->
-                  <div class="shield-container">
+                  <!-- EXIBIÇÃO DUPLA PARA SELEÇÕES: BANDEIRA + ESCUDO -->
+                  <template v-if="isNationalCompetition">
+                    <NationalFlag :countryName="p.nome" :size="22" class="rounded-circle shadow-sm" />
+                    <div class="shield-container">
+                      <TeamShield :teamName="p.nome" :size="24" :season="season.ano" isNational borderless noFlagFallback />
+                    </div>
+                  </template>
+
+                  <!-- 3. Escudo (Clubes) -->
+                  <div v-else class="shield-container">
                     <TeamShield :teamName="p.nome" :size="24" :season="season.ano" />
                   </div>
 
                   <!-- 4. Nome do Time -->
-                  <span class="team-name text-truncate flex-grow-1">{{ p.nome }}</span>
+                  <span class="team-name text-truncate flex-grow-1 d-flex align-items-center gap-1">
+                    {{ p.nome }}
+                    <i v-if="careerStore.isUserTeam(p.nome, season.ano, season.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9rem;"></i>
+                  </span>
                 </div>
 
                 <!-- STATS / DADOS -->
                 <div class="stats-group-cup">
-                  <div class="stat-slant-cup country" :class="getFedColorClass(p.federacao)">
+                  <div v-if="!isNationalCompetition" class="stat-slant-cup country" :class="getFedColorClass(p.federacao)">
                     <!-- NOVO: BANDEIRA DO PAÍS COM BLUR (IGUAL AOS CARDS) -->
                     <img v-if="p.pais && getFlagUrl(p.pais)" 
                          :src="getCachedLogo(getFlagUrl(p.pais))" 
@@ -281,7 +310,7 @@
                               class="form-select cup-input-select fw-black"
                               :class="getPlacementColorClass(p.colocacao)">
                          <option :value="null" class="bg-dark text-white">SELECIONAR</option>
-                         <option v-for="opt in PLACEMENTS_OPTIONS" 
+                         <option v-for="opt in dynamicPlacements" 
                                  :key="opt" 
                                  :value="opt"
                                  :class="getPlacementColorClass(opt) + '-option'">
@@ -441,6 +470,7 @@ import { imageCacheService } from '../services/imageCache.service'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import MundialBracket from '../components/MundialBracket.vue'
+import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 
 // == Funções de Copa ==
 const getCopaBadgeClass = (colocacao) => {
@@ -449,6 +479,8 @@ const getCopaBadgeClass = (colocacao) => {
   if (n.includes('campe')) return 'bg-warning text-dark'
   if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark'
   if (n.includes('semi')) return 'bg-success text-white'
+  if (n.includes('3') || n.includes('terceiro')) return 'bg-bronze text-white'
+  if (n.includes('4') || n.includes('quarto')) return 'bg-bronze text-white'
   if (n.includes('quart')) return 'bg-info text-dark'
   if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
   return 'bg-secondary text-white'
@@ -486,17 +518,29 @@ const getCopaPhasesGrouped = (participantes) => {
   })
 }
 
-const PLACEMENTS_OPTIONS = [
-  'CAMPEÃO',
-  'VICE',
-  '16 AVOS',
-  'SEMIFINAL',
-  'QUARTAS',
-  'OITAVAS',
-  'FASE DE GRUPOS',
-  'PRÉ-COPA',
-  'PRÉ-LIBERTADORES'
-]
+const dynamicPlacements = computed(() => {
+  const base = [
+    'CAMPEÃO',
+    'VICE',
+  ]
+  
+  // Adicionar 3º e 4º para seleções ou se for Copa do Mundo/Continental
+  const isNational = competitionInfo.value?.id >= 1000
+  if (isNational) {
+    base.push('3º COLOCADO', '4º COLOCADO')
+  }
+
+  base.push(
+    '16 AVOS',
+    'SEMIFINAL',
+    'QUARTAS',
+    'OITAVAS',
+    'FASE DE GRUPOS',
+    'PRÉ-COPA',
+    'PRÉ-LIBERTADORES'
+  )
+  return base
+})
 
 const libertadoresTeams = ref([])
 
@@ -514,7 +558,7 @@ const loadLibertadoresTeams = async () => {
     if (libSeason) {
       const teams = []
       if (libSeason.tabela) {
-        const lines = libSeason.tabela.split('\n').filter(l => l.trim())
+        const lines = libSeason.tabela.split('\n').filter(l => l?.trim())
         lines.forEach(line => {
           let cells = line.split('\t')
           if (cells.length === 1) cells = line.split(/\s{2,}/)
@@ -557,12 +601,12 @@ const getCachedLogo = (url) => {
 const showMundialModal = ref(false)
 
 const updateMundialField = (phase, field, value) => {
-  if (!season.value.mundial) return
+  if (!season.value?.mundial) return
   season.value.mundial[phase][field] = value
 }
 
 const computeMundialResults = () => {
-  const m = season.value.mundial;
+  const m = season.value?.mundial;
   if (!m) return;
 
   // Semi 1
@@ -662,6 +706,13 @@ const getFlagUrl = (countryName) => {
   return data?.bandeira_url || null
 }
 
+const isNationalCompetition = computed(() => {
+  return competitionInfo.value?.id >= 1000 || 
+         NATIONAL_COMPETITIONS_STRUCTURE.some(continent => 
+           continent?.competicoes?.some(c => c.nome === season.value?.competitionName)
+         )
+})
+
 const isInternational = computed(() => {
   return competitionInfo.value?.tipo === 'internacional' || 
          INTERNATIONAL_DATA.some(c => c.nome === season.value?.competitionName);
@@ -669,33 +720,7 @@ const isInternational = computed(() => {
 
 const competitionInfo = computed(() => {
   if (!season.value?.competitionName) return null
-  
-  const allComps = [
-    ...ALL_COMPETITIONS_DATA.flatMap(continent => [
-      ...continent.paises.flatMap(p => p.competicoes),
-      ...continent.continentais
-    ]),
-    ...INTERNATIONAL_DATA
-  ]
-  
-  let found = allComps.find(c => c.nome.toLowerCase().trim() === season.value.competitionName.toLowerCase().trim())
-  
-  // Fallback para nomes antigos/alternativos (CRÍTICO PARA EXIBIR TABELA)
-  if (!found) {
-    const sName = season.value.competitionName;
-    if (sName === 'Liga Argentina Série B') {
-       found = allComps.find(c => c.nome === 'Primera Nacional') || { nome: 'Liga Argentina Série B', modoRegistro: 'liga', tipo: 'Liga', rebaixados: 0, promovidos: 2 }
-    } else if (sName === 'Liga Argentina') {
-       found = allComps.find(c => c.nome === 'Liga Profissional') || { nome: 'Liga Argentina', modoRegistro: 'liga', tipo: 'Liga', rebaixados: 2, promovidos: 0 }
-    } else {
-       // Fallback genérico para garantir que a tabela apareça se tiver dados
-       if (season.value.tabela) {
-          found = { nome: sName, modoRegistro: 'liga', tipo: 'Liga', rebaixados: 0, promovidos: 0 }
-       }
-    }
-  }
-
-  return found
+  return dataSearchService.findCompetition(season.value.competitionName)
 })
 
 const competitionStats = computed(() => {
@@ -703,7 +728,8 @@ const competitionStats = computed(() => {
   
   return {
     promoted: comp?.promovidos || 0,
-    relegated: getRelegationCount(comp)
+    relegated: getRelegationCount(comp),
+    qualified: comp?.qualificados || 0
   }
 })
 
@@ -717,7 +743,7 @@ const getRelegationCount = (comp) => {
 
 const getFederation = (continentName) => {
   if (!continentName) return { nome: 'Federação', logo: '' };
-  const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const normalize = (s) => s?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   const normalizedKey = normalize(continentName);
   const key = Object.keys(FEDERATIONS_DATA).find(k => normalize(k) === normalizedKey);
   return FEDERATIONS_DATA[key] || { nome: 'Federação', logo: '' };
@@ -790,7 +816,7 @@ const headerBgStyle = computed(() => {
 
 const parsedTable = computed(() => {
   if (!season.value?.tabela) return []
-  const lines = season.value.tabela.split('\n').filter(l => l.trim())
+  const lines = season.value.tabela.split('\n').filter(l => l?.trim())
   return lines.map(line => {
     let cells = line.split('\t')
     if (cells.length === 1) cells = line.split(/\s{2,}/)
@@ -842,7 +868,8 @@ const getPlacementColorClass = (colocacao) => {
   const c = colocacao.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   if (c.includes('CAMPEAO')) return 'pos-gold';
   if (c.includes('VICE')) return 'pos-silver';
-  if (c.includes('SEMIFINAL')) return 'pos-bronze';
+  if (c.includes('3') || c.includes('4')) return 'pos-bronze';
+  if (c.includes('SEMIFINAL')) return 'pos-secondary';
   if (c.includes('QUARTAS')) return 'pos-green';
   if (c.includes('OITAVAS')) return 'pos-cyan';
   if (c.includes('16 AVOS')) return 'pos-blue';
@@ -1742,10 +1769,14 @@ select.form-select.cup-input-select.pos-silver {
 }
 
 select.form-select.cup-input-select.pos-bronze { 
-  background-color: #ff8c00 !important; 
+  background-color: #8b7355 !important; 
   color: #ffffff !important; 
   font-weight: 950 !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+.bg-bronze {
+  background-color: #8b7355 !important;
 }
 
 select.form-select.cup-input-select.pos-green { 

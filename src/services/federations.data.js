@@ -11,7 +11,7 @@ export const FEDERATIONS_DATA = {
     },
     "América do Norte": {
         nome: "CONCACAF",
-        logo: "https://1000marcas.net/wp-content/uploads/2020/03/Logo-Concacaf.png",
+        logo: "https://a.imagem.app/B76POt.png",
         file: "concacaf.png"
     },
     "África": {

@@ -164,6 +164,14 @@
         <span>Rebaixado</span>
       </div>
       <div class="d-flex align-items-center gap-1">
+        <div class="mini-box expert-bronze-intl-grad shadow-sm" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
+        <span>3º Lugar</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <div class="mini-box expert-copper-intl-grad" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
+        <span>4º Lugar</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
         <div class="mini-box expert-blue-intl-bg" style="width: 12px; height: 12px; border: 1px solid #44d2ff;"></div> 
         <span>Participação Intl</span>
       </div>
@@ -361,7 +369,7 @@ const processedMatrix = computed(() => {
     // Bloqueio de País: Só processa temporadas que pertencem ao país da Matriz ou são continentais/mundiais.
     const seasonCountry = normalizeCountry(season.pais || '')
     const isInternational = !seasonCountry || 
-                           ['continente', 'mundial', 'internacional', 'america do sul', 'europa', 'america do norte', 'asia', 'oceania', 'africa'].includes(seasonCountry)
+                           ['continente', 'mundial', 'internacional', 'america do sul', 'europa', 'america do norte', 'asia', 'oceania', 'africa', 'conmebol', 'uefa', 'fifa', 'concacaf', 'afc', 'caf'].includes(seasonCountry)
     if (!isInternational && seasonCountry !== countryIdVal) return
     
     const tableStr = season.tabela || ''
@@ -420,8 +428,8 @@ const processedMatrix = computed(() => {
         intlSlots.value.forEach(intl => {
           const intlNorm = normalize(intl.name)
           const terms = intlNorm.split(' ')
-          // Verificação mais precisa para evitar falsos positivos
-          if (terms.some(t => t.length > 4 && compName.includes(t)) || compName.includes(intlNorm)) {
+          // Verificação mais precisa - reduzido para 3 letras para pegar termos como FIFA
+          if (terms.some(t => t.length >= 3 && compName.includes(t)) || compName.includes(intlNorm)) {
                slotKey = intl.key
           }
         })
@@ -727,8 +735,8 @@ const getCellExpertStyle = (club, season, slot) => {
     if (rank === 1) classes.push('expert-gold-bg', 'neon-border-gold')
     else if (rank === 2) classes.push('expert-silver-bg', 'neon-border-silver')
     else if (rank === 3) classes.push('expert-bronze-intl-grad')
-    else if (rank === 4) classes.push('expert-neutral-bg', 'opacity-75')
-    else if (rank === 4) classes.push('expert-bronze-intl-grad', 'opacity-50') // Fallback visual
+    else if (rank === 4) classes.push('expert-copper-intl-grad')
+    else if (rank === 4.5) classes.push('expert-bronze-intl-grad', 'opacity-75')
     else if (rank === 8) classes.push('expert-green-intl-grad')
     else if (rank === 16) classes.push('expert-cyan-intl-grad')
     else if (rank === 24) classes.push('expert-blue-intl-grad')
@@ -744,65 +752,62 @@ const getRank = (club, season, slot) => {
   const result = matrixData.value[club]?.[season]?.[slot.key]
   if (!result) return ''
   
-  const rank = result.rank
+  const rank = Number(result.rank)
+  const isUser = careerStore.isUserTeam(club, season, result.compName || slot.label)
   
+  let label = ''
   // Caso Especial: Campeão de Série Inferior (Acesso) -> Já tem troféu no híbrido
   if (slot.type === 'league' && rank === 1 && result.isAccess && slot.label !== 'A') {
-    return '🏆 1º'
+    label = '🏆 1º'
   }
-
   // Campeão de Série A ou qualquer outro título nacional que não seja acesso híbrido
-  if (slot.type === 'league' && rank === 1) {
-    return '🏆 1º'
+  else if (slot.type === 'league' && rank === 1) {
+    label = '🏆 1º'
   }
-
-  if (slot.type === 'league' && rank === 2 && result.isAccess && slot.label !== 'A') {
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
+  else if (slot.type === 'league' && rank === 2) {
+    label = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
   }
-
-  // Vice Geral
-  if (slot.type === 'league' && rank === 2) {
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
-  }
-
   // Rebaixamento (Seta para baixo) - Apenas para países selecionados
-  if (slot.type === 'league' && result.isRelegation && isRelegationCountry.value) {
-    return '↓ ' + rank + 'º'
+  else if (slot.type === 'league' && result.isRelegation && isRelegationCountry.value) {
+    label = '↓ ' + rank + 'º'
   }
-
   // COPA NACIONAL: Usar colocacao real ou rank mapeado
-  if (slot.type === 'cup') {
+  else if (slot.type === 'cup') {
     // Preferencialmente exibir o texto original da colocacao (Normalizado para curto)
     let coloc = result.colocacao || '';
     const n = coloc.toLowerCase();
-    if (n.includes('campe')) return '🏆 CAMPEÃO';
-    if (n.includes('vice')) return '🥈 VICE';
-    if (n.includes('semi')) return 'SEMI';
-    if (n.includes('quart')) return 'QUARTAS';
-    if (n.includes('oitav')) return 'OITAVAS';
-    if (n.includes('16')) return '16 AVOS';
-    if (n.includes('grupos')) return 'GRUPOS';
-    if (n.includes('pre') || n.includes('pré')) return 'PRÉ-COPA';
-    
-    if (rank === 1) return '🏆 CAMPEÃO'
-    if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
-    return result.colocacao || 'PART.'
+    if (n.includes('campe')) label = '🏆 CAMPEÃO';
+    else if (n.includes('vice')) label = '🥈 VICE';
+    else if (n.includes('semi')) label = 'SEMI';
+    else if (n.includes('quart')) label = 'QUARTAS';
+    else if (n.includes('oitav')) label = 'OITAVAS';
+    else if (n.includes('16')) label = '16 AVOS';
+    else if (n.includes('grupos')) label = 'GRUPOS';
+    else if (n.includes('pre') || n.includes('pré')) label = 'PRÉ-COPA';
+    else if (rank === 1) label = '🏆 CAMPEÃO'
+    else if (rank === 2) label = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
+    else label = result.colocacao || 'PART.'
+  }
+  else if (slot.type === 'intl') {
+    if (rank === 1) label = '🏆 CAMPEÃO'
+    else if (rank === 2) label = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
+    else if (rank === 3) label = '🥉 3º'
+    else if (rank === 4) label = '4º LUGAR'
+    else if (rank === 4.5) label = 'SEMIFINAL'
+    else if (rank === 8) label = 'QUARTAS'
+    else if (rank === 16) label = 'OITAVAS'
+    else if (rank === 24) label = '16 AVOS'
+    else if (rank === 32) label = 'GRUPOS'
+    else if (rank === 64) label = 'PRÉ-LIB'
+    else label = rank + 'º'
+  } else {
+    label = rank + 'º'
   }
 
-  if (slot.type === 'intl') {
-    if (rank === 1) return '🏆 CAMPEÃO'
-    if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
-    if (rank === 3) return '🥉 3º LUGAR'
-    if (rank === 4) return '4º LUGAR'
-    if (rank === 4) return 'SEMIFINAL' // Compatibilidade com outras comps
-    if (rank === 8) return 'QUARTAS'
-    if (rank === 16) return 'OITAVAS'
-    if (rank === 24) return '16 AVOS'
-    if (rank === 32) return 'GRUPOS'
-    if (rank === 64) return 'PRÉ-LIBERTA'
-    return rank + 'º'
+  if (isUser) {
+    return `<span class="d-flex align-items-center gap-1">${label} <i class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9em;"></i></span>`
   }
-  return rank + 'º'
+  return label
 }
 
 const getCellBackground = (club, season, slot) => {
@@ -1159,10 +1164,10 @@ thead th {
 .intl-slot-width {
   min-width: 110px !important;
   width: 110px !important;
-  font-size: 0.38rem !important;
-  line-height: 1 !important;
-  letter-spacing: 0.6px !important;
-  font-weight: 800 !important;
+  font-size: 0.65rem !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 900 !important;
 }
 
 .intl-slot-width .cell-rank-text {
@@ -1191,6 +1196,12 @@ thead th {
   line-height: 1 !important;
   letter-spacing: 0.6px !important;
   background-color: rgba(255, 140, 0, 0.04) !important;
+  font-weight: 800 !important;
+}
+
+.expert-copper-intl-grad { 
+  background: linear-gradient(135deg, #8b4513 0%, #5d2e0a 100%) !important; 
+  color: #fff !important; 
   font-weight: 800 !important;
 }
 

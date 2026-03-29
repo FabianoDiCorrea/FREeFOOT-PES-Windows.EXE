@@ -37,9 +37,10 @@ const props = defineProps({
   borderless: Boolean,
   season: String,
   premium: Boolean, // Ativa o fundo de bandeira desfocada
-  countryName: String, // Necessário para o fundo premium
-  isNational: Boolean, // Força a busca apenas em seleções
-  filterCountry: String // Se passado, prioriza busca de escudo pelo país exato
+  countryName: String, 
+  isNational: Boolean, 
+  filterCountry: String,
+  noFlagFallback: Boolean
 })
 
 const hasError = ref(false)
@@ -58,6 +59,9 @@ const sourceUrl = computed(() => {
   }
   
   const team = dataSearchService.search(props.teamName, type)
+  if (props.noFlagFallback && props.isNational) {
+    return team?.escudo_url || null
+  }
   return team?.escudo_url || team?.bandeira_url || null
 })
 

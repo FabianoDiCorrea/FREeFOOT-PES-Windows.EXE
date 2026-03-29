@@ -26,7 +26,11 @@ const props = defineProps({
     default: () => []
   },
   season: String, // Necessário para marcar o time do usuário
-  country: String // Novo: Para restringir destaque de rebaixamento
+  country: String, // Novo: Para restringir destaque de rebaixamento
+  qualifiedCount: {
+    type: Number,
+    default: 0
+  }
 })
 
 // Computar Mínimo e Máximo de GP/GC Dinamicamente com a Lógica Certa
@@ -86,6 +90,10 @@ const isAccessRow = (idx, teamName) => {
   // idx 1 (Vice/Direct2) -> True.
   // idx 2 (3º lugar) -> False (pois só tinham 2 diretas).
   return idx < directSpots
+}
+const isQualifiedRow = (idx) => {
+  if (idx === 0) return false // Campeão tem cor própria
+  return props.qualifiedCount > 0 && idx < props.qualifiedCount
 }
 
 const isRelegationCountry = computed(() => {
@@ -227,6 +235,7 @@ const calculateAproveitamento = (row) => {
              :class="{
                'linha-campeao': idx === 0,
                'linha-acesso': isAccessRow(idx, row[0]),
+               'linha-qualificado': isQualifiedRow(idx),
                'linha-rebaixado': isRelegationCountry && props.relegationCount > 0 && idx >= data.length - props.relegationCount,
                'row-alt-v2': idx % 2 !== 0
              }">
@@ -235,6 +244,7 @@ const calculateAproveitamento = (row) => {
           <!-- Rank Inclinado -->
            <div class="rank-slant-v2" :class="{ 
             'bg-champion': idx === 0, 
+            'bg-qualified': isQualifiedRow(idx),
             'bg-relegation': isRelegationCountry && props.relegationCount > 0 && idx >= data.length - props.relegationCount 
           }">
             <span>{{ idx + 1 }}</span>
@@ -392,6 +402,10 @@ const calculateAproveitamento = (row) => {
   background: linear-gradient(90deg, rgba(255,0,0,0.15), transparent) !important;
   border-left: 3px solid #ff2b2b;
 }
+.linha-qualificado {
+  background: linear-gradient(90deg, rgba(0, 242, 255, 0.12), transparent) !important;
+  border-left: 3px solid #00f2ff;
+}
 
 /* HOVER PARA LINHAS DESTACADAS */
 .linha-campeao:hover,
@@ -512,6 +526,10 @@ const calculateAproveitamento = (row) => {
 .bg-relegation {
   background: linear-gradient(135deg, #cc1111 0%, #550000 100%) !important;
   color: #fff !important;
+}
+.bg-qualified {
+  background: linear-gradient(135deg, #00f2ff 0%, #005f73 100%) !important;
+  color: #000 !important;
 }
 
 /* CUSTOM SCROLLBAR */

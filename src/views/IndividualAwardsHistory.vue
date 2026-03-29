@@ -343,10 +343,10 @@ const filteredGroupedAwards = computed(() => {
   
   return groupedAwards.value.map(group => {
     const filtered = group.awards.filter(a => {
-      const matchSearch = a.nome.toLowerCase().includes(q) || 
-                          a.clube.toLowerCase().includes(q) || 
-                          a.tipo.toLowerCase().includes(q) ||
-                          a.season.toLowerCase().includes(q)
+      const matchSearch = String(a?.nome || '').toLowerCase().includes(q) || 
+                          String(a?.clube || '').toLowerCase().includes(q) || 
+                          String(a?.tipo || '').toLowerCase().includes(q) ||
+                          String(a?.season || '').toLowerCase().includes(q)
       
       const matchFilter = activeFilters.value.length === 0 || activeFilters.value.includes(a.tipo)
       

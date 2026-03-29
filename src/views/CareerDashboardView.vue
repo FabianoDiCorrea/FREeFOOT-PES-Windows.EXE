@@ -453,6 +453,7 @@ import { awardsStore } from '../services/awards.store';
 import { careerStore } from '../services/career.store';
 import { seasonStore } from '../services/season.store';
 import { clubStore } from '../services/club.store';
+import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data';
 
 import { dataSearchService } from '../services/dataSearch.service';
 import { FEDERATIONS_DATA } from '../services/federations.data';
@@ -1067,7 +1068,19 @@ const chartDataCopas = computed(() => ({
 
 // Retorna apenas a história do tipo ativo
 const filteredHistory = computed(() => {
-    return (history.value || []).filter(h => h && h.tipo === contextType.value)
+    return (history.value || []).filter(h => {
+        if (!h) return false;
+        let hTipo = h.tipo;
+        if (!hTipo) {
+            // Detecção automática se o tipo estiver ausente (registros antigos)
+            const isNational = NATIONAL_COMPETITIONS_STRUCTURE.some(cont => 
+                cont.competicoes.some(c => c.nome === h.liga?.nome) || 
+                cont.continentais?.some(c => c.nome === h.liga?.nome)
+            );
+            hTipo = isNational ? 'selecao' : 'clube';
+        }
+        return hTipo === contextType.value;
+    })
 })
 
 // Calcula e processa todos os dados das temporadas
@@ -1094,8 +1107,10 @@ const processedSeasons = computed(() => {
                 const sYearNorm = normalizeYearStrict(s.ano);
                 if (sYearNorm !== hYearNorm) return false;
 
-                const sTabelaNorm = normalizeString(s.tabela || '');
-                return sTabelaNorm.includes(hTimeNorm);
+                // Match de Time: Busca na tabela ou na lista de participantes
+                if (s.tabela && normalizeString(s.tabela).includes(hTimeNorm)) return true;
+                if (s.participantes?.some(p => normalizeString(p.nome) === hTimeNorm)) return true;
+                return false;
             });
             
             if (matching) {
@@ -1260,9 +1275,10 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
                 const sYearNorm = normalizeYearStrict(season.ano);
                 if (sYearNorm !== hYearNorm) return false;
 
-                // Match de Time: Busca exata ou parcial normalizada na tabela
-                const sTabelaNorm = normalizeString(season.tabela || '');
-                return sTabelaNorm.includes(hTimeNorm);
+                // Match de Time: Busca na tabela ou participantes
+                if (season.tabela && normalizeString(season.tabela).includes(hTimeNorm)) return true;
+                if (season.participantes?.some(p => normalizeString(p.nome) === hTimeNorm)) return true;
+                return false;
             });
             if (match) realCompName = match.competitionName;
         }
@@ -1295,6 +1311,10 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
              finalBorder = '#808080';
              finalStyle = viceImgObj;
              finalRadius = 13;
+        } else if (s.posicaoTimeline === 3 || s.posicaoTimeline === 4) {
+             finalBg = '#8b7355'; // Bronze
+             finalBorder = '#6d5a43';
+             finalRadius = 10;
         }
 
         bgs.push(finalBg);
@@ -1350,7 +1370,20 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
                 copaPos = 1;
                 break;
             } 
-            // 2. Na tabela
+            // 2. Na lista de participantes (Novo modo)
+            else if (copa.participantes && copa.participantes.length > 0) {
+                const p = copa.participantes.find(part => normalizeString(part.nome) === hTimeNorm);
+                if (p && p.colocacao) {
+                    const rank = getCupRank(p.colocacao);
+                    if (rank) {
+                        copaFaseStr = p.colocacao;
+                        copaName = copa.competitionName;
+                        copaPos = rank;
+                        break;
+                    }
+                }
+            }
+            // 3. Na tabela (Modo Legado)
             else if (copa.tabela && normalizeString(copa.tabela).includes(hTimeNorm)) {
                 const lines = copa.tabela.split('\n');
                 const teamLineRaw = lines.find(l => normalizeString(l).includes(hTimeNorm));

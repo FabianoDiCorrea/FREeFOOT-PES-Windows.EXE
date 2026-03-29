@@ -83,10 +83,11 @@
         </GamePanel>
       </div>
 
-      <!-- DASHBOARD VISUAL -->
-      <div v-if="selectedEntry && !showForm" class="row g-4 m-0 mb-4">
-        <!-- HEADER DE IDENTIFICAÇÃO (Premium Design) -->
-        <div class="col-12 px-2">
+      <!-- DASHBOARD VISUAL (Exibido apenas quando há temporada selecionada) -->
+      <template v-if="selectedEntry && !showForm">
+        <div class="row g-4 m-0 mb-4">
+            <!-- HEADER DE IDENTIFICAÇÃO (Premium Design) -->
+            <div class="col-12 px-2">
             <div class="contract-banner position-relative d-flex align-items-center justify-content-between p-3 overflow-hidden rounded-3">
                 
                 <!-- Background: Escudo Marca D'água -->
@@ -129,17 +130,17 @@
                             <div class="text-warning x-small fw-black text-uppercase ls-2 mb-1">Contrato Atual</div>
                             <div class="d-flex align-items-center gap-3">
                                 <h1 class="m-0 fw-black text-uppercase d-flex align-items-center gap-2" style="font-size: 2.8rem;">
-                                    {{ selectedEntry.timeNome }}
-                                    <i v-if="selectedEntry.tipo === 'selecao'" class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.8em;"></i>
+                                    {{ selectedEntry?.timeNome }}
+                                    <i class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.8em;"></i>
                                 </h1>
-                                <div v-if="selectedEntry.tipo === 'selecao' && selectedNationalTeamData" class="rounded-circle overflow-hidden border border-2 border-white border-opacity-25 shadow-lg" style="width: 45px; height: 45px;">
-                                    <img :src="selectedNationalTeamData.bandeira_url" class="w-100 h-100 object-fit-cover">
+                                <div v-if="selectedEntry?.tipo === 'selecao' && selectedNationalTeamData" class="rounded-circle overflow-hidden border border-2 border-white border-opacity-25 shadow-lg" style="width: 45px; height: 45px;">
+                                    <img :src="selectedNationalTeamData?.bandeira_url" class="w-100 h-100 object-fit-cover">
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2 mt-2" :class="selectedEntry.tipo === 'selecao' ? 'opacity-100' : 'opacity-75'">
-                                <template v-if="selectedEntry.tipo === 'selecao' && selectedNationalTeamData">
+                                 <template v-if="selectedEntry?.tipo === 'selecao' && selectedNationalTeamData">
                                     <div class="bg-white bg-opacity-10 rounded-pill px-2 py-1 d-flex align-items-center gap-2">
-                                        <img :src="selectedNationalTeamData.continente" width="22" style="object-fit: contain">
+                                        <img :src="selectedNationalTeamData?.continente" width="22" style="object-fit: contain">
                                         <span class="fw-black text-uppercase small ls-1">{{ currentFederation?.nome || 'CONMEBOL' }}</span>
                                     </div>
                                 </template>
@@ -153,7 +154,7 @@
 
                     <div class="text-end z-3">
                         <div class="header-main-h3 text-uppercase fw-black mb-2">
-                            {{ normalizeYearStrict(selectedEntry.temporada) }}
+                            {{ selectedEntry ? normalizeYearStrict(selectedEntry.temporada) : '' }}
                         </div>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold x-small" @click="editCurrentEntry">
@@ -169,25 +170,31 @@
         </div>
 
         <!-- Navigation between career seasons -->
-        <div v-if="filteredHistory.length > 1" class="col-12 px-2 mb-3">
+        <div v-if="filteredHistory.length > 0" class="col-12 px-2 mb-3">
             <div class="career-nav d-flex gap-2 justify-content-center flex-wrap">
                 <button v-for="(h, idx) in filteredHistory" :key="h.id" 
-                        class="btn btn-sm" :class="selectedEntry?.id === h.id ? 'btn-warning' : 'btn-outline-secondary'"
-                        @click="selectedEntry = h; careerIndex = idx">
-                    {{ normalizeYearStrict(h.temporada) }}
+                        class="btn btn-sm d-flex align-items-center gap-1" :class="selectedEntry?.id === h.id ? 'btn-warning' : 'btn-outline-secondary'"
+                        @click="selectedEntry = sanitizeEntry(h); careerIndex = idx">
+                    <span>{{ normalizeYearStrict(h.temporada) }}</span>
+                    <span v-if="hasDuplicateYear(h.temporada)" class="x-small opacity-75">({{ h.timeNome }})</span>
                 </button>
             </div>
         </div>
 
         <!-- LADO ESQUERDO: TABELAS E DADOS (70%) -->
-        <div class="col-xl-8 px-2">
+        <div v-if="selectedEntry" class="col-xl-8 px-2">
             <div class="table-container p-0">
                 <!-- Tabela de Temporada -->
                 <div class="table-section-header text-center py-1 text-uppercase small fw-bold">{{ normalizeYearStrict(selectedEntry.temporada) }}</div>
                 <table class="career-table">
                     <thead>
                         <tr>
-                            <th class="text-start ps-3"><span>{{ selectedEntry.timeNome }}</span></th>
+                            <th class="text-start ps-3">
+                                <span class="d-flex align-items-center gap-2">
+                                    {{ selectedEntry.timeNome }}
+                                    <i class="bi bi-controller text-neon-green pulse-neon" style="font-size: 0.8rem;"></i>
+                                </span>
+                            </th>
                             <th><span>POS.</span></th>
                             <th><span>PONTOS</span></th>
                             <th><span>JOGOS</span></th>
@@ -201,39 +208,145 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Linha da Liga / Copa Continental ou Mundo (Auto/Sync) -->
-                        <tr class="row-liga">
+                        <!-- Linha 1: COPA DO MUNDO (Manual para Seleção, Liga para Clubes) -->
+                        <tr :class="selectedEntry.tipo === 'selecao' ? 'row-sel-copa' : 'row-liga'">
                             <td class="text-start ps-3 fw-bold">
-                                <span>{{ currentSeasonData?.nome || (selectedEntry.tipo === 'selecao' ? 'Copa do Mundo / Continental...' : 'Sincronizar Liga...') }}</span>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model="selectedEntry.copaMundo.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.nome || 'Sincronizar Liga...' }}</span>
+                                <span v-else class="text-secondary opacity-50">Copa do Mundo...</span>
                             </td>
-                            <td class="fw-bold"><span>{{ currentSeasonData?.posicao ? currentSeasonData.posicao + '°' : '---' }}</span></td>
-                            <td class="fw-bold text-info"><span>{{ currentSeasonData?.pontos || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.jogos || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.vitorias || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.empates || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.derrotas || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.golsPro || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.golsContra || 0 }}</span></td>
-                            <td><span>{{ currentSeasonData?.saldo || 0 }}</span></td>
-                            <td class="fw-black"><span>{{ calculateWinRate(currentSeasonData) }}%</span></td>
+                            <td class="fw-bold">
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model="selectedEntry.copaMundo.posicao" class="table-input" placeholder="Ex: 1º">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.posicao ? currentSeasonData.posicao + '°' : '---' }}</span>
+                                <span v-else>---</span>
+                            </td>
+                            <td class="fw-bold text-info">
+                                <span v-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.pontos || 0 }}</span>
+                                <span v-else>{{ selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias || 0) * 3) + Number(selectedEntry.copaMundo.empates || 0) : 0 }}</span>
+                            </td>
+                            <td>
+                                <span v-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.jogos || 0 }}</span>
+                                <span v-else>{{ selectedEntry.copaMundo ? Number(selectedEntry.copaMundo.vitorias || 0) + Number(selectedEntry.copaMundo.empates || 0) + Number(selectedEntry.copaMundo.derrotas || 0) : 0 }}</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.vitorias" class="table-input">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.vitorias || 0 }}</span>
+                                <span v-else>0</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.empates" class="table-input">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.empates || 0 }}</span>
+                                <span v-else>0</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.derrotas" class="table-input">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.derrotas || 0 }}</span>
+                                <span v-else>0</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.golsPro" class="table-input">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.golsPro || 0 }}</span>
+                                <span v-else>0</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.golsContra" class="table-input">
+                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.golsContra || 0 }}</span>
+                                <span v-else>0</span>
+                            </td>
+                            <td><span>{{ (selectedEntry.tipo === 'selecao' ? (selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.golsPro || 0) - Number(selectedEntry.copaMundo.golsContra || 0)) : 0) : (currentSeasonData?.saldo || 0)) }}</span></td>
+                            <td class="fw-black">
+                                <span v-if="selectedEntry.tipo === 'selecao'">
+                                    {{ calculateWinRate({ 
+                                        vitorias: selectedEntry.copaMundo?.vitorias, 
+                                        empates: selectedEntry.copaMundo?.empates, 
+                                        jogos: selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0)) : 0
+                                    }) }}%
+                                </span>
+                                <span v-else>{{ calculateWinRate(currentSeasonData) }}%</span>
+                            </td>
                         </tr>
-                        <!-- Linhas de Copas / Amistosos (Manual Input) -->
-                        <tr class="row-copas">
+
+                        <!-- Linha 2: ELIMINATÓRIAS (Automático) -->
+                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-elim">
                             <td class="text-start ps-3 fw-bold">
-                                <span>{{ selectedEntry.tipo === 'selecao' ? 'AMISTOSOS NA TEMPORADA' : 'TOTAL OUTRAS COMPETIÇÕES' }}</span>
+                                <span>{{ eliminatoriasData?.nome || 'RESUL. ELIMINATORIAS' }}</span>
+                            </td>
+                            <td class="fw-bold"><span>{{ eliminatoriasData?.posicao ? eliminatoriasData.posicao + '°' : '---' }}</span></td>
+                            <td class="fw-bold text-info"><span>{{ eliminatoriasData?.pontos || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.jogos || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.vitorias || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.empates || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.derrotas || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.golsPro || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.golsContra || 0 }}</span></td>
+                            <td><span>{{ eliminatoriasData?.saldo || 0 }}</span></td>
+                            <td class="fw-black"><span>{{ calculateWinRate(eliminatoriasData) }}%</span></td>
+                        </tr>
+
+                        <!-- Linha 3: COPAS (Manual) -->
+                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-copinhas">
+                            <td class="text-start ps-3 fw-bold">
+                                <input v-if="selectedEntry.copasManual" v-model="selectedEntry.copasManual.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                <span v-else class="text-secondary opacity-50">COPAS CONTINENTAIS</span>
+                            </td>
+                            <td class="fw-bold">---</td>
+                            <td class="fw-bold text-info"><span>{{ (Number(selectedEntry.copasManual?.vitorias || 0) * 3) + Number(selectedEntry.copasManual?.empates || 0) }}</span></td>
+                            <td class="fw-bold"><span>{{ Number(selectedEntry.copasManual?.vitorias || 0) + Number(selectedEntry.copasManual?.empates || 0) + Number(selectedEntry.copasManual?.derrotas || 0) }}</span></td>
+                            <td><input v-if="selectedEntry.copasManual" v-model.number="selectedEntry.copasManual.vitorias" class="table-input"></td>
+                            <td><input v-if="selectedEntry.copasManual" v-model.number="selectedEntry.copasManual.empates" class="table-input"></td>
+                            <td><input v-if="selectedEntry.copasManual" v-model.number="selectedEntry.copasManual.derrotas" class="table-input"></td>
+                            <td><input v-if="selectedEntry.copasManual" v-model.number="selectedEntry.copasManual.golsPro" class="table-input"></td>
+                            <td><input v-if="selectedEntry.copasManual" v-model.number="selectedEntry.copasManual.golsContra" class="table-input"></td>
+                            <td><span>{{ Number(selectedEntry.copasManual.golsPro || 0) - Number(selectedEntry.copasManual.golsContra || 0) }}</span></td>
+                            <td class="fw-bold"><span>{{ calculateWinRate({ vitorias: selectedEntry.copasManual?.vitorias, empates: selectedEntry.copasManual?.empates, jogos: Number(selectedEntry.copasManual?.vitorias||0)+Number(selectedEntry.copasManual?.empates||0)+Number(selectedEntry.copasManual?.derrotas||0) }) }}%</span></td>
+                        </tr>
+
+                        <!-- Linha 4: AMISTOSOS (Manual) -->
+                        <tr :class="selectedEntry.tipo === 'selecao' ? 'row-sel-amistosos' : 'row-amistosos'">
+                            <td class="text-start ps-3 fw-bold">
+                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.amistosos" v-model="selectedEntry.amistosos.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                <span v-else-if="selectedEntry.tipo === 'selecao'" class="text-secondary opacity-50">AMISTOSOS NA TEMPORADA</span>
+                                <span v-else>TOTAL OUTRAS COMPETIÇÕES</span>
                             </td>
                             <td><span>---</span></td>
-                            <td class="fw-bold text-info"><span>{{ copasPontosCalculado }}</span></td>
-                            <td class="fw-bold"><span>{{ copasJogosCalculado }}</span></td>
-                            <td><input v-model.number="selectedEntry.copas.vitorias" class="table-input"></td>
-                            <td><input v-model.number="selectedEntry.copas.empates" class="table-input"></td>
-                            <td><input v-model.number="selectedEntry.copas.derrotas" class="table-input"></td>
-                            <td><input v-model.number="selectedEntry.copas.golsPro" class="table-input"></td>
-                            <td><input v-model.number="selectedEntry.copas.golsContra" class="table-input"></td>
-                            <td><span>{{ selectedEntry.copas.golsPro - selectedEntry.copas.golsContra }}</span></td>
-                            <td class="fw-bold"><span>{{ calculateWinRate({ pontos: copasPontosCalculado, jogos: copasJogosCalculado }) }}%</span></td>
+                            <td class="fw-bold text-info">
+                                <span v-if="selectedEntry.tipo === 'selecao'">{{ (Number(selectedEntry.amistosos?.vitorias || 0)*3) + Number(selectedEntry.amistosos?.empates || 0) }}</span>
+                                <span v-else>{{ copasPontosCalculado }}</span>
+                            </td>
+                            <td class="fw-bold">
+                                <span v-if="selectedEntry.tipo === 'selecao'">{{ Number(selectedEntry.amistosos?.vitorias||0) + Number(selectedEntry.amistosos?.empates||0) + Number(selectedEntry.amistosos?.derrotas||0) }}</span>
+                                <span v-else>{{ copasJogosCalculado }}</span>
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.vitorias" class="table-input">
+                                <input v-else v-model.number="selectedEntry.copas.vitorias" class="table-input">
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.empates" class="table-input">
+                                <input v-else v-model.number="selectedEntry.copas.empates" class="table-input">
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.derrotas" class="table-input">
+                                <input v-else v-model.number="selectedEntry.copas.derrotas" class="table-input">
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.golsPro" class="table-input">
+                                <input v-else v-model.number="selectedEntry.copas.golsPro" class="table-input">
+                            </td>
+                            <td>
+                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.golsContra" class="table-input">
+                                <input v-else v-model.number="selectedEntry.copas.golsContra" class="table-input">
+                            </td>
+                            <td v-if="selectedEntry.tipo === 'selecao'"><span>{{ Number(selectedEntry.amistosos?.golsPro||0) - Number(selectedEntry.amistosos?.golsContra||0) }}</span></td>
+                            <td v-else-if="selectedEntry.copas"><span>{{ (selectedEntry.copas?.golsPro || 0) - (selectedEntry.copas?.golsContra || 0) }}</span></td>
+                            <td v-else>0</td>
+                            <td class="fw-bold">
+                                <span v-if="selectedEntry.tipo === 'selecao'">{{ calculateWinRate({ vitorias: selectedEntry.amistosos?.vitorias, empates: selectedEntry.amistosos?.empates, jogos: Number(selectedEntry.amistosos?.vitorias||0)+Number(selectedEntry.amistosos?.empates||0)+Number(selectedEntry.amistosos?.derrotas||0) }) }}%</span>
+                                <span v-else>{{ calculateWinRate({ pontos: copasPontosCalculado, jogos: copasJogosCalculado }) }}%</span>
+                            </td>
                         </tr>
-                        <!-- Linha de Resultado Total (Soma) -->
+
+                        <!-- Linha 5: TOTAL TEMPORADA -->
                         <tr class="row-total">
                             <td class="text-start ps-3 fw-black"><span>RESULTADO DA TEMPORADA</span></td>
                             <td><span>---</span></td>
@@ -298,9 +411,16 @@
                                     <img v-if="getCompLogo(result.competicao)" :src="getCompLogo(result.competicao)" class="mini-trophy-img" alt="Troféu">
                                     <i v-else class="bi bi-trophy-fill text-warning" style="font-size: 0.9rem;"></i>
                                 </div>
-                                <span class="fw-bold text-uppercase">{{ result.competicao }}</span>
+                                <span class="fw-bold text-uppercase d-flex align-items-center gap-1">
+                                    <div class="d-flex align-items-center gap-1 me-1">
+                                        <NationalFlag :countryName="selectedEntry.timeNome" :size="16" />
+                                        <TeamShield v-if="!isSelecao" :teamName="selectedEntry.timeNome" :size="20" />
+                                    </div>
+                                    {{ result.competicao }}
+                                    <i v-if="careerStore.isUserTeam(selectedEntry.timeNome, selectedEntry.temporada, result.competicao)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.7rem;"></i>
+                                </span>
                             </div>
-                            <span :class="['position-badge', result.posicao === 'CAMPEÃO' ? 'champion' : result.posicao === 'VICE-CAMPEÃO' ? 'vice' : 'other']">{{ result.posicao }}</span>
+                            <span :class="['position-badge', getPlacementClass(result.posicao)]">{{ result.posicao }}</span>
                         </div>
                     </div>
                     
@@ -337,11 +457,20 @@
         <!-- LADO DIREITO: DASHBOARDS (30%) -->
         <div class="col-xl-4 px-2">
             <div class="d-flex flex-column gap-3 h-100">
-                <div class="gauge-card-custom theme-liga text-center p-1 flex-fill d-flex flex-column justify-content-center" v-if="currentSeasonData">
-                    <div class="text-uppercase fw-bold mb-1 x-small opacity-40">Aproveitamento Liga</div>
-                    <CareerGauge :value="calculateWinRate(currentSeasonData)" label="Liga" />
-                    <div class="performance-status mt-2 text-uppercase fw-black">{{ getPerformanceStatus(calculateWinRate(currentSeasonData)) }}</div>
+                <!-- Gráfico Superior: Liga (Clubes) ou Copa do Mundo (Seleções) -->
+                <div class="gauge-card-custom theme-liga text-center p-1 flex-fill d-flex flex-column justify-content-center">
+                    <div class="text-uppercase fw-bold mb-1 x-small opacity-40">
+                        {{ selectedEntry.tipo === 'selecao' ? 'Aproveitamento Copa do Mundo' : 'Aproveitamento Liga' }}
+                    </div>
+                    <CareerGauge 
+                        :value="selectedEntry.tipo === 'selecao' ? calculateWinRate({ vitorias: selectedEntry.copaMundo?.vitorias, empates: selectedEntry.copaMundo?.empates, jogos: selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0)) : 0 }) : calculateWinRate(currentSeasonData)" 
+                        :label="selectedEntry.tipo === 'selecao' ? 'Copa' : 'Liga'" 
+                    />
+                    <div class="performance-status mt-2 text-uppercase fw-black">
+                        {{ getPerformanceStatus(selectedEntry.tipo === 'selecao' ? calculateWinRate({ vitorias: selectedEntry.copaMundo?.vitorias, empates: selectedEntry.copaMundo?.empates, jogos: selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0)) : 0 }) : calculateWinRate(currentSeasonData)) }}
+                    </div>
                 </div>
+                <!-- Gráfico Inferior: Temporada (Total) -->
                 <div class="gauge-card-custom theme-total text-center p-1 flex-fill d-flex flex-column justify-content-center">
                     <div class="text-uppercase fw-bold mb-2 x-small opacity-40">Aproveitamento Temporada</div>
                     <CareerGauge :value="calculateWinRate(totalStats)" label="Temporada" />
@@ -395,6 +524,14 @@
                 </div>
             </div>
          </div>
+      </div>
+   </template>
+
+      <!-- Mensagem de Estado Vazio -->
+      <div v-else-if="!showForm" class="col-12 py-5 text-center opacity-50">
+          <i class="bi bi-folder-x display-1 mb-3"></i>
+          <h3 class="fw-black text-uppercase">Nenhuma Temporada Registrada</h3>
+          <p>Selecione "Clubes" ou "Seleções" para ver seu histórico ou clique em "Nova Temporada".</p>
       </div>
 
     </div>
@@ -469,6 +606,7 @@ import { CLUBS_DATA } from '../data/clubs.data'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
+import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { dataSearchService } from '../services/dataSearch.service'
 import { getTrofeuPath, normalizeString, normalizeYearStrict } from '../services/utils'
 
@@ -490,6 +628,29 @@ const cancelBudgetGeneration = async () => {
     await careerStore.saveEntry(JSON.parse(JSON.stringify(selectedEntry.value)))
     showBudgetModal.value = false
 }
+
+const selectEntry = (entry) => {
+    selectedEntry.value = sanitizeEntry(entry);
+    editMode.value = true;
+};
+
+const sanitizeEntry = (entry) => {
+    if (!entry) return null;
+    const sanitized = JSON.parse(JSON.stringify(entry));
+    
+    const ensure = (obj, defaultNome) => {
+        const base = { nome: defaultNome, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0, saldo: 0, posicao: '' };
+        if (!obj || !obj.nome) return base;
+        return { ...base, ...obj };
+    };
+
+    sanitized.copaMundo = ensure(sanitized.copaMundo, 'COPA DO MUNDO');
+    sanitized.copasManual = ensure(sanitized.copasManual, 'COPAS CONTINENTAIS');
+    sanitized.amistosos = ensure(sanitized.amistosos, 'AMISTOSOS NA TEMPORADA');
+    sanitized.liga = ensure(sanitized.liga, 'LIGA');
+    
+    return sanitized;
+};
 
 const formatCurrency = (val) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
@@ -580,7 +741,7 @@ const filteredHistory = computed(() => {
 watch(activeType, () => {
     const list = filteredHistory.value
     if (list && list.length > 0) {
-        selectedEntry.value = list[list.length - 1]
+        selectedEntry.value = sanitizeEntry(list[list.length - 1])
     } else {
         selectedEntry.value = null
     }
@@ -590,8 +751,12 @@ const entryForm = ref({
     temporada: '',
     timeNome: '',
     pais: '',
+    tipo: 'clube',
     liga: { nome: '', posicao: 0, jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0, saldo: 0 },
-    copas: { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
+    copaMundo: { nome: 'COPA DO MUNDO', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0, posicao: '' },
+    copasManual: { nome: 'COPAS CONTINENTAIS', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
+    amistosos: { nome: 'AMISTOSOS NA TEMPORADA', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
+    copas: { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 }, // Para compatibilidade clubes
     titulos: [],
     rankInicio: '',
     rankFinal: '',
@@ -600,22 +765,34 @@ const entryForm = ref({
 
 const autoRankFinal = computed(() => {
   if (!selectedEntry.value) return null
-  return rankingsStore.getTeamRank(selectedEntry.value.timeNome, selectedEntry.value.temporada)
+  return rankingsStore.getTeamRank(selectedEntry.value?.timeNome, selectedEntry.value?.temporada)
 })
 
 const selectedNationalTeamData = computed(() => {
     if (!selectedEntry.value || selectedEntry.value.tipo !== 'selecao') return null
-    return dataSearchService.findNationalTeam(selectedEntry.value.timeNome)
+    return dataSearchService.findNationalTeam(selectedEntry.value?.timeNome)
 })
 
 const currentFederation = computed(() => {
     if (!selectedNationalTeamData.value) return null
-    // continente field in nationalTeams.data.js is already the logo URL
     const logoUrl = selectedNationalTeamData.value.continente
     
-    // Find federation name in FEDERATIONS_DATA by logo URL
-    return Object.values(FEDERATIONS_DATA).find(f => f.logo === logoUrl)
+    // 1. Buscar por URL exata
+    const found = Object.values(FEDERATIONS_DATA).find(f => f.logo === logoUrl)
+    if (found) return found
+
+    // 2. Fallback por nome de país/continente se a URL falhar
+    if (selectedEntry.value?.pais) {
+        return FEDERATIONS_DATA[selectedEntry.value.pais] || null
+    }
+
+    return null
 })
+
+const hasDuplicateYear = (yearStr) => {
+    const year = normalizeYearStrict(yearStr)
+    return filteredHistory.value.filter(h => normalizeYearStrict(h.temporada) === year).length > 1
+}
 
 const rankEvolution = computed(() => {
     if (!selectedEntry.value) return null
@@ -642,13 +819,12 @@ watch(() => entryForm.value.temporada, (newVal) => {
 
 onMounted(async () => {
     await careerStore.loadAll()
-    await seasonStore.loadAll() // Carregar temporadas para buscar resultados automáticos
-    await rankingsStore.loadAll() // Carregar rankings para sincronização
+    await seasonStore.loadAll() 
+    await rankingsStore.loadAll() 
     if (history.value.length > 0) {
-        // Selecionar a última temporada do tipo atual
         const activeHistory = history.value.filter(h => h.tipo === activeType.value)
         if (activeHistory.length > 0) {
-            selectedEntry.value = activeHistory[activeHistory.length - 1]
+            selectedEntry.value = sanitizeEntry(activeHistory[activeHistory.length - 1])
         }
     }
 })
@@ -676,6 +852,9 @@ const openForm = (entry = null) => {
             pais: '',
             tipo: activeType.value,
             liga: { nome: '', posicao: 0, jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0, saldo: 0 },
+            copaMundo: { nome: 'COPA DO MUNDO', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0, posicao: '' },
+            copasManual: { nome: 'COPAS CONTINENTAIS', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
+            amistosos: { nome: 'AMISTOSOS NA TEMPORADA', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
             copas: { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
             titulos: [],
             rankInicio: '',
@@ -699,8 +878,8 @@ const selectClub = (club) => {
     if (activeType.value === 'selecao') {
         const fedMap = {
             'https://a.imagem.app/B76yUr.png': 'Europa',
-            'https://a.imagem.app/B76ggb.png': 'América do Sul',
-            'https://a.imagem.app/B76POt.png': 'América do Norte',
+            'https://a.imagem.app/B76ggb.png': 'AMÉRICAa do Sul',
+            'https://a.imagem.app/B76POt.png': 'AMÉRICAa do Norte',
             'https://a.imagem.app/B76a00.webp': 'África',
             'https://a.imagem.app/B76MoQ.png': 'Ásia'
         }
@@ -726,8 +905,9 @@ const tryLookupLeagueData = async (teamName, seasonYear) => {
     entryForm.value.copas = { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 }
 
     // Buscar temporadas onde esse time aparece na tabela
+    const targetYear = normalizeYearStrict(seasonYear)
     const matchingSeasons = seasonStore.list.filter(s => {
-        return (s.ano === seasonYear || s.ano.includes(seasonYear)) && 
+        return normalizeYearStrict(s.ano) === targetYear && 
                s.tabela && s.tabela.toLowerCase().includes(teamName.toLowerCase())
     })
 
@@ -757,8 +937,8 @@ const tryLookupLeagueData = async (teamName, seasonYear) => {
             const lowerComp = season.competitionName.toLowerCase()
             
             if (entryForm.value.tipo === 'selecao') {
-                // Para seleções, prioridade é Copa do Mundo ou Continental (Euro, Copa América, etc)
-                isMainComp = lowerComp.match(/copa do mundo|world cup|euro|copa américa|copa africa|asian cup|gold cup/)
+                // Para seleções, prioridade é Copa do Mundo ou Continental (Euro, Copa AMÉRICAa, etc)
+                isMainComp = lowerComp.match(/copa do mundo|world cup|euro|copa AMÉRICAa|copa africa|asian cup|gold cup/)
             } else {
                 // Para clubes, prioridade é Liga/Campeonato Nacional
                 isMainComp = lowerComp.match(/liga|serie|division|ligue|bundesliga|premiership|primera|eredivisie|primeira|campeonato/)
@@ -873,26 +1053,52 @@ const copasPontosCalculado = computed(() => {
 })
 
 const totalStats = computed(() => {
-    if (!selectedEntry.value || !currentSeasonData.value) return {}
-    const l = currentSeasonData.value
-    const c = selectedEntry.value.copas || {}
+    if (!selectedEntry.value) return { jogos: 0, pontos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, saldo: 0 }
     
+    // Fallback para objetos antigos
+    const ensureStats = (obj) => ({
+        vitorias: Number(obj?.vitorias || 0),
+        empates: Number(obj?.empates || 0),
+        derrotas: Number(obj?.derrotas || 0),
+        golsPro: Number(obj?.golsPro || 0),
+        golsContra: Number(obj?.golsContra || 0)
+    })
+
+    const isSelecao = selectedEntry.value.tipo === 'selecao'
+    
+    const liga = ensureStats(isSelecao ? selectedEntry.value.liga : currentSeasonData.value)
+    const elim = ensureStats(isSelecao ? eliminatoriasData.value : null)
+    const copaMundo = ensureStats(isSelecao ? selectedEntry.value.copaMundo : null)
+    const copasManual = ensureStats(isSelecao ? selectedEntry.value.copasManual : null)
+    const amistosos = ensureStats(isSelecao ? selectedEntry.value.amistosos : (selectedEntry.value.copas || null))
+
+    const sum = (field) => liga[field] + elim[field] + copaMundo[field] + copasManual[field] + amistosos[field]
+
+    const v = sum('vitorias')
+    const e = sum('empates')
+    const d = sum('derrotas')
+    const gp = sum('golsPro')
+    const gc = sum('golsContra')
+
     return {
-        jogos: (l.jogos || 0) + copasJogosCalculado.value,
-        pontos: (l.pontos || 0) + copasPontosCalculado.value,
-        vitorias: (l.vitorias || 0) + (c.vitorias || 0),
-        empates: (l.empates || 0) + (c.empates || 0),
-        derrotas: (l.derrotas || 0) + (c.derrotas || 0),
-        golsPro: (l.golsPro || 0) + (c.golsPro || 0),
-        golsContra: (l.golsContra || 0) + (c.golsContra || 0),
-        saldo: (l.saldo || 0) + ((c.golsPro || 0) - (c.golsContra || 0))
+        jogos: v + e + d,
+        pontos: v * 3 + e,
+        vitorias: v,
+        empates: e,
+        derrotas: d,
+        golsPro: gp,
+        golsContra: gc,
+        saldo: gp - gc
     }
 })
 
 const calculateWinRate = (stats) => {
     if (!stats || !stats.jogos || stats.jogos === 0) return '0.00'
+    const v = stats.vitorias !== undefined ? stats.vitorias : Math.floor((stats.pontos || 0) / 3) // Fallback rústico se não houver V
+    const e = stats.empates !== undefined ? stats.empates : (stats.pontos || 0) % 3
+    
     // NOVA FÓRMULA SOLICITADA: (V+E)/J
-    const totalPontuados = (stats.vitorias || 0) + (stats.empates || 0)
+    const totalPontuados = (v || 0) + (e || 0)
     const rate = (totalPontuados / stats.jogos) * 100
     return rate.toFixed(2)
 }
@@ -927,21 +1133,23 @@ const groupedTrophies = computed(() => {
     history.value.forEach(h => {
         if (!h.titulos) return
         h.titulos.forEach(t => {
-            if (!grouped[t.nome]) {
-                grouped[t.nome] = {
-                    nome: t.nome,
+            if (!t) return;
+            const tNome = t.nome || t;
+            if (!grouped[tNome]) {
+                grouped[tNome] = {
+                    nome: tNome,
                     count: 0,
                     years: [],
-                    teamsData: [] // Array de objetos {nome, pais}
+                    teamsData: []
                 }
             }
-            grouped[t.nome].count++
-            grouped[t.nome].years.push(h.temporada)
+            grouped[tNome].count++
+            grouped[tNome].years.push(h.temporada)
             
             // Adicionar dados completos do time
-            const teamExists = grouped[t.nome].teamsData.find(td => td.nome === h.timeNome)
+            const teamExists = grouped[tNome].teamsData.find(td => td?.nome === h.timeNome)
             if (!teamExists) {
-                grouped[t.nome].teamsData.push({
+                grouped[tNome].teamsData.push({
                     nome: h.timeNome,
                     pais: h.pais
                 })
@@ -1002,19 +1210,38 @@ const groupedTrophies = computed(() => {
 // Dados dinâmicos da temporada selecionada (busca SEMPRE da temporada salva)
 const currentSeasonData = computed(() => {
     if (!selectedEntry.value) return null
+    const baseData = selectedEntry.value.liga || {}
     
-    // Tentar buscar liga automática
+    // Se for seleção, a 'Liga' é manual (pode ser Copa do Mundo, etc narrado pelo user)
+    // As Eliminatórias têm sua própria linha automática abaixo
+    if (selectedEntry.value.tipo === 'selecao') {
+        return {
+            nome: baseData.nome || 'Copa do Mundo / Continental...',
+            posicao: baseData.posicao || '',
+            jogos: baseData.jogos || 0,
+            pontos: baseData.pontos || 0,
+            vitorias: baseData.vitorias || 0,
+            empates: baseData.empates || 0,
+            derrotas: baseData.derrotas || 0,
+            golsPro: baseData.golsPro || 0,
+            golsContra: baseData.golsContra || 0,
+            saldo: (baseData.golsPro || 0) - (baseData.golsContra || 0)
+        }
+    }
+
+    // Tentar buscar liga automática para CLUBES
     const timeNome = selectedEntry.value.timeNome
     const temporada = selectedEntry.value.temporada
+    const matchingYear = normalizeYearStrict(temporada)
     
-    // Buscar temporadas que correspondem ao ano e time na tabela
+    // Buscar temporadas que correspondem ao ano e time na tabela (ignorando eliminatórias)
     const matchingSeasons = seasonStore.list.filter(s => {
-        return s.ano === temporada && s.tabela && s.tabela.toLowerCase().includes(timeNome.toLowerCase())
+        const isElims = (s.competitionName || '').toLowerCase().includes('eliminat')
+        return !isElims && normalizeYearStrict(s.ano) === matchingYear && s.tabela && s.tabela.toLowerCase().includes(timeNome.toLowerCase())
     })
     
     // Se não encontrar, mantemos os dados manuais como fallback
     if (matchingSeasons.length === 0) {
-        const baseData = selectedEntry.value.liga || {}
         return {
             nome: baseData.nome || 'Sincronizar Liga...',
             posicao: baseData.posicao || 0,
@@ -1031,60 +1258,42 @@ const currentSeasonData = computed(() => {
     
     // Pegar a temporada com mais times (liga principal)
     const selectedSeason = matchingSeasons.reduce((best, current) => {
-        const bestLines = best.tabela.split('\n').length
-        const currentLines = current.tabela.split('\n').length
+        const bestLines = (best.tabela || '').split('\n').length
+        const currentLines = (current.tabela || '').split('\n').length
         return currentLines > bestLines ? current : best
     }, matchingSeasons[0])
     
-    // Parsear tabela para extrair estatísticas
+    // Parsear tabela para extrair estatísticas (mesma lógica anterior)
     const lines = selectedSeason.tabela.split('\n')
     const teamLine = lines.find(l => l.toLowerCase().includes(timeNome.toLowerCase()))
     
     if (!teamLine) return {}
     
     const position = lines.indexOf(teamLine) + 1
-    
-    // Parsear a linha para extrair números
-    // Formato NA IMAGEM: Nome | Pos | P | J | V | E | D | GP | GC | SG | %
-    // Exemplo: TIME | 1 | 108 | 42 | 35 | 3 | 4 | 86 | 18 | 68 | 89%
-    
-    // Remover caracteres não numéricos extras que possam atrapalhar, mantendo espaços
     const cleanLine = teamLine.replace(/[^\w\s\d]/g, ' ').trim();
     const parts = cleanLine.split(/\s+/);
-    
-    // AQUI MUDOU: Aceitamos o último número como sendo a % se ele estiver lá
     const numbers = parts.filter(p => !isNaN(parseInt(p)) && p !== '').map(p => parseInt(p))
     
     let pontos = 0, jogos = 0, vitorias = 0, empates = 0, derrotas = 0, golsPro = 0, golsContra = 0, saldo = 0
     let percentualTexto = 0
-
     let idxV = -1;
     let fallbackJ = false;
     
-    // 1. Procurar checksum J = V + E + D
-    // Procuramos V nas posições 1, 2 e 3
     for (let i = 1; i <= 3; i++) {
         if (numbers.length >= i + 3 && numbers[i-1] === numbers[i] + numbers[i+1] + numbers[i+2]) {
-            idxV = i;
-            break;
+            idxV = i; break;
         }
     }
-    
-    // 2. Procurar checksum P = V*3 + E (se J está faltando)
     if (idxV === -1) {
         for (let i = 1; i <= 2; i++) {
             if (numbers.length >= i + 2 && numbers[i-1] === (numbers[i] * 3) + numbers[i+1]) {
-                idxV = i;
-                fallbackJ = true;
-                break;
+                idxV = i; fallbackJ = true; break;
             }
         }
     }
-    
-    // 3. Fallback genérico se a matemática falhar (ex: punição de pontos)
     if (idxV === -1) {
-        if (numbers.length >= 9) idxV = 3; // ex: [Pos, P, J, V...] -> V is 3
-        else if (numbers.length === 8) idxV = 2; // ex: [P, J, V...] or [Pos, P, V...] -> Assume V is 2
+        if (numbers.length >= 9) idxV = 3;
+        else if (numbers.length === 8) idxV = 2;
         else idxV = 1;
     }
     
@@ -1108,14 +1317,6 @@ const currentSeasonData = computed(() => {
         saldo = numbers[idxV + 5] || 0;
     }
     
-    // Tentativa de puxar percentual se existir como numérico final (ex: '89%')
-    if (numbers.length > 8) {
-        let last = numbers[numbers.length - 1];
-        if (last > 0 && last <= 100 && last !== saldo && last !== golsContra && last !== golsPro) {
-            percentualTexto = last;
-        }
-    }
-    
     return {
         nome: selectedSeason.competitionName || 'Liga',
         posicao: position,
@@ -1127,11 +1328,71 @@ const currentSeasonData = computed(() => {
         golsPro: golsPro,
         golsContra: golsContra,
         saldo: saldo,
-        percentual: percentualTexto // Novo campo
+        percentual: percentualTexto
+    }
+})
+
+// Nova Linha: RESUL. ELIMINATORIAS (Sincronizado automaticamente)
+const eliminatoriasData = computed(() => {
+    if (!selectedEntry.value || selectedEntry.value.tipo !== 'selecao') return null
+    
+    const timeNome = selectedEntry.value.timeNome
+    const temporada = selectedEntry.value.temporada
+    const matchingYear = normalizeYearStrict(temporada)
+    
+    // Normalização extra para seleções
+    const normalizeTeamName = (n) => {
+        if (!n) return ''
+        const lower = n.toLowerCase().trim()
+        if (lower === 'eua') return 'estados unidos'
+        return lower
+    }
+    const myTeamNorm = normalizeTeamName(timeNome)
+
+    const elimSeason = seasonStore.list.find(s => {
+        const isElims = (s.competitionName || '').toLowerCase().includes('eliminat')
+        if (!isElims) return false
+        if (normalizeYearStrict(s.ano) !== matchingYear) return false
+        
+        // Match do time na tabela
+        return s.tabela && s.tabela.toLowerCase().includes(myTeamNorm)
+    })
+
+    if (!elimSeason) return null
+
+    // Parsear tabela similar à liga
+    const lines = elimSeason.tabela.split('\n')
+    const teamLine = lines.find(l => l.toLowerCase().includes(myTeamNorm))
+    if (!teamLine) return null
+
+    const position = lines.indexOf(teamLine) + 1
+    const parts = teamLine.replace(/[^\w\s\d]/g, ' ').trim().split(/\s+/);
+    const numbers = parts.filter(p => !isNaN(parseInt(p))).map(p => parseInt(p))
+    
+    // Heurística simplificada para eliminatórias (Pos, P, J, V, E, D, GP, GC, SG)
+    let p=0, j=0, v=0, e=0, d=0, gp=0, gc=0, sg=0
+    if (numbers.length >= 8) {
+        p = numbers[1] || 0; j = numbers[2] || 0; v = numbers[3] || 0; e = numbers[4] || 0; d = numbers[5] || 0;
+        gp = numbers[6] || 0; gc = numbers[7] || 0; sg = numbers[8] || (gp - gc);
+    }
+
+    return {
+        nome: elimSeason.competitionName,
+        posicao: position,
+        pontos: p, jogos: j, vitorias: v, empates: e, derrotas: d, golsPro: gp, golsContra: gc, saldo: sg
     }
 })
 
 // Buscar TODOS os resultados automaticamente das temporadas salvas
+const getPlacementClass = (pos) => {
+    if (!pos) return 'other'
+    const p = pos.toUpperCase()
+    if (p === 'CAMPEÃO') return 'champion'
+    if (p === 'VICE-CAMPEÃO' || p === 'VICE') return 'vice'
+    if (p.includes('3º') || p.includes('4º') || p.includes('TERCEIRO') || p.includes('QUARTO') || p.includes('SEMIFINAL')) return 'bronze'
+    return 'other'
+}
+
 const allCompetitionResults = computed(() => {
     if (!selectedEntry.value) return []
     
@@ -1139,13 +1400,24 @@ const allCompetitionResults = computed(() => {
     const resultsSet = new Set() // Para evitar duplicatas internas (ex: achou tabela e campeão)
     const temporada = selectedEntry.value.temporada
     // Normalizar nome do time para comparação segura
-    const timeNome = selectedEntry.value.timeNome.toLowerCase().trim()
+    const normalizeTeam = (name) => {
+        if (!name) return ''
+        const n = name.toLowerCase().trim()
+            .replace(/\./g, '')
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remover acentos
+        if (n === 'eua') return 'estados unidos'
+        return n
+    }
+    const timeNome = normalizeTeam(selectedEntry.value.timeNome)
     
     // Obter lista de títulos manuais para evitar duplicação visual
-    const manualTitles = (selectedEntry.value.titulos || []).map(t => t.nome.toLowerCase().trim())
+    const manualTitles = (selectedEntry.value?.titulos || [])
+        .filter(t => t)
+        .map(t => (t.nome || t).toLowerCase().trim())
     
     // Buscar todas as temporadas (competições) que aconteceram neste ano
-    const matchingSeasons = seasonStore.list.filter(s => s.ano === temporada)
+    const matchingYear = normalizeYearStrict(temporada)
+    const matchingSeasons = seasonStore.list.filter(s => normalizeYearStrict(s.ano) === matchingYear)
     
     matchingSeasons.forEach(season => {
         let badge = ''
@@ -1153,13 +1425,40 @@ const allCompetitionResults = computed(() => {
         let found = false
         
         // 1. Verificar se é CAMPEÃO direto (Funciona para Copas e Ligas)
-        if (season.campeao && season.campeao.toLowerCase().trim() === timeNome) {
+        if (season.campeao && normalizeTeam(season.campeao) === timeNome) {
             badge = 'CAMPEÃO'
             ordem = 1
             found = true
         } 
-        // 2. Se não for campeão direto, tentar achar na TABELA (apenas Ligas)
-        else if (season.tabela && season.tabela.toLowerCase().includes(timeNome)) {
+        else if (season.vice && normalizeTeam(season.vice) === timeNome) {
+            badge = 'VICE-CAMPEÃO'
+            ordem = 2
+            found = true
+        }
+        // 2. Tentar achar na lista de PARTICIPANTES (Novo modo de Copas)
+        else if (season.participantes && season.participantes.length > 0) {
+            const p = season.participantes.find(part => part && normalizeTeam(part.nome || part) === timeNome)
+            if (p && p.colocacao) {
+                badge = p.colocacao.toUpperCase()
+                
+                // Normalizar badge para o padrão da Carreira
+                if (badge === 'VICE' || badge === 'VICE-CAMPEAO') badge = 'VICE-CAMPEÃO'
+                
+                // Definir ordem para o sort
+                if (badge === 'CAMPEÃO') ordem = 1
+                else if (badge === 'VICE-CAMPEÃO') ordem = 2
+                else if (badge.includes('3º') || badge.includes('TERCEIRO')) ordem = 3
+                else if (badge.includes('4º') || badge.includes('QUARTO')) ordem = 4
+                else if (badge.includes('SEMIFINAL')) ordem = 4
+                else if (badge.includes('QUARTAS')) ordem = 8
+                else if (badge.includes('OITAVAS')) ordem = 16
+                else ordem = 50
+                
+                found = true
+            }
+        }
+        // 3. Se não for campeão direto nem tiver participantes, tentar achar na TABELA (apenas Ligas)
+        if (!found && season.tabela && season.tabela.toLowerCase().includes(timeNome)) {
             const lines = season.tabela.split('\n')
             const teamLine = lines.find(l => l.toLowerCase().includes(timeNome))
             
@@ -1254,7 +1553,8 @@ const getCompLogo = (compName) => {
             ...continent.paises.flatMap(p => p.competicoes),
             ...continent.continentais
         ]),
-        ...INTERNATIONAL_DATA
+        ...INTERNATIONAL_DATA,
+        ...NATIONAL_COMPETITIONS_STRUCTURE.flatMap(continent => continent.competicoes)
     ]
 
     const normSearch = normalizeString(compName)
@@ -1265,6 +1565,7 @@ const getCompLogo = (compName) => {
 
     // 2. Fallback por nome de arquivo comum
     const slug = compName.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remover acentos antes de slugify
         .replace(/\s+/g, '-')
         .replace(/[^\w-]/g, '')
     
@@ -1453,8 +1754,8 @@ watch(selectedEntry, async (newVal) => {
 .row-liga { background: #0d3b2e !important; color: white !important; }
 .row-liga:hover { background: #125240 !important; }
 
-.row-copas { background: #497c63 !important; color: white !important; }
-.row-copas:hover { background: #368d62 !important; }
+.row-copas { background: #42785c !important; color: white !important; }
+
 
 .row-total { background: #bd5b1a !important; color: white !important; }
 .row-total:hover { background: #e67e22 !important; }
@@ -1532,6 +1833,12 @@ watch(selectedEntry, async (newVal) => {
     box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
 }
 
+.position-badge.bronze {
+    background: linear-gradient(135deg, #8b7355 0%, #a68b6a 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(139, 115, 85, 0.4);
+}
+
 .position-badge.other {
     background: rgba(100, 100, 100, 0.3);
     color: #fff;
@@ -1563,9 +1870,9 @@ watch(selectedEntry, async (newVal) => {
     color: #000;
 }
 
-.position-badge.pos-3 {
-    background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
-    color: #000;
+.position-badge.pos-3, .position-badge.pos-4 {
+    background: linear-gradient(135deg, #8b7355 0%, #a68b6a 100%);
+    color: #fff;
 }
 
 .position-badge[class*="pos-"] {
@@ -1985,6 +2292,16 @@ watch(selectedEntry, async (newVal) => {
   border-color: #ffc107;
   box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
 }
+
+
+.row-sel-copa { background: linear-gradient(90deg, rgba(30, 40, 50, 0.95), rgba(15, 20, 25, 0.95)) !important; color: #eee !important; border-left: 3px solid #f1c40f !important; }
+.row-sel-elim { background: linear-gradient(90deg, rgba(20, 35, 50, 0.95), rgba(10, 15, 25, 0.95)) !important; color: #eee !important; border-left: 3px solid #3498db !important; }
+.row-sel-copinhas { background: linear-gradient(90deg, rgba(40, 25, 35, 0.95), rgba(20, 10, 15, 0.95)) !important; color: #eee !important; border-left: 3px solid #e74c3c !important; }
+.row-sel-amistosos { background: linear-gradient(90deg, rgba(25, 40, 30, 0.95), rgba(10, 20, 15, 0.95)) !important; color: #eee !important; border-left: 3px solid #2ecc71 !important; }
+.row-sel-copa input, .row-sel-elim input, .row-sel-copinhas input, .row-sel-amistosos input { color: #eee !important; }
+
 </style>
+
+
 
 

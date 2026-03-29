@@ -8,8 +8,8 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "América do Sul",
         logo_continente: "",
         competicoes: [
-            { id: 1001, nome: "Copa América", pais: "América", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_america.png', trofeu: 'trofeu-copaamerica' },
-            { id: 1002, nome: "Eliminatórias (Am. do Sul)", pais: "América do Sul", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '' }
+            { id: 1001, nome: "Copa América", pais: "América", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_america.png', trofeu: 'trofeu-copaamerica', continente: "América do Sul" },
+            { id: 1002, nome: "Eliminatórias (Am. do Sul)", pais: "América do Sul", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 6, continente: "América do Sul" }
         ]
     },
     {
@@ -17,8 +17,8 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "América do Norte",
         logo_continente: "",
         competicoes: [
-            { id: 1001, nome: "Copa América", pais: "América", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_america.png', trofeu: 'trofeu-copaamerica' },
-            { id: 1010, nome: "Eliminatórias (Concacaf)", pais: "América do Norte", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '' }
+            { id: 1001, nome: "Copa América", pais: "América", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_america.png', trofeu: 'trofeu-copaamerica', continente: "América do Norte" },
+            { id: 1010, nome: "Eliminatórias (Concacaf)", pais: "América do Norte", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 3, continente: "América do Norte" }
         ]
     },
     {
@@ -26,8 +26,8 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "Europa",
         logo_continente: "",
         competicoes: [
-            { id: 1003, nome: "Euro Copa", pais: "Europa", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/uefa_euro.png', trofeu: 'trofeu-euro-copa' },
-            { id: 1004, nome: "Eliminatórias (Europa)", pais: "Europa", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '' }
+            { id: 1003, nome: "Euro Copa", pais: "Europa", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/uefa_euro.png', trofeu: 'trofeu-euro-copa', continente: "Europa" },
+            { id: 1004, nome: "Eliminatórias (Europa)", pais: "Europa", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 13, continente: "Europa" }
         ]
     },
     {
@@ -35,8 +35,8 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "África",
         logo_continente: "",
         competicoes: [
-            { id: 1005, nome: "Copa da África", pais: "África", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_africa.png', trofeu: 'trofeu-copaafrica' },
-            { id: 1006, nome: "Eliminatórias (África)", pais: "África", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '' }
+            { id: 1005, nome: "Copa da África", pais: "África", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_africa.png', trofeu: 'trofeu-copaafrica', continente: "África" },
+            { id: 1006, nome: "Eliminatórias (África)", pais: "África", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 9, continente: "África" }
         ]
     },
     {
@@ -44,16 +44,16 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "Ásia - Oceania",
         logo_continente: "",
         competicoes: [
-            { id: 1007, nome: "Copa da Ásia", pais: "Ásia", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_asia_oceania.png', trofeu: 'trofeu-copaasiaoceania' },
-            { id: 1008, nome: "Eliminatórias (Ásia)", pais: "Ásia", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '' }
+            { id: 1007, nome: "Copa da Ásia", pais: "Ásia", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_asia_oceania.png', trofeu: 'trofeu-copaasiaoceania', continente: "Ásia - Oceania" },
+            { id: 1008, nome: "Eliminatórias (Ásia)", pais: "Ásia", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 8, continente: "Ásia - Oceania" }
         ]
     },
     {
-        id: 'nc_mundo',
+        id: 'nc_mundial',
         continente: "Mundial",
-        logo_continente: "",
+        logo_continente: "logos/competitions/fifa.png",
         competicoes: [
-            { id: 1009, nome: "COPA DO MUNDO", pais: "Mundo", tipo: "Copa", modoRegistro: "mundial", logo: 'logos/competitions/copa_mundo.png', trofeu: 'trofeu-copadomundo' }
+            { id: 1009, nome: "Copa do Mundo", pais: "Mundial", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_mundo.png', trofeu: 'trofeu-fifa-worldcup', continente: "Mundial" }
         ]
     }
 ];

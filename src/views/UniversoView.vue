@@ -65,22 +65,22 @@
         <div class="row g-4 m-0">
           <!-- Sidebar: Info da Competio (30%) -->
           <div class="col-xl-3">
-            <GamePanel :customClass="getFederationColorClass(selectedCompetition.continente || (selectedContinent ? getFederation(selectedContinent.continente).nome : ''))">
+            <GamePanel :customClass="getFederationColorClass(selectedCompetition?.continente || (selectedContinent ? getFederation(selectedContinent?.continente)?.nome : ''))">
               <div class="text-center p-3">
                 <div class="d-flex align-items-center justify-content-center gap-3 mb-4">
                   <div class="comp-sidebar-logo-highlight">
-                    <img v-if="selectedCompetition.logo" :src="getCachedLogo(selectedCompetition.logo)" @error="(e) => e.target.style.display='none'" class="comp-sidebar-logo">
-                    <i class="bi bi-trophy fs-1 text-dark opacity-50" v-if="!selectedCompetition.logo"></i>
+                    <img v-if="selectedCompetition?.logo" :src="getCachedLogo(selectedCompetition?.logo)" @error="(e) => e.target.style.display='none'" class="comp-sidebar-logo">
+                    <i class="bi bi-trophy fs-1 text-dark opacity-50" v-if="!selectedCompetition?.logo"></i>
                   </div>
                   
-                  <div v-if="selectedCompetition.trofeu" class="comp-sidebar-logo-highlight">
+                  <div v-if="selectedCompetition?.trofeu" class="comp-sidebar-logo-highlight">
                     <img :src="getTrofeuPath(selectedCompetition.trofeu)" 
                          class="comp-sidebar-logo"
                          alt="Troféu"
                          @error="e => e.target.parentElement.style.display='none'">
                   </div>
                 </div>
-                <h4 class="fw-bold text-uppercase">{{ selectedCompetition.nome }}</h4>
+                <h4 class="fw-bold text-uppercase">{{ selectedCompetition?.nome }}</h4>
                 <div v-if="selectedCountry" class="d-flex justify-content-center align-items-center gap-2 mb-3">
                   <NationalFlag :countryName="selectedCountry.nome" :forceUrl="selectedCountry.bandeira" :size="20" />
                   <span class="text-secondary small fw-bold text-uppercase opacity-75">{{ selectedCountry.nome }}</span>
@@ -94,7 +94,7 @@
                   </GameButton>
                   
                   <div class="d-flex gap-2">
-                    <button class="btn btn-outline-info flex-grow-1 py-2 fw-bold text-uppercase small" @click="$router.push(`/competicao/${selectedCompetition.id}/historico`)">
+                    <button class="btn btn-outline-info flex-grow-1 py-2 fw-bold text-uppercase small" @click="$router.push(`/competicao/${selectedCompetition?.id}/historico`)">
                       <i class="bi bi-trophy me-1"></i> 🏆 HISTÓRICO
                     </button>
                     <button class="btn btn-outline-warning py-2 fw-bold text-uppercase small" @click="importFromIMLPES" title="Importar dados do extrator iMLPES">
@@ -132,12 +132,15 @@
                       <td class="fw-bold fs-5 text-nowrap">{{ s.ano }}</td>
                       <td class="text-nowrap">
                         <div class="d-flex align-items-center gap-2">
-                          <TeamShield :teamName="s.campeao" :isNational="activeTab === 'selecoes'" :size="36" :season="s.ano" />
-                          <div class="d-flex flex-column">
-                            <div class="d-flex align-items-center gap-1 no-wrap">
-                              <span class="fw-bold text-uppercase name-cell">{{ s.campeao }}</span>
-                              <img v-if="isFromLib(s.campeao)" src="/logos/competitions/classdaliberta.png" class="lib-indicator-mini ms-1" title="Vindo da Libertadores">
-                              <i v-if="careerStore.isUserTeam(s.campeao, s.ano)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
+                           <div v-if="activeTab === 'selecoes'" class="d-flex align-items-center">
+                             <NationalFlag :countryName="s.campeao" :size="20" class="rounded-circle shadow-sm" />
+                           </div>
+                           <TeamShield :teamName="s.campeao" :isNational="activeTab === 'selecoes'" :size="36" :season="s.ano" noFlagFallback />
+                           <div class="d-flex flex-column">
+                             <div class="d-flex align-items-center gap-1 no-wrap">
+                               <span class="fw-bold text-uppercase name-cell">{{ s.campeao }}</span>
+                               <img v-if="isFromLib(s.campeao)" src="/logos/competitions/classdaliberta.png" class="lib-indicator-mini ms-1" title="Vindo da Libertadores">
+                               <i v-if="careerStore.isUserTeam(s.campeao, s.ano, s.competitionName)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
                               
                               <!-- identificação de País e federação (Mundial - Mesma Linha) -->
                               <template v-if="(selectedCompetition?.modoRegistro === 'mundial' || selectedCompetition?.nome === 'Mundial de Clubes') && getClubInfo(s.campeao)">
@@ -174,12 +177,15 @@
                       </td>
                       <td class="text-nowrap">
                         <div class="d-flex align-items-center gap-2">
-                          <TeamShield :teamName="s.vice" :isNational="activeTab === 'selecoes'" :size="28" :season="s.ano" />
+                           <div v-if="activeTab === 'selecoes' && s.vice" class="d-flex align-items-center">
+                             <NationalFlag :countryName="s.vice" :size="16" class="rounded-circle shadow-sm" />
+                           </div>
+                           <TeamShield :teamName="s.vice" :isNational="activeTab === 'selecoes'" :size="28" :season="s.ano" noFlagFallback />
                           <div class="d-flex flex-column">
                             <div class="d-flex align-items-center gap-1 no-wrap">
                               <span class="small text-uppercase name-cell-vice">{{ s.vice || '-' }}</span>
                               <img v-if="s.vice && isFromLib(s.vice)" src="/logos/competitions/classdaliberta.png" class="lib-indicator-mini ms-1" title="Vindo da Libertadores">
-                              <i v-if="s.vice && careerStore.isUserTeam(s.vice, s.ano)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
+                              <i v-if="s.vice && careerStore.isUserTeam(s.vice, s.ano, s.competitionName)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
                               
                               <!-- identificação de País e federação (Mundial - Mesma Linha - Vice) -->
                               <template v-if="(selectedCompetition?.modoRegistro === 'mundial' || selectedCompetition?.nome === 'Mundial de Clubes') && s.vice && getClubInfo(s.vice)">
@@ -244,6 +250,7 @@
                           :data="s.tabela" 
                           :promotedCount="s.promovidos"
                           :relegationCount="s.rebaixados"
+                          :qualifiedCount="selectedCompetition?.qualificados || 0"
                           :playoffPromotedTeams="s.promovidosPlayoff || []"
                           :season="s.ano"
                           :country="selectedCountry?.nome"
@@ -328,7 +335,7 @@
         <div v-if="activeTab === 'clubes'" class="game-grid-auto">
           <div v-for="pais in selectedContinent.paises" :key="pais.nome">
             <GamePanel 
-              :customClass="'h-100 cursor-pointer country-card-modern ' + getFederationColorClass(selectedContinent ? getFederation(selectedContinent.continente).nome : '')"
+              :customClass="'h-100 cursor-pointer country-card-modern ' + getFederationColorClass(selectedContinent ? getFederation(selectedContinent.continente)?.nome : '')"
               @click="selectCountry(pais)"
             >
               <div class="country-glass-overlay"></div>
@@ -365,7 +372,7 @@
           <div class="game-grid-auto">
             <div v-for="comp in selectedContinent.competicoes" :key="comp.id">
               <GamePanel 
-                  :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : getFederation(selectedContinent.continente).nome)"
+                  :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : (getFederation(selectedContinent.continente)?.nome || ''))"
                   @click="selectCompetition(comp)"
                 >
                   <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
@@ -465,7 +472,7 @@
         <div v-if="activeTab === 'selecoes'" class="game-grid-auto">
           <div v-for="cont in NATIONAL_COMPETITIONS_STRUCTURE" :key="cont.id">
             <GamePanel 
-              :customClass="'h-100 cursor-pointer card-hover ' + getFederationColorClass(cont.continente === 'Mundial' ? 'FIFA' : getFederation(cont.continente).nome)"
+              :customClass="'h-100 cursor-pointer card-hover ' + getFederationColorClass(cont.continente === 'Mundial' ? 'FIFA' : (getFederation(cont.continente)?.nome || ''))"
               @click="selectContinent(cont)"
             >
               <div class="text-center py-4">
@@ -765,9 +772,50 @@
             <!-- SEÇÃO 1.8: CLASSIFICAÇÃO FINAL DE COPA -->
             <div class="form-section-premium mb-5">
               <h4 class="text-primary fw-black mb-1 text-uppercase d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-diagram-3-fill me-2"></i>CLASSIFICAÇÃO DE COPA</span>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-diagram-3-fill me-2"></i>CLASSIFICAÇÃO DE COPA
+                  <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'classificacaoCopaTxt' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('classificacaoCopaTxt')">
+                    IA AGENTE
+                  </button>
+                </div>
                 <span v-if="newSeason.participantes && newSeason.participantes.length > 0" class="text-success animated-fade-in">✅ {{ newSeason.participantes.length }} times</span>
               </h4>
+
+              <div v-if="ocrWorkspace.activeField === 'classificacaoCopaTxt'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                <div class="p-4">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                     <span class="badge bg-info text-dark fw-black x-small text-uppercase">Painel de Interpretacao IA</span>
+                     <button class="btn btn-xs btn-outline-danger p-0 px-2 rounded-pill shadow-sm" @click="ocrWorkspace.activeField = null">
+                       CONCLUIR
+                     </button>
+                  </div>
+                  
+                  <div class="row g-2 mb-3">
+                    <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                      <div class="print-upload-slot w-100" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
+                        <template v-if="newSeason.printsUrls[idx]">
+                          <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
+                          <div class="print-slot-overlay">
+                             <button class="btn btn-danger btn-xs rounded-circle" @click.stop="removePrint(idx)"><i class="bi bi-trash"></i></button>
+                          </div>
+                        </template>
+                        <div v-else class="print-slot-empty" style="padding: 10px;">
+                          <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    @click="interpretAttachedPrints"
+                    class="btn btn-info w-100 fw-black text-uppercase shadow-sm"
+                    :disabled="ocrWorkspace.isProcessing || !newSeason.printsUrls.some(u => u)"
+                  >
+                    <span v-if="ocrWorkspace.isProcessing">PROCESSANDO...</span>
+                    <span v-else>GERAR LISTA A PARTIR DOS SLOTS</span>
+                  </button>
+                </div>
+              </div>
               <p class="text-secondary small mb-3">Cole a classificação final (Nome&nbsp;&nbsp;Fase) — um time por linha. O sistema detecta a fase automaticamente.</p>
               <p class="x-small opacity-50 mb-3 font-monospace">Ex: "River Plate Campeão" / "Aldosivi Semi" / "Instituto ACC Quartas"</p>
 
@@ -797,16 +845,21 @@
                       <tr v-for="(p, idx) in newSeason.participantes" :key="idx" class="border-bottom border-white border-opacity-5">
                         <td class="ps-3 py-2">
                           <div class="d-flex align-items-center gap-2">
-                            <TeamShield :teamName="p.nome" :size="20" borderless :filterCountry="newSeason.pais" />
-                            <span class="fw-bold small">{{ p.nome }}</span>
+                            <NationalFlag v-if="activeTab === 'selecoes'" :countryName="p.nome" :size="20" class="rounded-circle shadow-sm" />
+                            <TeamShield :teamName="p.nome" :size="20" borderless :isNational="activeTab === 'selecoes'" />
+                            <span class="fw-bold small d-flex align-items-center gap-1">
+                                {{ p.nome }}
+                                <i v-if="isUserTeam(p.nome, newSeason?.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9em;"></i>
+                            </span>
                           </div>
                         </td>
                         <td>
                           <select v-model="p.colocacao" 
                                   class="form-select form-select-sm fw-black x-small border-0 rounded-pill px-3" 
                                   :class="getCopaBadgeClass(p.colocacao)"
+                                  :style="(p.colocacao && (p.colocacao.includes('3') || p.colocacao.includes('4'))) ? 'background-color: #8b7355 !important; border-color: #a68b6a !important; color: white !important;' : ''"
                                   @change="updateChampViceFromManual(p)">
-                            <option v-for="opt in PLACEMENTS_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+                            <option v-for="opt in dynamicPlacements" :key="opt" :value="opt" :class="getCopaBadgeClass(opt)">{{ opt }}</option>
                           </select>
                         </td>
                         <td class="text-center">
@@ -824,20 +877,91 @@
               </div>
             </div>
 
-            <!-- SEÇÃO 2: TABELA (OPCIONAL) -->
-            <div class="form-section-premium">
+            <!-- SEÇÃO 2: TABELA (APARECE SÓ EM LIGAS) -->
+            <div v-if="selectedCompetition?.modoRegistro === 'liga' || !selectedCompetition" class="form-section-premium">
               <h4 class="text-info fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-list-ol me-2"></i>TABELA FINAL (OPCIONAL)</span>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-list-ol me-2"></i>TABELA FINAL (OPCIONAL)
+                  <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'tabela' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('tabela')">
+                    <i class="bi bi-robot me-1"></i>IA AGENTE
+                  </button>
+                </div>
                 <span v-if="newSeason.tabela" class="text-success animated-fade-in" title="Tabela Inserida">✅</span>
               </h4>
-              
-              <!-- NOVO: CHAVEAMENTO MUNDIAL (Componente Premium) -->
-              <div v-if="selectedCompetition?.modoRegistro === 'mundial' || selectedCompetition?.nome === 'Mundial de Clubes'" class="mb-4">
-                <MundialBracket 
-                  v-if="newSeason?.mundial"
-                  :mundial="newSeason.mundial" 
-                  :isEditable="true" 
-                />
+
+              <div v-if="ocrWorkspace.activeField === 'tabela'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                <div class="ocr-dropzone p-4" @paste="(e) => handlePasteOcr(e, 'tabela')" tabindex="0">
+                  <div v-if="ocrWorkspace.isProcessing" class="ocr-loading">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <span class="ms-3 fw-black text-uppercase small">IA Lendo Print...</span>
+                  </div>
+                  <div v-else class="text-center w-100">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                       <span class="badge bg-info text-dark fw-black x-small text-uppercase">Área de Leitura Temporária</span>
+                       <button class="btn btn-xs btn-outline-danger p-0 px-2 rounded-pill shadow-sm" @click="ocrWorkspace.activeField = null">
+                         <i class="bi bi-x-lg me-1"></i>CONCLUIR
+                       </button>
+                    </div>
+                    
+                    <template v-if="ocrWorkspace.totalFound > 0">
+                       <div class="text-success fw-black small mb-2 animated-fade-in">
+                         <i class="bi bi-check-circle-fill me-1"></i>{{ ocrWorkspace.totalFound }} TIMES IDENTIFICADOS ATÉ AGORA
+                       </div>
+                       <i class="bi bi-plus-circle-fill fs-1 mb-2 d-block text-success opacity-75"></i>
+                       <div class="fw-black text-uppercase small ls-1 text-success">PRONTO! COLE A PRÓXIMA PARTE</div>
+                       <div class="x-small opacity-50 mt-1 italic text-success">Ou clique em CONCLUIR para fechar.</div>
+                    </template>
+                    <template v-else>
+                       <i class="bi bi-table fs-1 mb-2 d-block text-info opacity-50"></i>
+                       <div class="fw-black text-uppercase small ls-1 text-info">COLE A 1ª PARTE DA TABELA</div>
+                       <div class="x-small opacity-50 mt-1">Clique aqui e dê CTRL + V</div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+               <h4 class="text-primary fw-black mb-1 text-uppercase d-flex align-items-center justify-content-between">
+                 <div class="d-flex align-items-center gap-2">
+                   <i class="bi bi-table me-2"></i>TABELA FINAL (OPCIONAL)
+                   <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'tabela' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('tabela')">
+                     IA AGENTE
+                   </button>
+                 </div>
+               </h4>
+
+              <div v-if="ocrWorkspace.activeField === 'tabela'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                <div class="p-4">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                     <span class="badge bg-info text-dark fw-black x-small text-uppercase">Painel de Interpretacao IA</span>
+                     <button class="btn btn-xs btn-outline-danger p-0 px-2 rounded-pill shadow-sm" @click="ocrWorkspace.activeField = null">
+                       CONCLUIR
+                     </button>
+                  </div>
+                  
+                  <div class="row g-2 mb-3">
+                    <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                      <div class="print-upload-slot w-100" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
+                        <template v-if="newSeason.printsUrls[idx]">
+                          <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
+                          <div class="print-slot-overlay">
+                             <button class="btn btn-danger btn-xs rounded-circle" @click.stop="removePrint(idx)"><i class="bi bi-trash"></i></button>
+                          </div>
+                        </template>
+                        <div v-else class="print-slot-empty" style="padding: 10px;">
+                          <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    @click="interpretAttachedPrints"
+                    class="btn btn-info w-100 fw-black text-uppercase shadow-sm"
+                    :disabled="ocrWorkspace.isProcessing || !newSeason.printsUrls.some(u => u)"
+                  >
+                    <span v-if="ocrWorkspace.isProcessing">PROCESSANDO...</span>
+                    <span v-else>GERAR LISTA A PARTIR DOS SLOTS</span>
+                  </button>
+                </div>
               </div>
 
               <p class="text-secondary small mb-3">Cole aqui o conteúdo da tabela final da competição.</p>
@@ -948,42 +1072,10 @@
           <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="saveNewSeason(false)">SALVAR</button>
         </div>
 
-        <!-- SEÇÃO 4: GALERIA DE PRINTS (COPAS) -->
-        <div v-if="selectedCompetition?.tipo === 'Copa' || selectedCompetition?.tipo === 'internacional'" class="row mt-4">
-          <div class="col-12">
-            <div class="form-section-premium">
-              <h4 class="text-info fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-images me-2"></i>GALERIA DE PRINTS (MAX 3)</span>
-                <span v-if="newSeason.printsUrls && newSeason.printsUrls.some(u => u)" class="text-success animated-fade-in">✅</span>
-              </h4>
-              <p class="text-secondary small mb-4">Adicione prints de chaveamentos, resultados ou fases prévias. Clique no slot e use CTRL+V para colar.</p>
-              
-              <div class="d-flex flex-wrap gap-3">
-                <div v-for="(url, idx) in newSeason.printsUrls" :key="idx" 
-                     class="print-upload-slot"
-                     :class="{ 'has-image': url }"
-                     @paste="(e) => handlePastePrint(e, idx)"
-                     tabindex="0"
-                >
-                  <template v-if="url">
-                    <img :src="getCachedLogo(url)" class="print-preview-img" @click="openPhotoZoom(url)">
-                    <div class="print-slot-overlay">
-                       <button class="btn btn-danger btn-sm rounded-circle" @click.stop="removePrint(idx)">
-                         <i class="bi bi-trash"></i>
-                       </button>
-                    </div>
-                  </template>
-                  <div v-else class="print-slot-empty" @click="$refs['printInput'+idx][0].click()">
-                    <i class="bi bi-plus-lg d-block mb-1"></i>
-                    <span class="x-small fw-bold">PRINT {{ idx + 1 }}</span>
-                    <span v-if="url" class="text-success ms-1">✅</span>
-                  </div>
-                  <input type="file" :ref="'printInput'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- SEÇÃO 4: GALERIA DE PRINTS (DESATIVADA v8.20) -->
+        <!-- <div v-if="['Copa', 'internacional'].includes(selectedCompetition?.tipo)" class="row mt-4">
+           ... (Conteudo comentado para garantir remocao visual) ...
+        </div> -->
       </div>
     </div>
   </div>
@@ -1110,6 +1202,20 @@ const restoreNavigation = () => {
         if (c) { foundComp = c; foundContinent = cont; break }
       }
     }
+    
+    // Buscar em Seleções se não achou em Clubes
+    if (!foundComp) {
+      for (const cont of NATIONAL_COMPETITIONS_STRUCTURE) {
+        const c = cont.competicoes.find(item => item.id === compId)
+        if (c) { 
+          foundComp = c
+          foundContinent = cont
+          activeTab.value = 'selecoes'
+          break 
+        }
+      }
+    }
+
     if (!foundComp) foundComp = INTERNATIONAL_DATA.find(c => c.id === compId)
     if (foundComp) {
       selectedContinent.value = foundContinent; selectedCountry.value = foundCountry; selectedCompetition.value = foundComp;
@@ -1245,6 +1351,15 @@ const newSeason = ref({
   }
 })
 
+// NOVO v8.6: Estado para OCR temporário (não salvo no DB)
+const ocrWorkspace = ref({
+  activeField: null, // 'tabela' ou 'classificacaoCopaTxt'
+  isProcessing: false,
+  lastCount: 0,
+  totalFound: 0,
+  prints: []
+})
+
 const showScorerModal = ref(false)
 const selectedSeasonForScorer = ref(null)
 const isEditingScorer = ref(false)
@@ -1341,7 +1456,7 @@ const addParticipant = (teamName) => {
         nome: nation.nome,
         escudo: nation.bandeira_url,
         pais: nation.pais,
-        federacao: getFederation(nation.continente).nome,
+        federacao: getFederation(nation.continente)?.nome || 'FIFA',
         colocacao: null
       });
       return;
@@ -1414,6 +1529,21 @@ const playoffCandidates = computed(() => {
   })
   return teams
 })
+
+// MÉTODOS DE INTEGRAÇÃO COM O AGENTE (v5.0)
+const callAgenteOCR = async (field) => {
+  try {
+    const resp = await fetch('http://localhost:5001/ocr');
+    const data = await resp.json();
+    if (data.sucesso) {
+      newSeason.value[field] = data.texto;
+    } else {
+      alert("⚠️ Erro no Agente: " + data.erro);
+    }
+  } catch (e) {
+    alert("❌ O Agente não está aberto ou o servidor v5.0 não foi iniciado.");
+  }
+}
 
 const getRelegatedTeams = (season) => {
   if (!season.tabela) return []
@@ -1500,7 +1630,8 @@ const getISOCode = (pais) => {
   if (!pais || !pais.bandeira) return '';
   const match = pais.bandeira.match(/\/([a-z]{2,3})\.png/);
   if (match) return match[1].toUpperCase();
-  return pais.nome.substring(0, 3).toUpperCase();
+  if (!pais) return countryName?.substring(0, 3).toUpperCase() || '';
+  return pais.nome?.substring(0, 3).toUpperCase() || '';
 }
 
 const getClubInfo = (clubName) => {
@@ -1627,7 +1758,7 @@ const countTitles = (teamName, seasonStr) => {
   const currentYear = getSeasonFinalYear(seasonStr)
   
   const matches = seasonStore.list.filter(s => {
-    const isSameComp = s.competitionName === selectedCompetition.value.nome
+    const isSameComp = s.competitionName === selectedCompetition.value?.nome
     const isSameTeam = s.campeao.toLowerCase().trim() === teamName.toLowerCase().trim()
     const isPastOrPresent = getSeasonFinalYear(s.ano) <= currentYear
     return isSameComp && isSameTeam && isPastOrPresent
@@ -1652,7 +1783,7 @@ const countVices = (teamName, seasonStr) => {
   const currentYear = getSeasonFinalYear(seasonStr)
   
   const matches = seasonStore.list.filter(s => {
-    const isSameComp = s.competitionName === selectedCompetition.value.nome
+    const isSameComp = s.competitionName === selectedCompetition.value?.nome
     const hasVice = s.vice && s.vice.toLowerCase().trim() === teamName.toLowerCase().trim()
     const isPastOrPresent = getSeasonFinalYear(s.ano) <= currentYear
     return isSameComp && hasVice && isPastOrPresent
@@ -1691,7 +1822,8 @@ const prepareEdit = async (s) => {
         semi2: clone.mundial?.semi2 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
         final: clone.mundial?.final || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
         terceiro: clone.mundial?.terceiro || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
-      }
+      },
+      tipo: clone.tipo || (activeTab.value === 'selecoes' ? 'selecao' : 'clube')
     }
 
     // Carregar o primeiro artilheiro no formulário unificado (opcional no form)
@@ -1750,6 +1882,140 @@ const removePrint = (index) => {
   newSeason.value.printsUrls[index] = '';
 }
 
+const interpretAttachedPrints = async () => {
+  const prints = newSeason.value.printsUrls.filter(u => u && u.trim() !== '');
+  if (prints.length === 0) {
+    alert("Anexe pelo menos um print primeiro!");
+    return;
+  }
+  
+  ocrWorkspace.value.isProcessing = true;
+  let allLines = [];
+  const activeF = ocrWorkspace.value.activeField || 'tabela';
+  const isCopa = activeF === 'classificacaoCopaTxt';
+  
+  for (const url of prints) {
+    try {
+      let b64 = url;
+      if (!url.startsWith('data:')) {
+        const cached = await imageCacheService.getLogo(url);
+        if (cached) b64 = cached;
+      }
+
+      if (b64 && b64.startsWith('data:')) {
+        const res = await fetch(b64);
+        const blob = await res.blob();
+        
+        const formData = new FormData();
+        formData.append('file', blob, 'print.png');
+        formData.append('modo_copa', isCopa ? 'true' : 'false');
+        
+        const response = await fetch('http://localhost:5001/ocr/image', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        if (data.sucesso && data.linhas) {
+          allLines = [...allLines, ...data.linhas];
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao interpretar print:", e);
+    }
+  }
+
+  if (allLines.length > 0) {
+    // Unificar linhas (remover duplicatas de times)
+    const uniqueMap = new Map();
+    allLines.forEach(l => {
+      const parts = l.split(' ');
+      // Nome do time é tudo antes dos 7 números finais
+      const teamName = parts.length > 7 ? parts.slice(0, -7).join(' ') : l;
+      if (!uniqueMap.has(teamName)) uniqueMap.set(teamName, l);
+    });
+    
+    const targetField = ocrWorkspace.value.activeField || 'tabela';
+    newSeason.value[targetField] = Array.from(uniqueMap.values()).join('\n');
+    alert("IA: " + uniqueMap.size + " times encontrados e processados!");
+  } else {
+    alert("❌ A IA não conseguiu identificar dados válidos nesses prints.");
+  }
+  
+  ocrWorkspace.value.isProcessing = false;
+}
+
+// NOVO v8.8: Método para Colagem Contínua e Unificação
+const handlePasteOcr = async (event, targetField) => {
+  const items = event.clipboardData.items;
+  let imageBlob = null;
+
+  for (const item of items) {
+    if (item.type.indexOf("image") !== -1) {
+      imageBlob = item.getAsFile();
+      break;
+    }
+  }
+
+  if (!imageBlob) return;
+
+  ocrWorkspace.value.isProcessing = true;
+  const isCopa = targetField === 'classificacaoCopaTxt';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', imageBlob, 'ocr_capture.png');
+    formData.append('modo_copa', isCopa ? 'true' : 'false');
+
+    const response = await fetch('http://localhost:5001/ocr/image', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+    if (data.sucesso && data.linhas.length > 0) {
+      const currentText = newSeason.value[targetField] || '';
+      const existingLines = currentText.split('\n').filter(l => l.trim());
+      const newLines = data.linhas;
+
+      const uniqueTeams = new Map();
+      existingLines.forEach(line => {
+        const parts = line.split(' ');
+        const name = isCopa ? line : (parts.length > 7 ? parts.slice(0, -7).join(' ') : line);
+        uniqueTeams.set(name.trim().toUpperCase(), line);
+      });
+
+      newLines.forEach(line => {
+        const parts = line.split(' ');
+        const name = isCopa ? line : (parts.length > 7 ? parts.slice(0, -7).join(' ') : line);
+        uniqueTeams.set(name.trim().toUpperCase(), line);
+      });
+
+      newSeason.value[targetField] = Array.from(uniqueTeams.values()).join('\n');
+      ocrWorkspace.value.lastCount = newLines.length;
+      ocrWorkspace.value.totalFound = uniqueTeams.size;
+    } else {
+      alert("IA: Nao consegui ler dados validos neste print. Verifique se e uma tabela de campeonato.");
+    }
+  } catch (err) {
+    console.error("Erro OCR Direto:", err);
+    alert("Erro de conexão com o AI Engine (Porta 5001).");
+  } finally {
+    ocrWorkspace.value.isProcessing = false;
+  }
+}
+
+const toggleOcrZone = (field) => {
+  if (ocrWorkspace.value.activeField === field) {
+    ocrWorkspace.value.activeField = null;
+  } else {
+    ocrWorkspace.value.activeField = field;
+    // Resetar contadores para nova zona
+    ocrWorkspace.value.totalFound = 0;
+    ocrWorkspace.value.lastCount = 0;
+  }
+}
+
 const resetScorerForm = () => {
   scorerForm.value = {
     nome: '',
@@ -1781,7 +2047,7 @@ const openForm = () => {
     ano: lastYear ? getNextSeasonYear(lastYear) : '',
     campeao: '',
     vice: '',
-    competitionName: selectedCompetition.value.nome,
+    competitionName: selectedCompetition.value?.nome,
     topScorers: [],
     participantes: [],
     tabela: '',
@@ -1793,7 +2059,8 @@ const openForm = () => {
       semi2: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
       final: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
       terceiro: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
-    }
+    },
+    tipo: activeTab.value === 'selecoes' ? 'selecao' : 'clube'
   }
   resetScorerForm()
   viewMode.value = 'form'
@@ -1804,16 +2071,24 @@ const openForm = () => {
 const CUP_PHASES = [
   { tokens: ['campeao', 'campea', 'champion'], label: 'Campeão', priority: 1 },
   { tokens: ['vice', 'finalista', 'runner-up', 'segundo'], label: 'Vice', priority: 2 },
-  { tokens: ['semi', 'semifinal', 'semi-final', '3', '4'], label: 'Semifinal', priority: 3 },
-  { tokens: ['quartas', 'quarta', 'quartas de final', '8'], label: 'Quartas', priority: 4 },
-  { tokens: ['oitavas', 'oitava', 'oitavas de final', '16'], label: 'Oitavas', priority: 5 },
-  { tokens: ['elim. 16 avos', '16 avos', 'avos', '32'], label: '16 Avos', priority: 6 },
-  { tokens: ['pre-copa', 'pré-copa', 'elim. pre', 'elim. pré', 'pre'], label: 'Pré-Copa', priority: 7 },
-  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Eliminado', priority: 8 },
-  { tokens: ['participante', 'participant'], label: 'Participante', priority: 9 },
+  { tokens: ['3', '3º', '3º colocado', 'terceiro'], label: '3º COLOCADO', priority: 3 },
+  { tokens: ['4', '4º', '4º colocado', 'quarto'], label: '4º COLOCADO', priority: 4 },
+  { tokens: ['semi', 'semifinal', 'semi-final'], label: 'Semifinal', priority: 5 },
+  { tokens: ['quartas', 'quarta', 'quartas de final', '8'], label: 'Quartas', priority: 6 },
+  { tokens: ['oitavas', 'oitava', 'oitavas de final', '16'], label: 'Oitavas', priority: 7 },
+  { tokens: ['elim. 16 avos', '16 avos', 'avos', '32'], label: '16 Avos', priority: 8 },
+  { tokens: ['pre-copa', 'pré-copa', 'elim. pre', 'elim. pré', 'pre'], label: 'Pré-Copa', priority: 9 },
+  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Eliminado', priority: 10 },
+  { tokens: ['participante', 'participant'], label: 'Participante', priority: 11 },
 ]
 
-const PLACEMENTS_OPTIONS = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+const dynamicPlacements = computed(() => {
+  const isNational = activeTab.value === 'selecoes' || selectedCompetition.value?.id >= 1000
+  const base = ['Campeão', 'Vice']
+  if (isNational) base.push('3º COLOCADO', '4º COLOCADO')
+  base.push('Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante')
+  return base
+})
 
 const safeNormalize = (str) => {
   if (!str) return ''
@@ -1838,15 +2113,24 @@ const detectCupPhase = (phaseStr) => {
 }
 
 const getCopaBadgeClass = (colocacao) => {
-  if (!colocacao) return 'bg-secondary text-white'
-  const n = colocacao.toLowerCase()
-  if (n.includes('campe')) return 'bg-warning text-dark'
-  if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark'
-  if (n.includes('semi')) return 'bg-success text-white'
-  if (n.includes('quart')) return 'bg-info text-dark'
-  if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
+    if (!colocacao) return 'bg-secondary text-white'
+    const n = colocacao.toLowerCase()
+    if (n.includes('campe')) return 'bg-warning text-dark fw-black border border-white'
+    if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark fw-black border border-secondary'
+    if (n.includes('3') || n.includes('4')) return 'bg-bronze text-white fw-bold shadow-sm'
+    if (n.includes('semi')) return 'bg-info text-white fw-bold'
+    if (n.includes('quart')) return 'bg-success text-white fw-bold'
+    if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
   if (n.includes('elim') || n.includes('pre') || n.includes('pré')) return 'bg-secondary text-white'
   return 'bg-secondary text-white'
+}
+
+const isUserTeam = (teamName, compName = null) => {
+    if (!careerStore.history) return false
+    return careerStore.history.some(h => {
+        // Aproveitar o método robusto da store
+        return careerStore.isUserTeam(teamName, newSeason.value.ano, compName)
+    })
 }
 
 const updateChampViceFromManual = (p) => {
@@ -2078,8 +2362,8 @@ watch(() => newSeason.value.tabela, (newTable) => {
     const champ = parseLine(filteredLines[0])
     const vice = parseLine(filteredLines[1])
 
-    if (champ && !newSeason.value.campeao) newSeason.value.campeao = champ
-    if (vice && !newSeason.value.vice) newSeason.value.vice = vice
+    if (champ && !newSeason.value?.campeao) newSeason.value.campeao = champ
+    if (vice && !newSeason.value?.vice) newSeason.value.vice = vice
   }
 })
 
@@ -2162,10 +2446,10 @@ const importFromIMLPES = () => {
       const champ = CLUBS_DATA.find(c => c.pesId == champId || c.id == champId);
       const vice = CLUBS_DATA.find(c => c.pesId == viceId || c.id == viceId);
 
-      if (champ) newSeason.value.campeao = champ.nome;
-      if (vice) newSeason.value.vice = vice.nome;
+      if (champ) newSeason.value.campeao = champ.nome || champ;
+      if (vice) newSeason.value.vice = vice.nome || vice;
       
-      console.log(`Mapeamento iMLPES: Campeão=${newSeason.value.campeao}, Vice=${newSeason.value.vice}`);
+      console.log(`Mapeamento iMLPES: Campeão=${newSeason.value?.campeao}, Vice=${newSeason.value?.vice}`);
     }
 
     // 4. Tentar detectar o ano (se disponível no fileName ex: ML00000005)
@@ -2211,7 +2495,7 @@ const deleteScorer = (index) => {
 }
 
 const saveScorer = async () => {
-  if (!scorerForm.value.nome) return
+  if (!scorerForm.value?.nome) return
 
   // Criar uma cpia para evitar problemas de referncia
   const scorerToSave = { ...scorerForm.value }
@@ -2275,7 +2559,7 @@ const saveNewSeason = async (shouldClose = true) => {
   if (!selectedCompetition.value) return
   
   // Garantir que os artilheiros sejam processados se preenchidos no form nico
-  if (scorerForm.value.nome) {
+  if (scorerForm.value?.nome) {
     // Se houver dados no form de artilheiro, vamos "salvar" ele no array topScorers antes de persistir a temporada
     const scorerToSave = JSON.parse(JSON.stringify(scorerForm.value));
     
@@ -2303,9 +2587,7 @@ const saveNewSeason = async (shouldClose = true) => {
     } else {
       await seasonStore.addSeason({
         ...newSeason.value,
-        competitionName: selectedCompetition.value.nome,
-        competitionId: selectedCompetition.value.id,
-        pais: selectedCountry.value?.nome || selectedCompetition.value.pais || 'Internacional'
+        pais: selectedCountry.value?.nome || selectedCompetition.value?.pais || 'Internacional'
       })
     }
     
@@ -2374,7 +2656,7 @@ watch([selectedContinent, selectedCountry, selectedCompetition, activeTab], () =
     activeTab: activeTab.value,
     continent: selectedContinent.value,
     country: selectedCountry.value,
-    competition: selectedCompetition.value ? { nome: selectedCompetition.value.nome } : null
+    competition: selectedCompetition.value ? { nome: selectedCompetition.value?.nome } : null
   }
   localStorage.setItem('freefoot_universo_nav', JSON.stringify(state))
 }, { deep: true })
@@ -2387,12 +2669,40 @@ onMounted(async () => {
   // 1. Sincronizar com parâmetros da URL (Navegação facilitada solicitada pelo usuário)
   if (route.query.pais) {
     const pNome = route.query.pais;
+    // Buscar em Clubes
     for (const cont of ALL_COMPETITIONS_DATA) {
       const p = cont.paises.find(p => p.nome === pNome);
       if (p) {
         selectedContinent.value = cont;
         selectedCountry.value = p;
+        activeTab.value = 'clubes';
         break;
+      }
+    }
+    // Buscar em Seleções (Continentes)
+    if (!selectedCountry.value) {
+      const contS = NATIONAL_COMPETITIONS_STRUCTURE.find(c => c.continente === pNome);
+      if (contS) {
+        selectedContinent.value = contS;
+        activeTab.value = 'selecoes';
+      }
+    }
+  }
+
+  // Se vier com nome da competição direto (sem compId)
+  if (route.query.comp && !selectedCompetition.value) {
+    const cNome = route.query.comp;
+    const allComps = [
+      ...ALL_COMPETITIONS_DATA.flatMap(c => c.paises?.flatMap(p => p.competicoes) || []),
+      ...ALL_COMPETITIONS_DATA.flatMap(c => c.continentais || []),
+      ...NATIONAL_COMPETITIONS_STRUCTURE.flatMap(c => c.competicoes || []),
+      ...INTERNATIONAL_DATA
+    ];
+    const found = allComps.find(c => c.nome === cNome);
+    if (found) {
+      selectedCompetition.value = found;
+      if (NATIONAL_COMPETITIONS_STRUCTURE.some(s => s.competicoes.some(c => c.id === found.id))) {
+        activeTab.value = 'selecoes';
       }
     }
   }
@@ -2402,9 +2712,9 @@ onMounted(async () => {
   // Vamos direto para loadSeasons() que carrega apenas a lista filtrada da competição.
   // O loadAll() só é necessário quando não há competição selecionada (primeira visita).
   if (selectedCompetition.value) {
-    const targetCountry = selectedCompetition.value.pais || selectedCountry.value?.nome
-    await seasonStore.loadSeasons(selectedCompetition.value.nome, targetCountry)
-    if (selectedCompetition.value.nome === 'Sul-Americana' && seasonStore.list[0]) {
+    const targetCountry = selectedCompetition.value?.pais || selectedCountry.value?.nome
+    await seasonStore.loadSeasons(selectedCompetition.value?.nome, targetCountry)
+    if (selectedCompetition.value?.nome === 'Sul-Americana' && seasonStore.list[0]) {
       loadLibTeams(seasonStore.list[0].ano)
     }
   } else {
@@ -2441,9 +2751,9 @@ onMounted(async () => {
 // sem remontagem, sem piscada — o restante do estado já está preservado.
 onActivated(async () => {
   if (selectedCompetition.value) {
-    const targetCountry = selectedCompetition.value.pais || selectedCountry.value?.nome
-    await seasonStore.loadSeasons(selectedCompetition.value.nome, targetCountry)
-    if (selectedCompetition.value.nome === 'Sul-Americana' && seasonStore.list[0]) {
+    const targetCountry = selectedCompetition.value?.pais || selectedCountry.value?.nome
+    await seasonStore.loadSeasons(selectedCompetition.value?.nome, targetCountry)
+    if (selectedCompetition.value?.nome === 'Sul-Americana' && seasonStore.list[0]) {
       loadLibTeams(seasonStore.list[0].ano)
     }
   }
@@ -3669,6 +3979,14 @@ onActivated(async () => {
   text-align: center;
 }
 
+.bg-bronze { background-color: #8b7355 !important; color: white !important; }
+select.bg-bronze { 
+    background-color: #8b7355 !important; 
+    color: white !important; 
+    border-color: #a68b6a !important;
+}
+option.bg-bronze { background-color: #8b7355 !important; color: white !important; }
+
 .copa-team-chip {
   display: inline-flex;
   align-items: center;
@@ -3696,5 +4014,42 @@ onActivated(async () => {
   padding-bottom: 0.25rem;
 }
 
+.ocr-capture-zone {
+  border: 2px dashed rgba(0, 242, 255, 0.3);
+  background: rgba(0, 242, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ocr-dropzone {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: crosshair;
+  color: var(--bs-info);
+  outline: none;
+}
+
+.ocr-dropzone:hover, .ocr-dropzone:focus {
+  background: rgba(0, 242, 255, 0.1);
+  border-color: var(--bs-info);
+}
+
+.ocr-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.animated-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 

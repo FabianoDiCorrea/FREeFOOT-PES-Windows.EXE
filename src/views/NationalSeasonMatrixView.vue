@@ -132,6 +132,14 @@
         <span>Vice</span>
       </div>
       <div class="d-flex align-items-center gap-1">
+        <div class="mini-box expert-bronze-intl-grad" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
+        <span>3º Lugar</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <div class="mini-box expert-copper-intl-grad" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
+        <span>4º Lugar</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
         <div class="mini-box expert-blue-intl-bg" style="width: 12px; height: 12px; border: 1px solid #44d2ff;"></div> 
         <span>Colocação</span>
       </div>
@@ -145,6 +153,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { seasonStore } from '../services/season.store'
 import { rankingsStore } from '../services/rankings.store'
+import { careerStore } from '../services/career.store'
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { FEDERATIONS_DATA } from '../services/federations.data'
@@ -312,9 +321,15 @@ const parseTable = (str) => {
 const getRankFromExtra = (extra) => {
     if (!extra) return 999;
     const e = extra.toUpperCase();
-    if (e.includes('CAMPEÃO') || e === 'CAMPEAO') return 1;
+    // Prioridade: check Vice antes de Campeão para evitar bugs com "Vice-Campeão"
     if (e.includes('VICE') || e.includes('2º')) return 2;
-    if (e.includes('SEMIFINAL') || e.includes('4º') || e === '3º') return 4;
+    if (e.includes('CAMPEÃO') || e === 'CAMPEAO' || e === '1º') return 1;
+    
+    // Diferenciar 3º e 4º
+    if (e === '3º' || e.includes('3º COLOCADO') || e.includes('TERCEIRO')) return 3;
+    if (e === '4º' || e.includes('4º COLOCADO') || e.includes('QUARTO')) return 4;
+    
+    if (e.includes('SEMIFINAL')) return 4.5; // Semifinal genérica (sem 3º/4º definido)
     if (e.includes('QUARTAS') || e.includes('8º')) return 8;
     if (e.includes('OITAVAS') || e.includes('16º')) return 16;
     if (e.includes('16 AVOS')) return 24;
@@ -326,16 +341,26 @@ const getRankFromExtra = (extra) => {
 const getRank = (team, season, slot) => {
   const result = matrixData.value[team]?.[season]?.[slot.key]
   if (!result) return ''
-  const rank = result.rank
-  if (rank === 1) return '🏆 1º'
-  if (rank === 2) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> 2º'
-  if (rank === 4) return '4º'
-  if (rank === 8) return '8º'
-  if (rank === 16) return '16º'
-  if (rank === 24) return '16 AVOS'
-  if (rank === 32) return 'GF'
-  if (rank === 64) return 'P-LIB'
-  return rank + 'º'
+  const rank = Number(result.rank)
+  const isUser = careerStore.isUserTeam(team, season, result.compName || slot.label)
+  
+  let label = ''
+  if (rank === 1) label = '🏆 CAMPEÃO'
+  else if (rank === 2) label = '🥈 VICE'
+  else if (rank === 3) label = '🥉 3º LUGAR'
+  else if (rank === 4) label = '4º LUGAR'
+  else if (rank === 4.5) label = 'SEMIFINAL'
+  else if (rank === 8) label = 'QUARTAS'
+  else if (rank === 16) label = 'OITAVAS'
+  else if (rank === 24) label = '16 AVOS'
+  else if (rank === 32) label = 'GRUPOS'
+  else if (rank === 64) label = 'ELIMIN'
+  else label = rank + 'º'
+
+  if (isUser) {
+    return `<span class="d-flex align-items-center gap-1">${label} <i class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.8em;"></i></span>`
+  }
+  return label
 }
 
 const getCellBackground = (team, season, slot) => {
@@ -344,7 +369,9 @@ const getCellBackground = (team, season, slot) => {
   const rank = result.rank
   if (rank === 1) return 'expert-gold-bg neon-border-gold'
   if (rank === 2) return 'expert-silver-bg neon-border-silver'
-  if (rank === 4) return 'expert-bronze-intl-grad'
+  if (rank === 3) return 'expert-bronze-intl-grad'
+  if (rank === 4) return 'expert-copper-intl-grad'
+  if (rank === 4.5) return 'expert-bronze-intl-grad opacity-75'
   if (rank === 8) return 'expert-green-intl-grad'
   if (rank === 16) return 'expert-cyan-intl-grad'
   if (rank === 24) return 'expert-blue-intl-grad'
@@ -363,6 +390,7 @@ watch(() => route.params.id, () => {
 
 onMounted(async () => {
     await seasonStore.loadAll()
+    await careerStore.loadAll()
     setupSlots()
 })
 </script>
@@ -555,6 +583,12 @@ thead th {
   background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%) !important; 
   color: #fff !important; 
   font-weight: 950 !important;
+}
+
+.expert-copper-intl-grad { 
+  background: linear-gradient(135deg, #8b4513 0%, #5d2e0a 100%) !important; 
+  color: #fff !important; 
+  font-weight: 800 !important;
 }
 
 .expert-green-intl-grad { 

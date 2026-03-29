@@ -6,6 +6,7 @@ import {
     INTERNATIONAL_COMPETITIONS,
     CONCACAF_COMPETITIONS
 } from '../data/competitions.data';
+import { NATIONAL_COMPETITIONS_STRUCTURE } from './national.data';
 import { normalizeString, normalizeCountry } from './utils';
 
 export const dataSearchService = {
@@ -72,7 +73,8 @@ export const dataSearchService = {
             ...SOUTH_AMERICA_COMPETITIONS,
             ...UEFA_COMPETITIONS,
             ...INTERNATIONAL_COMPETITIONS,
-            ...CONCACAF_COMPETITIONS
+            ...CONCACAF_COMPETITIONS,
+            ...NATIONAL_COMPETITIONS_STRUCTURE.flatMap(continent => continent.competicoes)
         ];
         return allComps.find(c => normalizeString(c.nome) === search) ||
             allComps.find(c => normalizeString(c.nome).includes(search));
