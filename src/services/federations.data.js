@@ -48,5 +48,20 @@ export const FEDERATIONS_DATA = {
         nome: "AFC",
         logo: "https://a.imagem.app/B76MoQ.png",
         file: "afc.png"
+    },
+    "Outros Américas": {
+        nome: "CONMEBOL",
+        logo: "https://a.imagem.app/B76ggb.png",
+        file: "conmebol.png"
+    },
+    "Outros Europa": {
+        nome: "UEFA",
+        logo: "https://a.imagem.app/B76yUr.png",
+        file: "uefa.png"
+    },
+    "Outros África": {
+        nome: "CAF",
+        logo: "https://a.imagem.app/B76a00.webp",
+        file: "caf.png"
     }
 };

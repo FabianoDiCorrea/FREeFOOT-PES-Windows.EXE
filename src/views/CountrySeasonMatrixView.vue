@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2 bg-glass border-bottom border-white border-opacity-10 shadow-lg">
       <div class="d-flex align-items-center gap-4">
         <button @click="$router.push(`/pais/${countryId}/historico`)" class="btn btn-sm btn-action hover-glow px-3 me-2">
-          <i class="bi bi-table me-2"></i>HISTÓRICO
+          <i class="bi bi-table me-2"></i>VER HISTÓRICO
         </button>
         <button @click="$router.push('/universo?pais=' + countryName)" class="btn btn-sm btn-outline-info hover-glow px-3 me-2">
           <i class="bi bi-trophy me-2"></i>COMPETIÇÕES
@@ -148,32 +148,32 @@
     <!-- LEGENDA EXPERT COMPACTA -->
     <div class="mt-2 d-flex flex-wrap gap-3 align-items-center small opacity-75 px-2">
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-gold-bg neon-border-gold" style="width: 12px; height: 12px;"></div> 
-        <span>Campeão (A ou Intl)</span>
+        <div class="mini-box bg-pos-gold neon-border-gold" style="width: 12px; height: 12px;"></div> 
+        <span>Campeão</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-silver-bg neon-border-silver" style="width: 12px; height: 12px;"></div> 
-        <span>Vice / Top Ranking</span>
+        <div class="mini-box bg-pos-silver neon-border-silver" style="width: 12px; height: 12px;"></div> 
+        <span>Vice</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-green-bg" style="width: 12px; height: 12px; border: 1px solid #55ef44;"></div> 
-        <span>Acesso / Elite</span>
+        <div class="mini-box bg-pos-green" style="width: 12px; height: 12px;"></div> 
+        <span>Quartas / Acesso</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-red-bg" style="width: 12px; height: 12px; border: 1px solid #ff5555;"></div> 
-        <span>Rebaixado</span>
+        <div class="mini-box bg-pos-red-pre" style="width: 12px; height: 12px;"></div> 
+        <span>Rebaixado / Pré</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-bronze-intl-grad shadow-sm" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
-        <span>3º Lugar</span>
+        <div class="mini-box bg-pos-bronze" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
+        <span>3º / 4º / Semi</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-copper-intl-grad" style="width: 12px; height: 12px; border-radius: 2px;"></div> 
-        <span>4º Lugar</span>
+        <div class="mini-box bg-pos-blue-lib" style="width: 12px; height: 12px;"></div> 
+        <span>Oitavas</span>
       </div>
       <div class="d-flex align-items-center gap-1">
-        <div class="mini-box expert-blue-intl-bg" style="width: 12px; height: 12px; border: 1px solid #44d2ff;"></div> 
-        <span>Participação Intl</span>
+        <div class="mini-box bg-pos-blue-sula" style="width: 12px; height: 12px;"></div> 
+        <span>16 Avos</span>
       </div>
       <div class="ms-auto opacity-50">{{ sortedClubs.length }} Clubes | {{ sortedSeasons.length }} Temporadas</div>
     </div>
@@ -273,6 +273,20 @@ const setupSlots = () => {
     'América do Norte': [
       { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: getIntlLogo('CONCACAF') },
       { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
+    ],
+    // NOVOS GRUPOS "OUTROS"
+    'Outros Américas': [
+      { id: 'liberta', key: 'intl_Libertadores', name: 'Libertadores', shortName: 'LIBERTADORES', logo: getIntlLogo('Libertadores') },
+      { id: 'sula', key: 'intl_Sul-Americana', name: 'Sul-Americana', shortName: 'SUDAMERICANA', logo: getIntlLogo('Sul-Americana') },
+      { id: 'concacaf', key: 'intl_CONCACAF Champions', name: 'CONCACAF Champions', shortName: 'CONCACAF', logo: getIntlLogo('CONCACAF') },
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
+    ],
+    'Outros Europa': [
+      { id: 'champions', key: 'intl_Champions League', name: 'Champions League', shortName: 'CHAMPIONS', logo: getIntlLogo('Champions League') },
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
+    ],
+    'Outros África': [
+      { id: 'mundial', key: 'intl_Mundial de Clubes', name: 'Mundial de Clubes', shortName: 'MUNDIAL', logo: getIntlLogo('Mundial') }
     ]
   }
 
@@ -343,11 +357,19 @@ const processedMatrix = computed(() => {
   }
 
   // 1. Identificar clubes do país (Normalizado) incluindo os Customizados
-  const countryClubsNamesNormalized = clubStore.list.filter(c => 
-    normalizeCountry(c.pais) === countryIdVal
-  ).map(c => normalize(c.nome))
+  const countryClubsNamesNormalized = clubStore.list.filter(c => {
+    const clubCountry = normalizeCountry(c.pais)
+    if (clubCountry === countryIdVal) return true
+    
+    // Suporte Especial para Grupos "Outros": Se o clube tem o país da federação mas está marcado como "Outros"
+    // ou se o país do clube contém o termo "Outros" e estamos vendo uma matriz de "Outros"
+    if (countryIdVal.includes('outros') && clubCountry.includes('outros')) {
+       return clubCountry === countryIdVal
+    }
+    return false
+  }).map(c => normalize(c.nome))
 
-  if (countryClubsNamesNormalized.length === 0) {
+  if (countryClubsNamesNormalized.length === 0 && !countryIdVal.includes('outros')) {
     return { data, seasons: [], clubs: [], noClubs: true }
   }
 
@@ -673,79 +695,42 @@ const getRankFromExtra = (extra) => {
     const e = extra.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     if (e === 'CAMPEAO' || e.includes('CAMPEA')) return 1;
     if (e === 'VICE' || e.includes('VICE-CAMPEA') || e.includes('FINALISTA')) return 2;
-    if (e.includes('SEMIFINAL') || e === 'SEMI') return 4;
+    if (e.includes('TERCEIRO') || e === '3º') return 3;
+    if (e.includes('QUARTO') || e === '4º') return 4;
+    if (e.includes('SEMIFINAL') || e === 'SEMI') return 4.5;
     if (e.includes('QUARTAS DE FINAL') || e.includes('QUARTA DE FINAL') || e === 'QUARTAS') return 8;
     if (e.includes('OITAVAS DE FINAL') || e.includes('OITAVA DE FINAL') || e === 'OITAVAS') return 16;
-    if (e.includes('16 AVOS') || e === 'ELIMINADO 16') return 24;
+    if (e.includes('16 AVOS') || e === 'ELIMINADO 16' || e.includes('AVOS')) return 24;
     if (e.includes('GRUPOS') || e.includes('FASE DE GRUPOS')) return 32;
-    if (e.includes('PRE-COPA') || e.includes('ELIMINADO PRE') || e.includes('PRE COPA')) return 64;
-    if (e.includes('ELIM') || e.includes('ELIMINADO')) return 64;
-    if (e.includes('PRE') || e.includes('PRE')) return 64;
+    if (e.includes('LIBERTADORES') && (e.includes('PRE') || e.includes('PRE'))) return 64;
+    if (e.includes('PRE') || e.includes('ELIM') || e.includes('REBAIXADO')) return 64;
     return 999;
 }
 
 const getCellExpertStyle = (club, season, slot) => {
   const result = matrixData.value[club]?.[season]?.[slot.key]
   if (!result) return ''
-
   const rank = result.rank
-  const classes = []
+  
+  if (rank === 1) return 'bg-pos-gold neon-border-gold'
+  if (rank === 2) return 'bg-pos-silver neon-border-silver'
 
-  if (slot.type === 'league' && slot.meta) {
-    const { promovidos, rebaixados, label } = slot.meta
-    const isSerieA = slot.label === 'A'
-    
-    // CAMPEÃO (1º Lugar)
-    if (rank === 1) {
-      if (isSerieA) classes.push('expert-gold-bg', 'neon-border-gold')
-      else if (result.isAccess) classes.push('expert-champion-access-bg', 'neon-border-gold')
-      else classes.push('expert-green-bg', 'neon-border-gold')
-    } 
-    // VICE / ACESSO OU REBAIXAMENTO (DINÂMICO)
-    else {
-      if (rank === 2) {
-        if (result.isAccess && !isSerieA) classes.push('expert-vice-access-bg', 'neon-border-silver')
-        else classes.push('expert-silver-bg', 'neon-border-silver')
-      } else if (result.isAccess) {
-         classes.push('expert-green-bg')
-      } 
-      
-      if (result.isRelegation && isRelegationCountry.value) {
-         classes.push('expert-red-bg')
-      }
-
-      if (classes.length === 0) {
-         classes.push('expert-neutral-bg')
-      }
-    }
+  // LOGICA PARA LIGAS (Destaque apenas em zonas críticas)
+  if (slot.type === 'league') {
+    if (result.isAccess) return 'bg-pos-green neon-border-green'
+    if (result.isRelegation) return 'bg-pos-red'
+    return 'bg-pos-neutral'
   }
 
-  if (slot.type === 'cup') {
-    if (rank === 1) classes.push('expert-gold-bg', 'neon-border-gold')
-    else if (rank === 2) classes.push('expert-silver-bg', 'neon-border-silver')
-    else if (rank === 4) classes.push('expert-green-intl-grad')
-    else if (rank === 8) classes.push('expert-cyan-intl-grad')
-    else if (rank === 16) classes.push('expert-blue-intl-grad')
-    else if (rank === 24) classes.push('expert-brown-intl-grad') // 16 AVOS (MARROM)
-    else if (rank === 64) classes.push('expert-red-intl-grad')      // PRÉ-COPA
-    else classes.push('expert-neutral-bg')
-  }
-
-  if (slot.type === 'intl') {
-    if (rank === 1) classes.push('expert-gold-bg', 'neon-border-gold')
-    else if (rank === 2) classes.push('expert-silver-bg', 'neon-border-silver')
-    else if (rank === 3) classes.push('expert-bronze-intl-grad')
-    else if (rank === 4) classes.push('expert-copper-intl-grad')
-    else if (rank === 4.5) classes.push('expert-bronze-intl-grad', 'opacity-75')
-    else if (rank === 8) classes.push('expert-green-intl-grad')
-    else if (rank === 16) classes.push('expert-cyan-intl-grad')
-    else if (rank === 24) classes.push('expert-blue-intl-grad')
-    else if (rank === 32) classes.push('expert-red-light-intl-grad')
-    else if (rank === 64) classes.push('expert-red-intl-grad')
-    else classes.push('expert-neutral-bg')
-  }
-
-  return classes.join(' ')
+  // LOGICA PARA COPAS / INTERNACIONAIS (Destaque por fases)
+  if (rank === 3 || rank === 4 || rank === 4.5) return 'bg-pos-bronze'
+  if (rank === 8) return 'bg-pos-green'
+  if (rank === 16) return 'bg-pos-blue-lib'
+  if (rank === 24) return 'bg-pos-blue-sula'
+  if (rank === 32) return 'bg-pos-red'
+  if (rank === 64) return 'bg-pos-red'
+  
+  return 'bg-pos-neutral'
 }
 
 const getRank = (club, season, slot) => {
@@ -793,12 +778,14 @@ const getRank = (club, season, slot) => {
     else if (rank === 2) label = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><path fill="#ff4444" d="M5.8 2L8.5 2 11 10 8.3 10z"/><path fill="#0055ff" d="M18.2 2L15.5 2 13 10 15.7 10z"/><circle cx="12" cy="14" r="7" fill="#e0e0e0" stroke="#808080" stroke-width="1.5"/><text x="12" y="17.5" font-family="Arial" font-size="10" font-weight="bold" fill="#666" text-anchor="middle">2</text></svg> VICE'
     else if (rank === 3) label = '🥉 3º'
     else if (rank === 4) label = '4º LUGAR'
-    else if (rank === 4.5) label = 'SEMIFINAL'
+    else if (rank === 4.5) label = 'SEMI'
     else if (rank === 8) label = 'QUARTAS'
     else if (rank === 16) label = 'OITAVAS'
     else if (rank === 24) label = '16 AVOS'
     else if (rank === 32) label = 'GRUPOS'
-    else if (rank === 64) label = 'PRÉ-LIB'
+    else if (rank === 64) {
+        label = (result.compName?.includes('Libertadores') || result.colocacao?.includes('Libertadores')) ? 'PRÉ-LIB' : 'PRÉ-COPA'
+    }
     else label = rank + 'º'
   } else {
     label = rank + 'º'
@@ -969,12 +956,13 @@ thead th {
 .matrix-xl-cell {
   height: 30px;
   max-height: 30px;
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 0.68rem;
+  font-weight: 700;
   padding: 0 !important;
   vertical-align: middle;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
+  line-height: 1.1;
 }
 
 .cell-rank-text { display: block; }
@@ -1005,109 +993,16 @@ thead th {
   background: rgba(0, 242, 255, 0.2);
 }
 
-/* Cores Estilo Expert (Neon e Vibrantes) */
-.expert-gold-bg { 
-  background: linear-gradient(135deg, #ffed4b 0%, #ffd700 100%) !important; 
-  color: #332b00 !important; 
-  font-weight: 950 !important;
-}
+/* Cores Estilo Expert (Gradients Vibrantes Premium) */
+.bg-pos-gold { background: linear-gradient(180deg, #fff385 0%, #ffd700 50%, #b8860b 100%) !important; color: #000 !important; font-weight: 900 !important; box-shadow: inset 0 0 12px rgba(255,255,255,0.4) !important; }
+.bg-pos-silver { background: linear-gradient(180deg, #ffffff 0%, #d0d0d0 50%, #a0a0a0 100%) !important; color: #000 !important; font-weight: 850 !important; box-shadow: inset 0 0 12px rgba(255,255,255,0.3) !important; }
+.bg-pos-bronze { background: linear-gradient(180deg, #f0a35e 0%, #cd7f32 50%, #8b4513 100%) !important; color: #fff !important; font-weight: 700 !important; }
+.bg-pos-green { background: linear-gradient(180deg, #4ade80 0%, #2ecc71 50%, #27ae60 100%) !important; color: #fff !important; font-weight: 700 !important; }
+.bg-pos-blue-lib { background: linear-gradient(180deg, #67e8f9 0%, #00f2ff 50%, #00a8b3 100%) !important; color: #000 !important; font-weight: 750 !important; }
+.bg-pos-blue-sula { background: linear-gradient(180deg, #38bdf8 0%, #0096ff 50%, #0055aa 100%) !important; color: #fff !important; font-weight: 700 !important; }
+.bg-pos-red { background: linear-gradient(180deg, #f87171 0%, #ff4444 50%, #cc0000 100%) !important; color: #fff !important; font-weight: 700 !important; }
+.bg-pos-neutral { background: rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.8) !important; font-weight: 600 !important; }
 
-.expert-champion-access-bg {
-  background: linear-gradient(135deg, #28a745 0%, #ffd700 100%) !important;
-  color: #000 !important;
-  font-weight: 950 !important;
-}
-
-.expert-vice-access-bg {
-  background: linear-gradient(135deg, #28a745 0%, #c0c0c0 100%) !important;
-  color: #000 !important;
-  font-weight: 900 !important;
-}
-
-.expert-silver-bg { 
-  background: linear-gradient(135deg, #a0a0a0 0%, #707070 100%) !important; 
-  color: #ffffff !important; 
-  font-weight: 800 !important;
-}
-
-.expert-green-bg { 
-  background: #28a745 !important; 
-  color: #fff !important; 
-  border: 1px solid rgba(40, 167, 69, 0.3) !important;
-}
-
-.expert-red-bg { 
-  background: #dc3545 !important; 
-  color: #fff !important; 
-  font-weight: 800 !important;
-}
-
-.expert-bronze-bg { 
-  background: #ff8c00 !important; 
-  color: #fff !important; 
-  font-weight: 900 !important;
-}
-
-/* GRADIENTES PARA INTERNACIONAIS (DIFERENCIAÇÃO) - FONTE PRETA */
-.expert-bronze-intl-grad { 
-  background: linear-gradient(135deg, #ff8c00 0%, #cc7000 100%) !important; 
-  color: #000 !important; 
-  font-weight: 700 !important;
-}
-
-.expert-green-intl-grad { 
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%) !important; /* Emerald */
-  color: #000 !important; 
-  font-weight: 700 !important;
-}
-
-.expert-cyan-intl-grad { 
-  background: linear-gradient(135deg, #00f2ff 0%, #00a8b3 100%) !important; 
-  color: #000 !important; 
-  font-weight: 700 !important;
-}
-
-.expert-blue-intl-grad { 
-  background: linear-gradient(135deg, #0056b3 0%, #003366 100%) !important; 
-  color: #fff !important; 
-  font-weight: 700 !important;
-}
-
-.expert-brown-intl-grad { 
-  background: linear-gradient(135deg, #8d6e63 0%, #4e342e 100%) !important; /* Marrom/Bronze */
-  color: #fff !important; 
-  font-weight: 700 !important;
-}
-
-.expert-cyan-intl-grad { 
-  background: linear-gradient(135deg, #00f2ff 0%, #00a8b3 100%) !important; 
-  color: #000 !important; 
-  font-weight: 950 !important;
-}
-
-.expert-red-light-intl-grad { 
-  background: linear-gradient(135deg, #ff8a8a 0%, #ff6e6e 100%) !important; 
-  color: #fff !important; 
-  font-weight: 800 !important;
-}
-
-.expert-red-intl-grad { 
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important; /* Carmesim */
-  color: #fff !important; 
-  font-weight: 700 !important;
-}
-
-.expert-cyan-bg { 
-  background: #00f2ff !important; 
-  color: #000 !important; 
-  font-weight: 950 !important;
-}
-
-.expert-blue-bg { 
-  background: #0056b3 !important; 
-  color: #fff !important; 
-  font-weight: 700 !important;
-}
 
 /* Bordas Neon */
 .neon-border-gold {
@@ -1164,14 +1059,14 @@ thead th {
 .intl-slot-width {
   min-width: 110px !important;
   width: 110px !important;
-  font-size: 0.65rem !important;
+  font-size: 0.62rem !important;
   line-height: 1.2 !important;
-  letter-spacing: 0.5px !important;
-  font-weight: 900 !important;
+  letter-spacing: 0.4px !important;
+  font-weight: 800 !important;
 }
 
 .intl-slot-width .cell-rank-text {
-  font-weight: 950 !important;
+  font-weight: 850 !important;
 }
 
 /* Custom Scrollbar */

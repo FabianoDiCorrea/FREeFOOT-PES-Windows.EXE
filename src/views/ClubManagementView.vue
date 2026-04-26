@@ -307,12 +307,10 @@ onMounted(async () => {
 })
 
 const orderedContinents = computed(() => {
-  const order = ["América do Sul", "América do Norte", "Europa", "África", "Ásia", "Oceania"]
-  return [...ALL_COMPETITIONS_DATA].sort((a, b) => {
-    const idxA = order.indexOf(a.continente)
-    const idxB = order.indexOf(b.continente)
-    return (idxA > -1 ? idxA : 99) - (idxB > -1 ? idxB : 99)
-  })
+  const order = ["América do Sul", "Europa", "América do Norte", "Outros Américas", "Outros Europa", "Outros África"]
+  return ALL_COMPETITIONS_DATA
+    .filter(c => order.includes(c.continente))
+    .sort((a, b) => order.indexOf(a.continente) - order.indexOf(b.continente))
 })
 
 const searchResults = computed(() => {

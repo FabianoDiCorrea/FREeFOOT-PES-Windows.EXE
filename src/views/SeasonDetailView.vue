@@ -55,7 +55,7 @@
                     <div v-if="isNationalCompetition" class="d-flex align-items-center me-3 border-end border-white border-opacity-10 pe-3">
                       <NationalFlag :countryName="season.campeao" :size="50" class="rounded-circle shadow-lg" />
                     </div>
-                    <TeamShield :teamName="season.campeao" :size="100" borderless class="escudo-campeao" :season="season.ano" isNational />
+                    <TeamShield :teamName="season.campeao" :size="100" borderless class="escudo-campeao" :season="season.ano" :isNational="isNationalCompetition" />
                  </div>
 
                  <div class="text-start info-campeao">
@@ -92,7 +92,7 @@
                 <div v-if="isNationalCompetition" class="d-flex align-items-center me-2">
                   <NationalFlag :countryName="season.vice" :size="40" class="rounded-circle shadow" />
                 </div>
-                <TeamShield :teamName="season.vice" :size="80" borderless :season="season.ano" isNational />
+                <TeamShield :teamName="season.vice" :size="80" borderless :season="season.ano" :isNational="isNationalCompetition" />
               </div>
               <h6 class="fw-bold text-uppercase text-secondary mb-0 small d-flex align-items-center justify-content-center gap-2">
                 {{ season.vice || 'SEM VICE' }}
@@ -192,15 +192,15 @@
     </div>
 
     <!-- CONTEÚDO PRINCIPAL: TABELA + ARTILHARIA (SIDE-BY-SIDE SEM VÁCUO) -->
-    <div class="d-flex gap-2 align-items-start" :class="competitionInfo?.modoRegistro === 'liga' ? 'flex-nowrap w-100 overflow-x-auto overflow-y-hidden' : 'flex-wrap'">
+    <div class="d-flex gap-2 align-items-start flex-nowrap w-100 overflow-x-auto overflow-y-hidden">
       
-      <!-- LADO ESQUERDO: TABELA (AMPLIADA SÓ NA SUL-AMERICANA) -->
+      <!-- LADO ESQUERDO: TABELA -->
       <div v-if="(competitionInfo?.modoRegistro === 'liga' && season.tabela) || competitionInfo?.modoRegistro === 'participantes'" 
            class="flex-shrink-0" 
            :style="{ 
              width: 'fit-content', 
-             minWidth: season.competitionName === 'Sul-Americana' ? '650px' : 'auto', 
-             maxWidth: season.competitionName === 'Sul-Americana' ? '850px' : '600px' 
+             minWidth: season.competitionName === 'Sul-Americana' ? '700px' : 'auto', 
+             maxWidth: season.competitionName === 'Sul-Americana' ? '900px' : '750px' 
            }">
         
         <!-- Caso Liga -->
@@ -222,15 +222,29 @@
 
         <!-- Caso Participantes (Copa) -->
         <GamePanel v-if="competitionInfo?.modoRegistro === 'participantes'" customClass="p-0 overflow-hidden">
-          <div class="px-3 py-2 bg-success bg-opacity-10 d-flex justify-content-between align-items-center border-bottom border-success border-opacity-20">
-            <h6 class="m-0 text-success fw-black x-small text-uppercase ls-1"><i class="bi bi-people-fill me-2"></i>Classificação Final (Copa)</h6>
-            <button class="btn btn-sm btn-success fw-black x-small" @click="saveClassification">SALVAR CLASSIFICAÇÃO</button>
+          <div class="px-3 py-2 bg-success bg-opacity-10 d-flex justify-content-between align-items-center border-bottom border-success border-opacity-20 gap-3">
+            <h6 class="m-0 text-success fw-black x-small text-uppercase ls-1 flex-shrink-0">
+              <i class="bi bi-people-fill me-2"></i>Classificação Final (Copa)
+            </h6>
+            
+            <!-- SELETOR DE ORDENAÇÃO -->
+            <div class="d-flex align-items-center gap-2 ms-auto overflow-hidden">
+              <span class="text-success opacity-50 x-small fw-bold text-uppercase d-none d-lg-inline">Ordenar por:</span>
+              <select v-model="cupSortBy" class="form-select form-select-sm expert-sort-select">
+                <option value="POS">COLOCAÇÃO</option>
+                <option value="PAIS">PAÍS</option>
+                <option value="CONT">CONTINENTE</option>
+                <option value="NOME">NOME</option>
+              </select>
+            </div>
+
+            <button class="btn btn-sm btn-success fw-black x-small flex-shrink-0 shadow-sm px-3" @click="saveClassification" style="min-width: fit-content;">SALVAR CLASSIFICAÇÃO</button>
           </div>
           
           <div class="px-2 pb-3">
             <div class="cup-table-v2 custom-scrollbar">
               <!-- CABEÇALHO -->
-              <div class="cup-header-v2">
+              <div class="cup-header-v2" :class="{ 'is-sul-americana': season.competitionName === 'Sul-Americana' }">
                 <div class="h-main">
                   <div class="h-team">EQUIPE</div>
                 </div>
@@ -241,11 +255,10 @@
               </div>
 
               <!-- LINHAS -->
-              <div v-for="(p, idx) in season.participantes" :key="p.clubeId" 
+              <div v-for="(p, idx) in sortedParticipantes" :key="p.clubeId || p.nome" 
                    class="cup-row-v2"
                    :class="[
                      { 'row-alt': idx % 2 !== 0 },
-                     getPlacementColorClass(p.colocacao),
                      { 'is-sul-americana': season.competitionName === 'Sul-Americana' }
                    ]">
                 
@@ -282,7 +295,7 @@
                   </div>
 
                   <!-- 4. Nome do Time -->
-                  <span class="team-name text-truncate flex-grow-1 d-flex align-items-center gap-1">
+                  <span class="team-name flex-grow-1 d-flex align-items-center gap-1">
                     {{ p.nome }}
                     <i v-if="careerStore.isUserTeam(p.nome, season.ano, season.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9rem;"></i>
                   </span>
@@ -292,14 +305,16 @@
                 <div class="stats-group-cup">
                   <div v-if="!isNationalCompetition" class="stat-slant-cup country" :class="getFedColorClass(p.federacao)">
                     <!-- NOVO: BANDEIRA DO PAÍS COM BLUR (IGUAL AOS CARDS) -->
-                    <img v-if="p.pais && getFlagUrl(p.pais)" 
-                         :src="getCachedLogo(getFlagUrl(p.pais))" 
+                    <img v-if="p.pais && getSlantFlagUrl(p.pais)" 
+                         :src="getCachedLogo(getSlantFlagUrl(p.pais))" 
                          class="country-slant-bg-flag">
                     
                     <div class="country-bg-glass"></div>
                     
-                    <div class="d-flex align-items-center justify-content-center w-100 slant-content gap-2" style="padding-right: 5px;">
-                      <NationalFlag v-if="p.pais" :countryName="p.pais" :size="20" class="position-relative z-3" />
+                    <div class="d-flex align-items-center justify-content-start w-100 slant-content gap-2">
+                      <div class="flag-align-container d-flex justify-content-center" style="width: 32px; flex-shrink: 0;">
+                        <NationalFlag v-if="p.pais" :countryName="p.pais" :size="26" class="position-relative z-3 shadow-lg" />
+                      </div>
                       <span class="text-uppercase fw-black text-truncate" style="font-size: 0.7rem; letter-spacing: 0.5px;">{{ p.pais || '-' }}</span>
                     </div>
                   </div>
@@ -471,19 +486,26 @@ import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import MundialBracket from '../components/MundialBracket.vue'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
+import { clubStore } from '../services/club.store'
 
 // == Funções de Copa ==
+const getPlacementColorClass = (colocacao) => {
+    if (!colocacao) return ''
+    const n = colocacao.toLowerCase()
+    if (n.includes('campe')) return 'bg-pos-gold'
+    if (n.includes('vice')) return 'bg-pos-silver'
+    if (n.includes('3') || n.includes('4') || n.includes('terceiro') || n.includes('quarto')) return 'bg-pos-bronze'
+    if (n.includes('semi')) return 'bg-pos-bronze'
+    if (n.includes('quart')) return 'bg-pos-green'
+    if (n.includes('oitav')) return 'bg-pos-blue-lib'
+    if (n.includes('16 avos')) return 'bg-pos-blue-sula'
+    if (n.includes('grupo') || n.includes('eliminado')) return 'bg-pos-red-group'
+    if (n.includes('pre') || n.includes('pré')) return 'bg-pos-red-pre'
+    return 'bg-pos-gray'
+}
+
 const getCopaBadgeClass = (colocacao) => {
-  if (!colocacao) return 'bg-secondary text-white'
-  const n = colocacao.toLowerCase()
-  if (n.includes('campe')) return 'bg-warning text-dark'
-  if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark'
-  if (n.includes('semi')) return 'bg-success text-white'
-  if (n.includes('3') || n.includes('terceiro')) return 'bg-bronze text-white'
-  if (n.includes('4') || n.includes('quarto')) return 'bg-bronze text-white'
-  if (n.includes('quart')) return 'bg-info text-dark'
-  if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
-  return 'bg-secondary text-white'
+  return getPlacementColorClass(colocacao)
 }
 
 const getCopaPhasesGrouped = (participantes) => {
@@ -497,12 +519,15 @@ const getCopaPhasesGrouped = (participantes) => {
     
     if (norm.includes('campe')) colocacao = 'Campeão'
     else if (norm.includes('vice')) colocacao = 'Vice'
+    else if (norm.includes('3') || norm.includes('terceiro')) colocacao = '3º COLOCADO'
+    else if (norm.includes('4') || norm.includes('quarto')) colocacao = '4º COLOCADO'
     else if (norm.includes('semi')) colocacao = 'Semifinal'
     else if (norm.includes('quart')) colocacao = 'Quartas'
     else if (norm.includes('oitav') || norm === '16') colocacao = 'Oitavas'
     else if (norm.includes('16') || norm.includes('avos')) colocacao = '16 Avos'
-    else if (norm.includes('pre') || norm.includes('pré')) colocacao = 'Pré-Copa'
-    else if (norm.includes('grupos')) colocacao = 'Grupos'
+    else if (norm.includes('libertadores') && (norm.includes('pre') || norm.includes('pré'))) colocacao = 'Pré-Libertadores'
+    else if (norm.includes('pre') || norm.includes('pré')) colocacao = (season.value?.competitionName?.includes('Libertadores')) ? 'Pré-Libertadores' : 'Pré-Copa'
+    else if (norm.includes('grupos') || norm.includes('grupo')) colocacao = 'Fase de Grupos'
     
     if (!phaseMap.has(colocacao)) {
       phaseMap.set(colocacao, { label: colocacao, teams: [], badgeClass: getCopaBadgeClass(colocacao) })
@@ -510,7 +535,7 @@ const getCopaPhasesGrouped = (participantes) => {
     phaseMap.get(colocacao).teams.push(p)
   })
   
-  const phaseOrder = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
   return Array.from(phaseMap.values()).sort((a, b) => {
     const ia = phaseOrder.indexOf(a.label)
     const ib = phaseOrder.indexOf(b.label)
@@ -519,27 +544,10 @@ const getCopaPhasesGrouped = (participantes) => {
 }
 
 const dynamicPlacements = computed(() => {
-  const base = [
-    'CAMPEÃO',
-    'VICE',
+  return [
+    'CAMPEÃO', 'VICE', '3º COLOCADO', '4º COLOCADO', 'SEMIFINAL', 
+    'QUARTAS', 'OITAVAS', '16 AVOS', 'FASE DE GRUPOS', 'PRÉ-COPA', 'PRÉ-LIBERTADORES', 'ELIMINADO', 'PARTICIPANTE'
   ]
-  
-  // Adicionar 3º e 4º para seleções ou se for Copa do Mundo/Continental
-  const isNational = competitionInfo.value?.id >= 1000
-  if (isNational) {
-    base.push('3º COLOCADO', '4º COLOCADO')
-  }
-
-  base.push(
-    '16 AVOS',
-    'SEMIFINAL',
-    'QUARTAS',
-    'OITAVAS',
-    'FASE DE GRUPOS',
-    'PRÉ-COPA',
-    'PRÉ-LIBERTADORES'
-  )
-  return base
 })
 
 const libertadoresTeams = ref([])
@@ -604,6 +612,46 @@ const updateMundialField = (phase, field, value) => {
   if (!season.value?.mundial) return
   season.value.mundial[phase][field] = value
 }
+
+const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
+
+const getPhaseRank = (coloc) => {
+  if (!coloc) return 99
+  const norm = coloc.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.]/g, '')
+  if (norm.includes('campe')) return 0
+  if (norm.includes('vice')) return 1
+  if (norm.includes('3') || norm.includes('terceiro')) return 2
+  if (norm.includes('4') || norm.includes('quarto')) return 3
+  if (norm.includes('semi')) return 4
+  if (norm.includes('quart')) return 5
+  if (norm.includes('oitav') || norm === '16') return 6
+  if (norm.includes('16') || norm.includes('avos')) return 7
+  if (norm.includes('grupo')) return 8
+  if (norm.includes('pre') || norm.includes('pré')) return 9
+  return 10
+}
+
+const cupSortBy = ref('POS')
+
+const sortedParticipantes = computed(() => {
+  if (!season.value?.participantes) return []
+  const list = [...season.value.participantes]
+  
+  if (cupSortBy.value === 'PAIS') {
+    return list.sort((a, b) => (a.pais || '').localeCompare(b.pais || ''))
+  }
+  
+  if (cupSortBy.value === 'NOME') {
+    return list.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+  }
+  
+  if (cupSortBy.value === 'CONT') {
+    return list.sort((a, b) => (a.federacao || '').localeCompare(b.federacao || ''))
+  }
+  
+  // Default: POS (Colocação seguindo phaseOrder)
+  return list.sort((a, b) => getPhaseRank(a.colocacao) - getPhaseRank(b.colocacao))
+})
 
 const computeMundialResults = () => {
   const m = season.value?.mundial;
@@ -700,10 +748,27 @@ const saveMundialBracket = async () => {
   }
 }
 
+// Mapeamento especial para Grupos de Outros Clubes (ÍCONES REDONDOS)
 const getFlagUrl = (countryName) => {
   if (!countryName) return null
+
+  if (countryName === 'Outros Américas') return 'logos/competitions/banner-americas-redondo.png'
+  if (countryName === 'Outros Europa') return 'logos/competitions/banner-europa-redondo.png'
+  if (countryName === 'Outros África') return 'logos/competitions/banner-africa-redondo.png'
+
   const data = dataSearchService.findNationalTeam(countryName) || dataSearchService.findClub(countryName)
   return data?.bandeira_url || null
+}
+
+// Mapeamento especial para BANNERS DE FUNDO (RETANGULARES)
+const getSlantFlagUrl = (countryName) => {
+  if (!countryName) return null
+
+  if (countryName === 'Outros Américas') return 'logos/competitions/banner-americas.png'
+  if (countryName === 'Outros Europa') return 'logos/competitions/banner-europa.png'
+  if (countryName === 'Outros África') return 'logos/competitions/banner-africa.png'
+
+  return getFlagUrl(countryName)
 }
 
 const isNationalCompetition = computed(() => {
@@ -751,11 +816,22 @@ const getFederation = (continentName) => {
 
 const getClubInfo = (clubName) => {
   if (!clubName) return null;
-  const club = CLUBS_DATA.find(c => c.nome?.toLowerCase().trim() === clubName.toLowerCase().trim());
+  // Usar clubStore para busca robusta (inclui customizados e normalização)
+  const club = clubStore.getClub(clubName);
   if (!club) return null;
+  
+  const cont = (club.continente || '').toUpperCase();
+  let displayCountry = club.pais;
+  
+  // Mapeamento automático para grupos de "Outros" se o clube estiver categorizado assim
+  if (cont.includes('OUTROS AMÉRICAS')) displayCountry = 'Outros Américas';
+  else if (cont.includes('OUTROS EUROPA')) displayCountry = 'Outros Europa';
+  else if (cont.includes('OUTROS ÁFRICA')) displayCountry = 'Outros África';
+  
   const fed = getFederation(club.continente);
+  
   return {
-    pais: club.pais,
+    pais: displayCountry,
     bandeira: club.bandeira_url,
     federacao: fed.nome,
     federacaoLogo: fed.logo
@@ -852,6 +928,19 @@ const loadSeasonData = async () => {
       }
     }
     
+    if (season.value.participantes) {
+      season.value.participantes.forEach(p => {
+        // Fallback: Se o país for '-' ou vazio, tenta recuperar via getClubInfo
+        if (!p.pais || p.pais === '-' || !p.federacao) {
+          const info = getClubInfo(p.nome);
+          if (info) {
+            if (!p.pais || p.pais === '-') p.pais = info.pais;
+            if (!p.federacao) p.federacao = info.federacao;
+          }
+        }
+      });
+    }
+    
     if (hasScorers.value) {
       for (const sc of allScorers.value) {
         if (sc.fotoUrl && !sc.fotoUrl.startsWith('http') && !sc.fotoUrl.startsWith('data:')) {
@@ -863,20 +952,7 @@ const loadSeasonData = async () => {
   }
 }
 
-const getPlacementColorClass = (colocacao) => {
-  if (!colocacao) return '';
-  const c = colocacao.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  if (c.includes('CAMPEAO')) return 'pos-gold';
-  if (c.includes('VICE')) return 'pos-silver';
-  if (c.includes('3') || c.includes('4')) return 'pos-bronze';
-  if (c.includes('SEMIFINAL')) return 'pos-secondary';
-  if (c.includes('QUARTAS')) return 'pos-green';
-  if (c.includes('OITAVAS')) return 'pos-cyan';
-  if (c.includes('16 AVOS')) return 'pos-blue';
-  if (c.includes('GRUPO')) return 'pos-red-light';
-  if (c.includes('PRE')) return 'pos-red';
-  return '';
-}
+
 
 const getFedColorClass = (fedName) => {
   if (!fedName) return '';
@@ -964,9 +1040,13 @@ const saveClassification = async () => {
   if (vice) season.value.vice = vice.nome;
 
   try {
+    // IMPORTANTE: Ordenar os participantes por colocação ANTES de salvar a tabela string
+    // Isso garante que o Raio-X leia na ordem certa (Campeão no topo)
+    const sortedToSave = [...season.value.participantes].sort((a, b) => getPhaseRank(a.colocacao) - getPhaseRank(b.colocacao));
+
     // Gerar string da tabela para compatibilidade com históricos
     let tableStr = '';
-    season.value.participantes.forEach((p, index) => {
+    sortedToSave.forEach((p, index) => {
        tableStr += `${index + 1}\t${p.nome}\t${p.colocacao || '-'}\n`;
     });
 
@@ -1329,15 +1409,19 @@ const saveClassification = async () => {
 
 .h-main {
   display: flex;
-  width: 210px;
+  width: 280px; /* Reduzido de 310px */
   font-weight: 900;
   font-size: 0.6rem;
   color: rgba(255, 255, 255, 0.4);
   letter-spacing: 1px;
 }
 
+.cup-header-v2.is-sul-americana .h-main {
+  width: 360px; /* Reduzido de 410px */
+}
+
 .h-pos { width: 40px; text-align: center; }
-.h-team { padding-left: 15px; display: flex; align-items: center; justify-content: flex-start; }
+.h-team { padding-left: 10px; display: flex; align-items: center; justify-content: flex-start; }
 
 .h-stats {
   display: flex;
@@ -1358,9 +1442,9 @@ const saveClassification = async () => {
   padding: 0 10px;
 }
 
-.h-slant.country { width: 160px; }
+.h-slant.country { width: 220px; } /* Ajustado para 220px */
+.h-slant.pos { width: 170px; }
 .h-slant.fed { width: 80px; }
-.h-slant.pos { width: 140px; }
 
 .cup-row-v2 {
   display: flex;
@@ -1427,10 +1511,11 @@ const saveClassification = async () => {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px; /* Gap reduzido para o padrão */
+  gap: 8px;
   padding-left: 8px;
-  width: 220px; /* Ajustado de 210 para 220 para acomodar troféu+escudo com folga */
-  z-index: 1;
+  padding-right: 10px;
+  width: 280px; /* Reduzido de 310px */
+  z-index: 5;
   background: rgba(30, 40, 55, 0.98); 
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: width 0.3s ease;
@@ -1438,7 +1523,7 @@ const saveClassification = async () => {
 
 /* LAYOUT ESPECIAL APENAS PARA SUL-AMERICANA */
 .cup-row-v2.is-sul-americana .team-info-cup {
-  width: 320px;
+  width: 360px; /* Reduzido de 410px */
   gap: 12px;
 }
 
@@ -1496,10 +1581,13 @@ const saveClassification = async () => {
 
 .team-name {
   font-weight: 800;
-  font-size: 0.75rem;
+  font-size: 0.70rem;
   text-transform: uppercase;
-  color: #fff !important; /* Garantindo nome branco independente da posição */
+  color: #fff !important;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stats-group-cup {
@@ -1521,13 +1609,20 @@ const saveClassification = async () => {
   transform: skewX(20deg);
   display: flex;
   align-items: center;
-  justify-content: center; /* Centralizado conforme solicitado */
+  justify-content: flex-start; 
+  padding-left: 15px; /* Reduzido de 20px */
   width: 100%;
   font-weight: 800;
   font-size: 0.65rem;
   z-index: 2;
   position: relative;
   text-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.stat-slant-cup.select-col .slant-content {
+  font-size: 0.58rem; /* Fonte ainda menor para garantir que caiba */
+  justify-content: center;
+  padding: 0 10px; /* Margem interna de segurança */
 }
 
 .country-bg-glass {
@@ -1542,7 +1637,7 @@ const saveClassification = async () => {
 }
 
 .stat-slant-cup.country { 
-  width: 160px;
+  width: 220px; /* Aumentado para não cortar "OUTROS AMÉRICAS" */
   border-left: 2px solid rgba(255, 255, 255, 0.05);
   position: relative;
   overflow: hidden; /* Garante que o blur não vaze */
@@ -1551,14 +1646,14 @@ const saveClassification = async () => {
 .country-slant-bg-flag {
   position: absolute;
   top: 0;
-  left: -5%; /* Mais centralizada para visibilidade */
-  transform: skewX(20deg) scale(1.5); 
-  width: 80%; 
+  left: -20%; /* Posição ajustada para amplitude */
+  transform: skewX(20deg) scale(2.2); 
+  width: 100%; 
   height: 100%;
   object-fit: cover;
-  opacity: 0.7; /* Bem visível agora */
-  filter: brightness(0.9); /* Removi o blur para silhueta nítida */
-  mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  opacity: 0.4; /* Mais translúcido para não ofuscar a bandeira redonda */
+  filter: brightness(0.85); 
+  mask-image: linear-gradient(to right, black 65%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
   z-index: 1;
   pointer-events: none;
@@ -1592,7 +1687,7 @@ const saveClassification = async () => {
   background: linear-gradient(90deg, rgba(0, 255, 255, 0.15), transparent) !important;
 }
 
-.stat-slant-cup.select-col { width: 140px; background: rgba(0, 0, 0, 0.4); }
+.stat-slant-cup.select-col { width: 170px; background: rgba(0, 0, 0, 0.4); }
 
 /* SPECIAL ROW ACCENTS */
 .linha-campeao {
@@ -1619,9 +1714,9 @@ const saveClassification = async () => {
   border: none !important;
   color: #000 !important;
   font-size: 0.65rem;
-  padding: 0 10px;
+  padding: 0 4px !important; /* Padding reduzido para ganhar espaço lateral */
   height: 28px;
-  width: 130px;
+  width: 100% !important; /* Mudei para 100% para parar de cortar por largura fixa */
   cursor: pointer;
   appearance: none;
   text-align: center;
@@ -1736,93 +1831,65 @@ select.cup-input-select.pos-silver option:checked {
   50% { opacity: 1; transform: scale(1.2); }
   100% { opacity: 0.7; transform: scale(1); }
 }
-/* FUNDO DAS LINHAS (SUAVE) */
-.cup-row-v2.pos-gold { background: rgba(255, 215, 0, 0.15) !important; }
-.cup-row-v2.pos-silver { background: rgba(192, 192, 192, 0.15) !important; }
-.cup-row-v2.pos-bronze { background: rgba(255, 140, 0, 0.15) !important; }
-.cup-row-v2.pos-green { background: rgba(46, 204, 113, 0.15) !important; }
-.cup-row-v2.pos-cyan { background: rgba(0, 242, 255, 0.15) !important; }
-.cup-row-v2.pos-blue-dark { background: rgba(0, 86, 179, 0.15) !important; }
-.cup-row-v2.pos-red { background: rgba(231, 76, 60, 0.15) !important; }
+/* FUNDOS E BORDAS POR POSIÇÃO */
+.team-info-cup { border-left: 4px solid transparent; } /* Base para indicador de posição */
+.team-info-cup.pos-gold { border-left-color: #ffd700 !important; }
+.team-info-cup.pos-silver { border-left-color: #ffffff !important; }
+.team-info-cup.pos-bronze { border-left-color: #cd7f32 !important; }
+.team-info-cup.pos-green { border-left-color: #2ecc71 !important; }
+.team-info-cup.pos-blue-lib { border-left-color: #00f2ff !important; }
+.team-info-cup.pos-blue-sula { border-left-color: #0096ff !important; }
+.team-info-cup.pos-red-group { border-left-color: #ff4444 !important; }
+.team-info-cup.pos-red-pre { border-left-color: #ff7777 !important; }
 
-/* BADGES DAS POSIÇÕES (VIBRANTES/SÓLIDAS) - COR DE FUNDO E TEXTO */
+.cup-row-v2 .select-col.pos-gold { background: rgba(255, 237, 75, 0.5) !important; border-left: 2px solid #ffd700; }
+.cup-row-v2 .select-col.pos-silver { background: rgba(224, 224, 224, 0.4) !important; border-left: 2px solid #ffffff; }
+.cup-row-v2 .select-col.pos-bronze { background: rgba(205, 127, 50, 0.4) !important; border-left: 2px solid #cd7f32; }
+.cup-row-v2 .select-col.pos-green { background: rgba(40, 167, 69, 0.4) !important; border-left: 2px solid #2ecc71; }
+.cup-row-v2 .select-col.pos-blue-lib { background: rgba(0, 123, 255, 0.4) !important; border-left: 2px solid #00f2ff; }
+.cup-row-v2 .select-col.pos-blue-sula { background: rgba(0, 85, 255, 0.4) !important; border-left: 2px solid #0096ff; }
+.cup-row-v2 .select-col.pos-red-group { background: rgba(220, 53, 69, 0.4) !important; border-left: 2px solid #ff4444; }
+.cup-row-v2 .select-col.pos-red-pre { background: rgba(255, 77, 77, 0.4) !important; border-left: 2px solid #ff7777; }
+
+/* RE-MAPEAMENTO DAS CLASSES ANTIGAS PARA COMPATIBILIDADE NO DETALHE */
+.cup-row-v2.pos-cyan { background: rgba(0, 123, 255, 0.15) !important; }
+.cup-row-v2.pos-blue-dark { background: rgba(0, 85, 255, 0.15) !important; }
+.cup-row-v2.pos-red { background: rgba(220, 53, 69, 0.15) !important; }
+
+/* BADGES DAS POSIÇÕES (VIBRANTES/SÓLIDAS) - HERDANDO DO PLACEMENTS.CSS */
 select.form-select.cup-input-select.pos-gold { 
-  background-color: #ffd700 !important; 
-  color: #000 !important; 
-  font-weight: 800 !important; /* Reduzido de 950 */
-  font-size: 0.9rem !important; /* Aumentado de 0.65rem */
-  opacity: 1 !important; 
-  -webkit-text-fill-color: #000000 !important;
-  text-shadow: 0 0 1px #cfcccc !important;
-  filter: contrast(2);
+  background-color: var(--pos-gold) !important; 
+  color: var(--pos-gold-text) !important; 
 }
-
 select.form-select.cup-input-select.pos-silver { 
-  background-color: #c0c0c0 !important; 
-  color: #000 !important; 
-  font-weight: 800 !important; /* Reduzido de 950 */
-  font-size: 0.9rem !important; /* Aumentado de 0.65rem */
-  opacity: 1 !important;
-  -webkit-text-fill-color: #000 !important;
-  text-shadow: 0 0 1px cfcccc !important;
-  filter: contrast(2);
+  background-color: var(--pos-silver) !important; 
+  color: var(--pos-silver-text) !important; 
 }
-
 select.form-select.cup-input-select.pos-bronze { 
-  background-color: #8b7355 !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
+  background-color: var(--pos-bronze) !important; 
+  color: var(--pos-bronze-text) !important; 
 }
-
-.bg-bronze {
-  background-color: #8b7355 !important;
-}
-
 select.form-select.cup-input-select.pos-green { 
-  background-color: #28a745 !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
+  background-color: var(--pos-green) !important; 
+  color: var(--pos-green-text) !important; 
+}
+select.form-select.cup-input-select.pos-blue-lib { 
+  background-color: var(--pos-blue-lib) !important; 
+  color: var(--pos-blue-lib-text) !important; 
+}
+select.form-select.cup-input-select.pos-blue-sula { 
+  background-color: var(--pos-blue-sula) !important; 
+  color: var(--pos-blue-sula-text) !important; 
+}
+select.form-select.cup-input-select.pos-red-group { 
+  background-color: var(--pos-red-group) !important; 
+  color: var(--pos-red-group-text) !important; 
+}
+select.form-select.cup-input-select.pos-red-pre { 
+  background-color: var(--pos-red-pre) !important; 
+  color: var(--pos-red-pre-text) !important; 
 }
 
-select.form-select.cup-input-select.pos-cyan { 
-  background-color: #0b8eca !important; 
-  color: #fffafa !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #fffafa !important;
-}
-
-select.form-select.cup-input-select.pos-blue-dark { 
-  background-color: #0e00d8 !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-select.form-select.cup-input-select.pos-red { 
-  background-color: #dc3545 !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-.cup-row-v2.pos-blue { background: rgba(0, 150, 255, 0.15) !important; }
-.cup-row-v2.pos-red-light { background: rgba(255, 0, 0, 0.1) !important; }
-
-select.form-select.cup-input-select.pos-blue { 
-  background-color: #0026ff !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-select.form-select.cup-input-select.pos-red-light { 
-  background-color: #ff6e6e !important; 
-  color: #ffffff !important; 
-  font-weight: 950 !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
 
 .lib-indicator-large {
   width: 100px;
@@ -1964,7 +2031,32 @@ select.form-select.cup-input-select.pos-red-light {
 @media (max-width: 768px) {
   .prints-count-2, .prints-count-3 { grid-template-columns: 1fr; }
 }
-/* == CLASSIFICAÇÃO FINAL DE COPA (COMPACTO) == */
+.expert-sort-select {
+  background-color: rgba(25, 135, 84, 0.2);
+  border: 1px solid rgba(25, 135, 84, 0.4);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  width: auto;
+  min-width: 130px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.expert-sort-select:focus {
+  background-color: rgba(25, 135, 84, 0.4);
+  border-color: #198754;
+  box-shadow: 0 0 10px rgba(25, 135, 84, 0.3);
+  color: #fff;
+}
+
+.expert-sort-select option {
+  background-color: #1a1a1a;
+  color: #fff;
+  font-weight: 700;
+}
 .copa-phases-wrapper {
   display: flex;
   flex-direction: column;

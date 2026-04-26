@@ -118,4 +118,58 @@ export const CONCACAF_DATA = {
     internacionais: INTERNATIONAL_COMPETITIONS.filter(c => c.pais === "Mundo")
 };
 
-export const ALL_COMPETITIONS_DATA = [SOUTH_AMERICA_DATA, EUROPE_DATA, CONCACAF_DATA];
+export const OUTROS_AMERICAS_DATA = {
+    continente: "Outros Américas",
+    logo_continente: "logos/competitions/banner-americas-redondo.png",
+    paises: [
+        {
+            nome: "Outros Américas",
+            bandeira: "logos/competitions/banner-americas-redondo.png",
+            competicoes: []
+        }
+    ],
+    continentais: INTERNATIONAL_COMPETITIONS.filter(c => 
+        c.nome === "Copa Libertadores" || 
+        c.nome === "Copa Sul-Americana" || 
+        c.nome === "Recopa Sul-Americana" || 
+        c.nome === "CONCACAF Champions"
+    ),
+    internacionais: INTERNATIONAL_COMPETITIONS.filter(c => c.nome === "Mundial de Clubes")
+};
+
+export const OUTROS_EUROPA_DATA = {
+    continente: "Outros Europa",
+    logo_continente: "logos/competitions/banner-europa-redondo.png",
+    paises: [
+        {
+            nome: "Outros Europa",
+            bandeira: "logos/competitions/banner-europa-redondo.png",
+            competicoes: []
+        }
+    ],
+    continentais: INTERNATIONAL_COMPETITIONS.filter(c => c.nome === "Champions League"),
+    internacionais: INTERNATIONAL_COMPETITIONS.filter(c => c.nome === "Mundial de Clubes")
+};
+
+export const OUTROS_AFRICA_DATA = {
+    continente: "Outros África",
+    logo_continente: "logos/competitions/banner-africa-redondo.png",
+    paises: [
+        {
+            nome: "Outros África",
+            bandeira: "logos/competitions/banner-africa-redondo.png",
+            competicoes: []
+        }
+    ],
+    continentais: [],
+    internacionais: INTERNATIONAL_COMPETITIONS.filter(c => c.nome === "Mundial de Clubes")
+};
+
+export const ALL_COMPETITIONS_DATA = [
+    SOUTH_AMERICA_DATA, 
+    EUROPE_DATA, 
+    CONCACAF_DATA,
+    OUTROS_AMERICAS_DATA,
+    OUTROS_EUROPA_DATA,
+    OUTROS_AFRICA_DATA
+];

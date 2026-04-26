@@ -1,0 +1,73 @@
+/* Paleta de Cores de Colocação Padronizada */
+:root {
+  --pos-gold: #ffed4b;
+  --pos-gold-text: #000;
+  
+  --pos-silver: #e0e0e0;
+  --pos-silver-text: #000;
+  
+  --pos-bronze: #cd7f32;
+  --pos-bronze-text: #fff;
+  
+  --pos-green: #28a745;
+  --pos-green-text: #fff;
+  
+  --pos-blue-lib: #007bff;
+  --pos-blue-lib-text: #fff;
+  
+  --pos-blue-sula: #0055ff;
+  --pos-blue-sula-text: #fff;
+  
+  --pos-red-group: #dc3545;
+  --pos-red-group-text: #fff;
+  
+  --pos-red-pre: #ff4d4d;
+  --pos-red-pre-text: #fff;
+
+  --pos-gray: #6c757d;
+  --pos-gray-text: #fff;
+}
+
+/* Classes de Badge / Select (Sólidas) */
+.bg-pos-gold { background-color: var(--pos-gold) !important; color: var(--pos-gold-text) !important; font-weight: 900 !important; }
+.bg-pos-silver { background-color: var(--pos-silver) !important; color: var(--pos-silver-text) !important; font-weight: 900 !important; }
+.bg-pos-bronze { background-color: var(--pos-bronze) !important; color: var(--pos-bronze-text) !important; font-weight: 800 !important; }
+.bg-pos-green { background-color: var(--pos-green) !important; color: var(--pos-green-text) !important; font-weight: 800 !important; }
+.bg-pos-blue-lib { background-color: var(--pos-blue-lib) !important; color: var(--pos-blue-lib-text) !important; font-weight: 800 !important; }
+.bg-pos-blue-sula { background-color: var(--pos-blue-sula) !important; color: var(--pos-blue-sula-text) !important; font-weight: 800 !important; }
+.bg-pos-red-group { background-color: var(--pos-red-group) !important; color: var(--pos-red-group-text) !important; font-weight: 800 !important; }
+.bg-pos-red-pre { background-color: var(--pos-red-pre) !important; color: var(--pos-red-pre-text) !important; font-weight: 800 !important; }
+.bg-pos-gray { background-color: var(--pos-gray) !important; color: var(--pos-gray-text) !important; }
+
+/* Classes de Linha (Transparentes) */
+.row-pos-gold { background: rgba(255, 237, 75, 0.15) !important; }
+.row-pos-silver { background: rgba(224, 224, 224, 0.15) !important; }
+.row-pos-bronze { background: rgba(205, 127, 50, 0.15) !important; }
+.row-pos-green { background: rgba(40, 167, 69, 0.15) !important; }
+.row-pos-blue-lib { background: rgba(0, 123, 255, 0.15) !important; }
+.row-pos-blue-sula { background: rgba(0, 85, 255, 0.15) !important; }
+.row-pos-red-group { background: rgba(220, 53, 69, 0.15) !important; }
+.row-pos-red-pre { background: rgba(255, 77, 77, 0.15) !important; }
+
+/* Estilos Específicos para Selects de Colocação */
+.cup-input-select {
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    cursor: pointer !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    text-align: center !important;
+}
+
+.cup-input-select option {
+    background-color: #1a1a24;
+    color: #fff;
+    padding: 10px;
+}
+
+/* Aplicar cores dinâmicas via classes injectadas */
+.form-select.bg-pos-gold { color: #000 !important; -webkit-text-fill-color: #000 !important; }
+.form-select.bg-pos-silver { color: #000 !important; -webkit-text-fill-color: #000 !important; }

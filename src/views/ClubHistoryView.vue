@@ -435,16 +435,23 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
               let badgeText = isChampion ? 'CAMPEÃO' : isVice ? 'VICE' : `${position}º LUGAR`
               
               // Lógica de Acesso/Rebaixamento Simplificada mas Funcional
-              const lowName = compName.toLowerCase()
+              const lowName = normalizeString(compName)
               const isSerieA = lowName.includes('serie a') || lowName.includes('liga profissional') || lowName.includes('premier league') || lowName.includes('brasileirao')
               const isLowerSerie = lowName.includes('serie b') || lowName.includes('serie c') || lowName.includes('serie d') || lowName.includes('national')
 
-              const isPromoted = !isSerieA && (position <= 4 || isChampion) && isLowerSerie
-              const isRelegated = isSerieA && position >= 17 && tableData.length >= 17
+              const isPromoted = !isSerieA && position <= 4 && (isLowerSerie || lowName.includes('serie b') || lowName.includes('serie c'))
+              const isRelegated = isSerieA && position >= 17
+              let description = ''
 
-              let description = isChampion ? `Venceu a ${compName}` : isVice ? `Vice-campeão da ${compName}` : `Disputou a ${compName}`
-              
-              if (isPromoted && !isChampion) {
+              if (isChampion) {
+                  statusType = 'champion'
+                  badgeText = 'CAMPEÃO'
+                  description = `Venceu a ${compName}`
+              } else if (isVice) {
+                  statusType = 'vice'
+                  badgeText = 'VICE'
+                  description = `Vice-campeão da ${compName}`
+              } else if (isPromoted) {
                   statusType = 'promoted'
                   badgeText = 'ACESSO'
                   description = `${position}º lugar - Acesso garantido na ${compName}`
@@ -452,7 +459,9 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
                   statusType = 'relegated'
                   badgeText = 'REBAIXADO'
                   description = `${position}º lugar - Rebaixado na ${compName}`
-              } else if (!isChampion && !isVice) {
+              } else {
+                  statusType = 'neutral'
+                  badgeText = `${position}º LUGAR`
                   description = `${position}º lugar na ${compName}`
               }
 
@@ -466,9 +475,8 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
                   type: statusType,
                   badgeText,
                   description,
-                  statusClass: getStatusClass(statusType),
-                  icon: isChampion ? 'bi-trophy-fill' : isVice ? 'bi-award' : 'bi-shield',
                   badgeClass: getBadgeClass(statusType),
+                  statusClass: getStatusClass(statusType) + (isPromoted && (isChampion || isVice) ? ' neon-border-green' : ''),
                   isMyCareer,
                   sortYear: getSeasonFinalYear(s.ano),
                   trophyUrl: isChampion ? (compInfoObj?.trofeu ? getTrofeuPath(compInfoObj.trofeu) : getTrofeuPathByCompName(compName)) : null,
@@ -492,7 +500,10 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
           
           if (!isChampion && !isVice && colocacao) {
               const c = colocacao.toLowerCase()
-              if (c.includes('semi')) { statusType = 'promoted'; }
+              if (c.includes('semi') || c.includes('3') || c.includes('4')) { statusType = 'bronze'; }
+              else if (c.includes('quartas') || c.includes('8')) { statusType = 'quartas'; }
+              else if (c.includes('oitavas') || c.includes('16')) { statusType = 'oitavas'; }
+              else if (c.includes('grupos') || c.includes('32')) { statusType = 'grupos'; }
           }
 
           events.push({
@@ -599,20 +610,16 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
       g.events.push(e)
   })
 
-  // Prioridade Cor
-  const priority = { champion: 1, promoted: 2, vice: 3, relegated: 4, neutral: 5, award: 6 }
+  // Prioridade Cor (Expert)
+  const priority = { champion: 1, promoted: 2, vice: 3, bronze: 4, quartas: 5, oitavas: 6, grupos: 7, relegated: 8, neutral: 9, award: 10 }
   
   const final = Array.from(grouped.values()).map(g => {
-      g.events.sort((a, b) => priority[a.type] - priority[b.type])
+      g.events.sort((a, b) => priority[a.type] - priority[b.type] || b.sortYear - a.sortYear)
       const main = g.events.find(e => e.type !== 'award') || g.events[0]
       g.maxStatus = main.type
       g.cardClass = `glow-${main.type}`
-      g.bulletClass = `bg-${main.type}`
+      g.bulletClass = getStatusClass(main.type)
       
-      // Fallbacks específicos
-      if (g.maxStatus === 'neutral') { g.cardClass = 'glow-neutral'; g.bulletClass = 'bg-secondary'; }
-      if (g.maxStatus === 'award') { g.cardClass = 'glow-info'; g.bulletClass = 'bg-info'; }
-
       return g
   })
 
@@ -640,19 +647,21 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
 }
 
 const getStatusClass = (type) => {
-    if (type === 'champion') return 'bg-warning'
-    if (type === 'promoted') return 'bg-success'
-    if (type === 'relegated') return 'bg-danger'
-    if (type === 'vice') return 'bg-light'
-    return 'bg-secondary'
+    if (type === 'champion') return 'bg-pos-gold'
+    if (type === 'vice') return 'bg-pos-silver'
+    if (type === 'bronze') return 'bg-pos-bronze'
+    if (type === 'quartas') return 'bg-pos-green'
+    if (type === 'oitavas') return 'bg-pos-blue'
+    if (type === 'grupos' || type === 'relegated') return 'bg-pos-red'
+    if (type === 'promoted') return 'bg-pos-green'
+    return 'bg-pos-neutral'
 }
 
 const getBadgeClass = (type) => {
-    if (type === 'champion') return 'bg-warning text-dark'
-    if (type === 'promoted') return 'bg-success text-white'
-    if (type === 'relegated') return 'bg-danger text-white'
-    if (type === 'vice') return 'bg-light text-dark'
-    return 'bg-secondary text-white'
+    const base = getStatusClass(type)
+    if (type === 'champion' || type === 'oitavas') return base + ' text-dark fw-bold'
+    if (type === 'neutral') return base + ' text-white opacity-75 fw-normal'
+    return base + ' text-white fw-bold'
 }
 
 const getCompetitionInfo = (name, country = null) => {
@@ -850,12 +859,26 @@ watch(() => route.params.id, () => {
   backdrop-filter: blur(10px);
 }
 
-.glow-champion { border-left: 6px solid #ffcc00; box-shadow: inset 10px 0 30px rgba(255,204,0,0.05); }
-.glow-promoted { border-left: 6px solid #28a745; }
-.glow-relegated { border-left: 6px solid #dc3545; }
-.glow-vice { border-left: 6px solid #adb5bd; }
-.glow-neutral { border-left: 4px solid rgba(255,255,255,0.1); }
-.glow-info { border-left: 6px solid #0dcaf0; }
+.bg-pos-gold { background: linear-gradient(135deg, #ffed4b 0%, #ffd700 100%) !important; color: #332b00 !important; }
+.bg-pos-silver { background: linear-gradient(135deg, #a0a0a0 0%, #707070 100%) !important; color: #fff !important; }
+.bg-pos-bronze { background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%) !important; color: #fff !important; }
+.bg-pos-green { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%) !important; color: #fff !important; }
+.bg-pos-blue { background: linear-gradient(135deg, #00f2ff 0%, #00a8b3 100%) !important; color: #000 !important; }
+.bg-pos-red { background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important; color: #fff !important; }
+.bg-pos-neutral { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; color: rgba(255, 255, 255, 0.7) !important; }
+
+.neon-border-green {
+  box-shadow: inset 0 0 10px #28a745, 0 0 5px #28a745aa !important;
+  border: 1.5px solid #28a745 !important;
+}
+
+.glow-champion { border-left: 5px solid #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.1); }
+.glow-vice { border-left: 5px solid #c0c0c0; }
+.glow-promoted, .glow-quartas { border-left: 5px solid #2ecc71; }
+.glow-oitavas { border-left: 5px solid #00f2ff; }
+.glow-relegated, .glow-grupos { border-left: 5px solid #ff4444; }
+.glow-bronze { border-left: 5px solid #cd7f32; }
+.glow-neutral { border-left: 4px solid rgba(255, 255, 255, 0.1); }
 
 .event-icon-circle {
   width: 50px;

@@ -138,7 +138,7 @@
                            <TeamShield :teamName="s.campeao" :isNational="activeTab === 'selecoes'" :size="36" :season="s.ano" noFlagFallback />
                            <div class="d-flex flex-column">
                              <div class="d-flex align-items-center gap-1 no-wrap">
-                               <span class="fw-bold text-uppercase name-cell">{{ s.campeao }}</span>
+                               <span class="fw-bold text-uppercase name-cell" :class="{'cursor-pointer text-hover-info text-decoration-underline-hover': activeTab === 'selecoes'}" @click="activeTab === 'selecoes' && $router.push(`/selecao/${encodeURIComponent(s.campeao)}/historico`)">{{ s.campeao }}</span>
                                <img v-if="isFromLib(s.campeao)" src="/logos/competitions/classdaliberta.png" class="lib-indicator-mini ms-1" title="Vindo da Libertadores">
                                <i v-if="careerStore.isUserTeam(s.campeao, s.ano, s.competitionName)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
                               
@@ -183,7 +183,7 @@
                            <TeamShield :teamName="s.vice" :isNational="activeTab === 'selecoes'" :size="28" :season="s.ano" noFlagFallback />
                           <div class="d-flex flex-column">
                             <div class="d-flex align-items-center gap-1 no-wrap">
-                              <span class="small text-uppercase name-cell-vice">{{ s.vice || '-' }}</span>
+                              <span class="small text-uppercase name-cell-vice" :class="{'cursor-pointer text-hover-info text-decoration-underline-hover': activeTab === 'selecoes'}" @click="activeTab === 'selecoes' && $router.push(`/selecao/${encodeURIComponent(s.vice)}/historico`)">{{ s.vice || '-' }}</span>
                               <img v-if="s.vice && isFromLib(s.vice)" src="/logos/competitions/classdaliberta.png" class="lib-indicator-mini ms-1" title="Vindo da Libertadores">
                               <i v-if="s.vice && careerStore.isUserTeam(s.vice, s.ano, s.competitionName)" class="bi bi-controller ms-1 text-neon-green pulse-neon"></i>
                               
@@ -279,8 +279,8 @@
               <i class="bi bi-trophy-fill me-2 text-warning"></i>Competições - {{ selectedCountry.nome }}
             </h4>
             <div class="d-flex gap-2">
-              <button class="btn btn-outline-info fw-bold text-uppercase small" @click="$router.push(`/pais/${selectedCountry.nome}/historico`)">
-                <i class="bi bi-table me-2"></i> VER HISTÓRICO GERAL
+              <button class="btn btn-outline-info fw-bold text-uppercase small" @click="$router.push({ name: 'country-history', params: { id: selectedCountry.nome } })">
+                <i class="bi bi-table me-2"></i> VER HISTÓRICO
               </button>
               <button class="btn btn-info fw-black text-uppercase small text-dark" style="background: #00f2ff;" @click="$router.push(`/pais/${selectedCountry.nome}/matriz`)">
                 <i class="bi bi-calendar3 me-2"></i> VER MATRIZ EXPERT
@@ -297,9 +297,7 @@
               :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente || (selectedContinent ? getFederation(selectedContinent.continente).nome : ''))"
               @click="selectCompetition(comp)"
             >
-              <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                {{ getCompCount(comp) }} TEMPS
-              </div>
+              <SeasonCountIcon v-if="getCompCount(comp) > 0" :count="getCompCount(comp)" />
               <div class="d-flex align-items-center gap-3">
                 <div class="comp-items-horizontal d-flex gap-2">
                   <div class="comp-logo-container-highlight">
@@ -360,8 +358,8 @@
                <i class="bi bi-globe2 me-2 text-info"></i>Competições - {{ selectedContinent.continente }}
              </h4>
              <div class="d-flex gap-2">
-               <button class="btn btn-outline-info fw-bold text-uppercase small" @click="$router.push(`/selecao/${selectedContinent.continente}/historico`)">
-                 <i class="bi bi-table me-2"></i> VER HISTÓRICO GERAL
+               <button class="btn btn-outline-info fw-bold text-uppercase small" @click="$router.push({ name: 'continentHistory', params: { id: selectedContinent.continente } })">
+                 <i class="bi bi-table me-2"></i> VER HISTÓRICO
                </button>
                <button class="btn btn-info fw-black text-uppercase small text-dark" style="background: #00f2ff;" @click="$router.push(`/selecao/${selectedContinent.continente}/matriz`)">
                  <i class="bi bi-calendar3 me-2"></i> VER MATRIZ EXPERT
@@ -375,9 +373,7 @@
                   :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(selectedContinent.continente === 'Mundial' ? 'FIFA' : (getFederation(selectedContinent.continente)?.nome || ''))"
                   @click="selectCompetition(comp)"
                 >
-                  <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                    {{ getCompCount(comp) }} TEMPS
-                  </div>
+                  <SeasonCountIcon v-if="getCompCount(comp) > 0" :count="getCompCount(comp)" />
                   <div class="d-flex align-items-center gap-3">
                     <div class="comp-items-horizontal d-flex gap-2">
                       <div class="comp-logo-container-highlight">
@@ -415,9 +411,7 @@
                 :customClass="'comp-card-premium position-relative h-100 cursor-pointer ' + getFederationColorClass(comp.continente)"
                 @click="selectCompetition(comp)"
               >
-                <div v-if="getCompCount(comp) > 0" class="position-absolute top-0 end-0 m-2 badge bg-info text-dark rounded-pill border border-info shadow-sm fw-black" style="font-size: 0.65rem; z-index: 10;">
-                  {{ getCompCount(comp) }} TEMPS
-                </div>
+                <SeasonCountIcon v-if="getCompCount(comp) > 0" :count="getCompCount(comp)" />
                 <div class="d-flex align-items-center gap-3">
                   <div class="comp-items-horizontal d-flex gap-2">
                     <div class="comp-logo-container-highlight">
@@ -452,13 +446,13 @@
         
         <!-- CONTINENTES (CLUBES) -->
         <div v-if="activeTab === 'clubes'" class="game-grid-auto">
-          <div v-for="cont in ALL_COMPETITIONS_DATA" :key="cont.continente">
+          <div v-for="cont in orderedClubContinents" :key="cont.continente">
             <GamePanel 
               :customClass="'h-100 cursor-pointer card-hover ' + getFederationColorClass(getFederation(cont.continente).nome)"
               @click="selectContinent(cont)"
             >
               <div class="text-center py-4">
-                <img v-if="cont.logo_continente" :src="getCachedLogo(cont.logo_continente)" @error="(e) => e.target.style.display='none'" class="fed-logo mb-3" alt="Logo Continente">
+                <img v-if="cont.logo_continente" :src="getCachedLogo(cont.logo_continente)" @error="(e) => e.target.style.display='none'" :class="['mb-3', cont.continente.startsWith('Outros') ? 'fed-logo-round' : 'fed-logo']" alt="Logo Continente">
                 <i v-else class="bi bi-map fs-1 text-secondary mb-3"></i>
                 <h3 class="mb-1">{{ cont.continente }}</h3>
                 <p class="small text-secondary fw-bold">{{ getFederation(cont.continente).nome }}</p>
@@ -781,6 +775,24 @@
                 <span v-if="newSeason.participantes && newSeason.participantes.length > 0" class="text-success animated-fade-in">✅ {{ newSeason.participantes.length }} times</span>
               </h4>
 
+              <div class="row g-2 mb-3">
+                <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
+                    <input type="file" :id="'print-upload-copa-'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
+                    <template v-if="newSeason.printsUrls[idx]">
+                      <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
+                      <div class="print-slot-overlay">
+                         <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="removePrint(idx)"><i class="bi bi-trash"></i></button>
+                      </div>
+                    </template>
+                    <label v-else :for="'print-upload-copa-'+idx" class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                      <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
+                      <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem; letter-spacing: 0px;"><i class="bi bi-camera me-1"></i>CLIQUE OU CTRL+V</div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div v-if="ocrWorkspace.activeField === 'classificacaoCopaTxt'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
                 <div class="p-4">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -790,22 +802,6 @@
                      </button>
                   </div>
                   
-                  <div class="row g-2 mb-3">
-                    <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
-                      <div class="print-upload-slot w-100" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
-                        <template v-if="newSeason.printsUrls[idx]">
-                          <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
-                          <div class="print-slot-overlay">
-                             <button class="btn btn-danger btn-xs rounded-circle" @click.stop="removePrint(idx)"><i class="bi bi-trash"></i></button>
-                          </div>
-                        </template>
-                        <div v-else class="print-slot-empty" style="padding: 10px;">
-                          <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   <button 
                     @click="interpretAttachedPrints"
                     class="btn btn-info w-100 fw-black text-uppercase shadow-sm"
@@ -855,11 +851,10 @@
                         </td>
                         <td>
                           <select v-model="p.colocacao" 
-                                  class="form-select form-select-sm fw-black x-small border-0 rounded-pill px-3" 
-                                  :class="getCopaBadgeClass(p.colocacao)"
-                                  :style="(p.colocacao && (p.colocacao.includes('3') || p.colocacao.includes('4'))) ? 'background-color: #8b7355 !important; border-color: #a68b6a !important; color: white !important;' : ''"
+                                  class="form-select form-select-sm fw-black x-small cup-input-select" 
+                                  :class="getPlacementColorClass(p.colocacao)"
                                   @change="updateChampViceFromManual(p)">
-                            <option v-for="opt in dynamicPlacements" :key="opt" :value="opt" :class="getCopaBadgeClass(opt)">{{ opt }}</option>
+                            <option v-for="opt in dynamicPlacements" :key="opt" :value="opt" :class="getPlacementColorClass(opt)">{{ opt }}</option>
                           </select>
                         </td>
                         <td class="text-center">
@@ -919,48 +914,22 @@
                   </div>
                 </div>
               </div>
-               <h4 class="text-primary fw-black mb-1 text-uppercase d-flex align-items-center justify-content-between">
-                 <div class="d-flex align-items-center gap-2">
-                   <i class="bi bi-table me-2"></i>TABELA FINAL (OPCIONAL)
-                   <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'tabela' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('tabela')">
-                     IA AGENTE
-                   </button>
-                 </div>
-               </h4>
 
-              <div v-if="ocrWorkspace.activeField === 'tabela'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
-                <div class="p-4">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                     <span class="badge bg-info text-dark fw-black x-small text-uppercase">Painel de Interpretacao IA</span>
-                     <button class="btn btn-xs btn-outline-danger p-0 px-2 rounded-pill shadow-sm" @click="ocrWorkspace.activeField = null">
-                       CONCLUIR
-                     </button>
-                  </div>
-                  
-                  <div class="row g-2 mb-3">
-                    <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
-                      <div class="print-upload-slot w-100" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
-                        <template v-if="newSeason.printsUrls[idx]">
-                          <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
-                          <div class="print-slot-overlay">
-                             <button class="btn btn-danger btn-xs rounded-circle" @click.stop="removePrint(idx)"><i class="bi bi-trash"></i></button>
-                          </div>
-                        </template>
-                        <div v-else class="print-slot-empty" style="padding: 10px;">
-                          <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
-                        </div>
+              <div class="row g-2 mb-3 mt-3">
+                <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
+                    <input type="file" :id="'print-upload-tabela-'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
+                    <template v-if="newSeason.printsUrls[idx]">
+                      <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
+                      <div class="print-slot-overlay">
+                         <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="removePrint(idx)"><i class="bi bi-trash"></i></button>
                       </div>
-                    </div>
+                    </template>
+                    <label v-else :for="'print-upload-tabela-'+idx" class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                      <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
+                      <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem; letter-spacing: 0px;"><i class="bi bi-camera me-1"></i>CLIQUE OU CTRL+V</div>
+                    </label>
                   </div>
-
-                  <button 
-                    @click="interpretAttachedPrints"
-                    class="btn btn-info w-100 fw-black text-uppercase shadow-sm"
-                    :disabled="ocrWorkspace.isProcessing || !newSeason.printsUrls.some(u => u)"
-                  >
-                    <span v-if="ocrWorkspace.isProcessing">PROCESSANDO...</span>
-                    <span v-else>GERAR LISTA A PARTIR DOS SLOTS</span>
-                  </button>
                 </div>
               </div>
 
@@ -1094,6 +1063,7 @@ import GameButton from '../components/GameButton.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
+import SeasonCountIcon from '../components/SeasonCountIcon.vue'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
@@ -1360,6 +1330,13 @@ const ocrWorkspace = ref({
   prints: []
 })
 
+const orderedClubContinents = computed(() => {
+  const order = ["América do Sul", "Europa", "América do Norte", "Outros Américas", "Outros Europa", "Outros África"]
+  return ALL_COMPETITIONS_DATA
+    .filter(c => order.includes(c.continente))
+    .sort((a, b) => order.indexOf(a.continente) - order.indexOf(b.continente))
+})
+
 const showScorerModal = ref(false)
 const selectedSeasonForScorer = ref(null)
 const isEditingScorer = ref(false)
@@ -1448,6 +1425,9 @@ const addParticipant = (teamName) => {
   const alreadyAdded = newSeason.value.participantes.some(p => p.nome.toLowerCase().trim() === q);
   if (alreadyAdded) return;
 
+  // Se estamos em um grupo de "Outros", o país deve ser o nome do grupo para fins de ID visual
+  const virtualCountry = (selectedCountry.value?.nome?.startsWith('Outros')) ? selectedCountry.value.nome : null;
+
   if (activeTab.value === 'selecoes') {
     const nation = NATIONAL_TEAMS_DATA.find(n => n.nome.toLowerCase().trim() === q);
     if (nation) {
@@ -1455,7 +1435,7 @@ const addParticipant = (teamName) => {
         clubeId: nation.id,
         nome: nation.nome,
         escudo: nation.bandeira_url,
-        pais: nation.pais,
+        pais: virtualCountry || nation.pais,
         federacao: getFederation(nation.continente)?.nome || 'FIFA',
         colocacao: null
       });
@@ -1471,7 +1451,7 @@ const addParticipant = (teamName) => {
       clubeId: club.id,
       nome: club.nome,
       escudo: club.escudo_url,
-      pais: club.pais,
+      pais: virtualCountry || club.pais,
       federacao: fed.nome,
       colocacao: null
     });
@@ -1480,7 +1460,7 @@ const addParticipant = (teamName) => {
       clubeId: Date.now() + Math.random(),
       nome: teamName,
       escudo: '',
-      pais: '',
+      pais: virtualCountry || '',
       federacao: '',
       colocacao: null
     });
@@ -1617,6 +1597,9 @@ const getFederationLogo = (continente) => {
 const getFederationColorClass = (fedName) => {
   if (!fedName) return '';
   const name = fedName.toUpperCase();
+  if (name.includes('AMÉRICAS')) return 'neon-conmebol';
+  if (name.includes('EUROPA')) return 'neon-uefa';
+  if (name.includes('ÁFRICA')) return 'neon-caf';
   if (name.includes('CONMEBOL')) return 'neon-conmebol';
   if (name.includes('UEFA')) return 'neon-uefa';
   if (name.includes('CONCACAF')) return 'neon-concacaf';
@@ -1639,10 +1622,18 @@ const getClubInfo = (clubName) => {
   const club = clubStore.getClub(clubName);
   if (!club) return null;
   
+  const cont = (club.continente || '').toUpperCase();
+  let displayCountry = club.pais;
+  
+  // Mapeamento automático para grupos de "Outros"
+  if (cont.includes('OUTROS AMÉRICAS')) displayCountry = 'Outros Américas';
+  else if (cont.includes('OUTROS EUROPA')) displayCountry = 'Outros Europa';
+  else if (cont.includes('OUTROS ÁFRICA')) displayCountry = 'Outros África';
+  
   const fed = getFederation(club.continente);
   
   return {
-    pais: club.pais,
+    pais: displayCountry,
     bandeira: club.bandeira_url,
     federacao: fed.nome,
     federacaoLogo: fed.logo
@@ -2078,16 +2069,16 @@ const CUP_PHASES = [
   { tokens: ['oitavas', 'oitava', 'oitavas de final', '16'], label: 'Oitavas', priority: 7 },
   { tokens: ['elim. 16 avos', '16 avos', 'avos', '32'], label: '16 Avos', priority: 8 },
   { tokens: ['pre-copa', 'pré-copa', 'elim. pre', 'elim. pré', 'pre'], label: 'Pré-Copa', priority: 9 },
-  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Eliminado', priority: 10 },
-  { tokens: ['participante', 'participant'], label: 'Participante', priority: 11 },
+  { tokens: ['pre-libertadores', 'pré-libertadores', 'pre-lib', 'pré-lib'], label: 'Pré-Libertadores', priority: 10 },
+  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Fase de Grupos', priority: 11 },
+  { tokens: ['participante', 'participant'], label: 'Participante', priority: 12 },
 ]
 
 const dynamicPlacements = computed(() => {
-  const isNational = activeTab.value === 'selecoes' || selectedCompetition.value?.id >= 1000
-  const base = ['Campeão', 'Vice']
-  if (isNational) base.push('3º COLOCADO', '4º COLOCADO')
-  base.push('Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante')
-  return base
+  return [
+    'Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 
+    'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Copa', 'Pré-Libertadores', 'Eliminado', 'Participante'
+  ]
 })
 
 const safeNormalize = (str) => {
@@ -2112,17 +2103,23 @@ const detectCupPhase = (phaseStr) => {
   return null
 }
 
-const getCopaBadgeClass = (colocacao) => {
-    if (!colocacao) return 'bg-secondary text-white'
+const getPlacementColorClass = (colocacao) => {
+    if (!colocacao) return ''
     const n = colocacao.toLowerCase()
-    if (n.includes('campe')) return 'bg-warning text-dark fw-black border border-white'
-    if (n.includes('vice') || n.includes('final')) return 'bg-light text-dark fw-black border border-secondary'
-    if (n.includes('3') || n.includes('4')) return 'bg-bronze text-white fw-bold shadow-sm'
-    if (n.includes('semi')) return 'bg-info text-white fw-bold'
-    if (n.includes('quart')) return 'bg-success text-white fw-bold'
-    if (n.includes('oitav') || n.includes('16')) return 'bg-primary text-white'
-  if (n.includes('elim') || n.includes('pre') || n.includes('pré')) return 'bg-secondary text-white'
-  return 'bg-secondary text-white'
+    if (n.includes('campe')) return 'bg-pos-gold'
+    if (n.includes('vice')) return 'bg-pos-silver'
+    if (n.includes('3') || n.includes('4') || n.includes('terceiro') || n.includes('quarto')) return 'bg-pos-bronze'
+    if (n.includes('semi')) return 'bg-pos-bronze'
+    if (n.includes('quart')) return 'bg-pos-green'
+    if (n.includes('oitav')) return 'bg-pos-blue-lib'
+    if (n.includes('16 avos')) return 'bg-pos-blue-sula'
+    if (n.includes('grupo') || n.includes('eliminado')) return 'bg-pos-red-group'
+    if (n.includes('pre') || n.includes('pré')) return 'bg-pos-red-pre'
+    return 'bg-pos-gray'
+}
+
+const getCopaBadgeClass = (colocacao) => {
+    return getPlacementColorClass(colocacao)
 }
 
 const isUserTeam = (teamName, compName = null) => {
@@ -2156,7 +2153,7 @@ const getCopaPhasesGrouped = (participantes) => {
   })
   
   // Ordenar de acordo com a prioridade das fases
-  const phaseOrder = ['Campeão', 'Vice', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Pré-Copa', 'Eliminado', 'Participante']
+  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
   return Array.from(phaseMap.values()).sort((a, b) => {
     const ia = phaseOrder.findIndex(x => a.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
     const ib = phaseOrder.findIndex(x => b.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
@@ -3097,6 +3094,14 @@ onActivated(async () => {
   object-fit: contain;
 }
 
+.fed-logo-round {
+  height: 90px;
+  width: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+}
+
 .fed-mini-logo {
   height: 14px;
   width: auto;
@@ -3802,17 +3807,15 @@ onActivated(async () => {
 
 
 .competition-title {
-  font-size: 0.85rem; /* Reduced slightly more to fit long names */
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2; /* Standard property */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-height: 2.5em; 
-  display: flex; /* Fallback for alignment */ 
-  align-items: center;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  font-weight: 900 !important;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin-bottom: 0.5rem;
+  padding-right: 50px; /* Espaço para o ícone no canto */
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 .lib-indicator-mini {
@@ -3979,13 +3982,6 @@ onActivated(async () => {
   text-align: center;
 }
 
-.bg-bronze { background-color: #8b7355 !important; color: white !important; }
-select.bg-bronze { 
-    background-color: #8b7355 !important; 
-    color: white !important; 
-    border-color: #a68b6a !important;
-}
-option.bg-bronze { background-color: #8b7355 !important; color: white !important; }
 
 .copa-team-chip {
   display: inline-flex;

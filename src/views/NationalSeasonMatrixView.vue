@@ -3,8 +3,8 @@
     <!-- TOOLBAR SUPERIOR -->
     <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2 bg-glass border-bottom border-white border-opacity-10 shadow-lg">
       <div class="d-flex align-items-center gap-4">
-        <button @click="$router.push(`/selecao/${continentId}/historico`)" class="btn btn-sm btn-action hover-glow px-3 me-2">
-          <i class="bi bi-table me-2"></i>HISTÓRICO
+        <button @click="$router.push({ name: 'continentHistory', params: { id: continentId } })" class="btn btn-sm btn-action hover-glow px-3 me-2">
+          <i class="bi bi-table me-2"></i>VER HISTÓRICO
         </button>
         <button @click="$router.push('/universo')" class="btn btn-sm btn-outline-info hover-glow px-3">
           <i class="bi bi-trophy me-2"></i>COMPETIÇÕES
@@ -94,7 +94,7 @@
           <tr v-for="team in sortedTeams" :key="team" class="club-row-xl">
             <!-- COLUNA FIXA: SELEÇÃO -->
             <td class="sticky-club club-info-cell border-all px-2 cursor-pointer"
-                @click="$router.push(`/selecao/${teamNames[team] || team}/historico`)"
+                @click="$router.push({ name: 'nationalHistory', params: { id: (teamNames[team] || team) } })"
                 title="Ver Histórico da Seleção">
               <div class="d-flex align-items-center gap-2">
                 <NationalFlag :countryName="teamNames[team] || team" :size="20" />
@@ -321,18 +321,14 @@ const parseTable = (str) => {
 const getRankFromExtra = (extra) => {
     if (!extra) return 999;
     const e = extra.toUpperCase();
-    // Prioridade: check Vice antes de Campeão para evitar bugs com "Vice-Campeão"
     if (e.includes('VICE') || e.includes('2º')) return 2;
     if (e.includes('CAMPEÃO') || e === 'CAMPEAO' || e === '1º') return 1;
-    
-    // Diferenciar 3º e 4º
     if (e === '3º' || e.includes('3º COLOCADO') || e.includes('TERCEIRO')) return 3;
     if (e === '4º' || e.includes('4º COLOCADO') || e.includes('QUARTO')) return 4;
-    
-    if (e.includes('SEMIFINAL')) return 4.5; // Semifinal genérica (sem 3º/4º definido)
+    if (e.includes('SEMIFINAL')) return 4.5;
     if (e.includes('QUARTAS') || e.includes('8º')) return 8;
     if (e.includes('OITAVAS') || e.includes('16º')) return 16;
-    if (e.includes('16 AVOS')) return 24;
+    if (e.includes('16 AVOS') || e.includes('AVOS')) return 24;
     if (e.includes('GRUPOS') || e.includes('32º')) return 32;
     if (e.includes('PRÉ') || e.includes('PRE')) return 64;
     return 999;
@@ -367,16 +363,15 @@ const getCellBackground = (team, season, slot) => {
   const result = matrixData.value[team]?.[season]?.[slot.key]
   if (!result) return ''
   const rank = result.rank
-  if (rank === 1) return 'expert-gold-bg neon-border-gold'
-  if (rank === 2) return 'expert-silver-bg neon-border-silver'
-  if (rank === 3) return 'expert-bronze-intl-grad'
-  if (rank === 4) return 'expert-copper-intl-grad'
-  if (rank === 4.5) return 'expert-bronze-intl-grad opacity-75'
-  if (rank === 8) return 'expert-green-intl-grad'
-  if (rank === 16) return 'expert-cyan-intl-grad'
-  if (rank === 24) return 'expert-blue-intl-grad'
-  if (rank === 32) return 'expert-red-light-intl-grad'
-  return 'expert-blue-intl-bg'
+  if (rank === 1) return 'bg-pos-gold neon-border-gold'
+  if (rank === 2) return 'bg-pos-silver neon-border-silver'
+  if (rank === 3 || rank === 4 || rank === 4.5) return 'bg-pos-bronze'
+  if (rank === 8) return 'bg-pos-green'
+  if (rank === 16) return 'bg-pos-blue-lib'
+  if (rank === 24) return 'bg-pos-blue-sula'
+  if (rank === 32) return 'bg-pos-red-group'
+  if (rank === 64) return 'bg-pos-red-pre text-white'
+  return 'bg-pos-gray opacity-25'
 }
 
 const isLastSlot = (slot) => {

@@ -46,10 +46,15 @@ const flagUrl = computed(() => {
   if (!fed) {
       fed = Object.values(FEDERATIONS_DATA).find(f => f.nome === name)
   }
+
+  // MAPEAMENTO ESPECIAL PARA GRUPOS "OUTROS"
+  if (name === 'Outros Américas') return 'logos/competitions/banner-americas-redondo.png'
+  if (name === 'Outros Europa') return 'logos/competitions/banner-europa-redondo.png'
+  if (name === 'Outros África') return 'logos/competitions/banner-africa-redondo.png'
+
   if (fed) return fed.logo
 
   // 2. Tentar encontrar seleção/clube (Bandeira)
-  // Se for "Estados Unidos", o sistema pode estar usando "USA" ou outro nome internamente
   const searchName = name === 'Estados Unidos' ? 'USA' : name
   const data = dataSearchService.findNationalTeam(searchName) || dataSearchService.findClub(searchName)
   

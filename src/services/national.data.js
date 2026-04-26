@@ -26,7 +26,7 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "Europa",
         logo_continente: "",
         competicoes: [
-            { id: 1003, nome: "Euro Copa", pais: "Europa", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/uefa_euro.png', trofeu: 'trofeu-euro-copa', continente: "Europa" },
+            { id: 1003, nome: "Euro Copa", pais: "Europa", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/uefa_euro.png', trofeu: 'trofeu-eurocopa', continente: "Europa" },
             { id: 1004, nome: "Eliminatórias (Europa)", pais: "Europa", tipo: "Liga", modoRegistro: "liga", logo: "", trofeu: '', qualificados: 13, continente: "Europa" }
         ]
     },
@@ -53,7 +53,7 @@ export const NATIONAL_COMPETITIONS_STRUCTURE = [
         continente: "Mundial",
         logo_continente: "logos/competitions/fifa.png",
         competicoes: [
-            { id: 1009, nome: "Copa do Mundo", pais: "Mundial", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_mundo.png', trofeu: 'trofeu-fifa-worldcup', continente: "Mundial" }
+            { id: 1009, nome: "Copa do Mundo", pais: "Mundial", tipo: "Copa", modoRegistro: "participantes", logo: 'logos/competitions/copa_mundo.png', trofeu: 'trofeu-copadomundo', continente: "Mundial" }
         ]
     }
 ];
