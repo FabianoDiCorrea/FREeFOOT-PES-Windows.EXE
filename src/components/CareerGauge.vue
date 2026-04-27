@@ -1,5 +1,5 @@
 <template>
-  <div class="gauge-wrapper" :class="{ 'is-excellent': value >= 90 }">
+  <div class="gauge-wrapper" :class="{ 'is-excellent': value >= 85 }">
     <div class="gauge-container">
       <div class="gauge-body">
         <!-- Scale Background (Fixed 5 Colors) -->
@@ -45,10 +45,10 @@ const colors = {
 }
 
 const valueColor = computed(() => {
-    if (props.value >= 90) return colors.excelente
-    if (props.value >= 75) return colors.otimo
-    if (props.value >= 55) return colors.bom
-    if (props.value >= 30) return colors.regular
+    if (props.value >= 85) return colors.excelente
+    if (props.value >= 67) return colors.otimo
+    if (props.value >= 50) return colors.bom
+    if (props.value >= 33) return colors.regular
     return colors.ruim
 })
 
@@ -124,15 +124,15 @@ const needleStyles = computed(() => {
     background: conic-gradient(
         from 270deg,
         #dc3545 0deg,
-        #dc3545 54deg,    /* 30% */
-        #fd7e14 54deg,
-        #fd7e14 99deg,    /* 55% */
-        #ffc107 99deg,
-        #ffc107 135deg,   /* 75% */
-        #28a745 135deg,
-        #28a745 162deg,   /* 90% */
-        #00bfff 162deg,
-        #00bfff 180deg    /* 100% */
+        #dc3545 59deg,    /* 33% - Ruim */
+        #fd7e14 59deg,
+        #fd7e14 90deg,    /* 50% - Regular */
+        #ffc107 90deg,
+        #ffc107 121deg,   /* 67% - Bom */
+        #28a745 121deg,
+        #28a745 153deg,   /* 85% - Ótimo */
+        #00bfff 153deg,
+        #00bfff 180deg    /* 100% - Excelente */
     );
 }
 

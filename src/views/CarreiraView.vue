@@ -156,9 +156,24 @@
                         <div class="header-main-h3 text-uppercase fw-black mb-2">
                             {{ selectedEntry ? normalizeYearStrict(selectedEntry.temporada) : '' }}
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap justify-content-end">
                             <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold x-small" @click="editCurrentEntry">
                                 <i class="bi bi-pencil-fill me-1"></i> Editar Dados
+                            </button>
+                            <!-- Botão ENCERRAR / REABRIR CICLO -->
+                            <button
+                                v-if="!selectedEntry.cicloEncerrado"
+                                class="btn btn-sm btn-outline-info text-uppercase fw-bold x-small"
+                                @click="encerrarCiclo"
+                                title="Marca que você saiu deste time no meio da temporada. Os dados da liga são congelados e títulos automáticos deste período não são mais atribuídos.">
+                                <i class="bi bi-sign-stop me-1"></i> ENCERRAR CICLO
+                            </button>
+                            <button
+                                v-else
+                                class="btn btn-sm btn-info text-uppercase fw-bold x-small"
+                                @click="encerrarCiclo"
+                                title="Ciclo encerrado — clique para reabrir e voltar ao modo automático.">
+                                <i class="bi bi-lock-fill me-1"></i> CICLO ENCERRADO
                             </button>
                             <button class="btn btn-sm btn-outline-danger text-uppercase fw-bold x-small" @click="confirmDeleteEntry">
                                 <i class="bi bi-trash-fill me-1"></i> Excluir Temporada
@@ -208,52 +223,116 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Linha 1: COPA DO MUNDO (Manual para Seleção, Liga para Clubes) -->
+                        <!-- Linha 1: LIGA (Clubes) / COPA DO MUNDO (Seleções) -->
                         <tr :class="selectedEntry.tipo === 'selecao' ? 'row-sel-copa' : 'row-liga'">
+                            <!-- Nome da competição -->
                             <td class="text-start ps-3 fw-bold">
-                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model="selectedEntry.copaMundo.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.nome || 'Sincronizar Liga...' }}</span>
+                                <template v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo">
+                                    <input v-model="selectedEntry.copaMundo.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                </template>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <!-- Modo manual (ligaManual=true) ou ciclo encerrado (dados congelados) -->
+                                    <div v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" class="d-flex align-items-center gap-1">
+                                        <input v-model="selectedEntry.liga.nome" class="table-input text-start ps-0" style="background:transparent; flex:1;" placeholder="Nome da liga...">
+                                        <button v-if="!selectedEntry.cicloEncerrado"
+                                            class="btn btn-link p-0 text-warning" style="font-size:0.75rem;"
+                                            @click="toggleLigaManual" title="Voltar ao modo automático">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                        <span v-else class="text-info opacity-50" style="font-size:0.65rem;" title="Ciclo encerrado — dados congelados">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </span>
+                                    </div>
+                                    <!-- Modo automático: dados do Universo + botão de lápis -->
+                                    <div v-else class="d-flex align-items-center gap-1">
+                                        <span>{{ currentSeasonData?.nome || 'Sincronizar Liga...' }}</span>
+                                        <button class="btn btn-link p-0 text-secondary opacity-50" style="font-size:0.75rem;"
+                                            @click="toggleLigaManual" title="Editar dados da liga manualmente">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                    </div>
+                                </template>
                                 <span v-else class="text-secondary opacity-50">Copa do Mundo...</span>
                             </td>
+                            <!-- Posição -->
                             <td class="fw-bold">
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model="selectedEntry.copaMundo.posicao" class="table-input" placeholder="Ex: 1º">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.posicao ? currentSeasonData.posicao + '°' : '---' }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model="selectedEntry.liga.posicao" class="table-input" placeholder="---">
+                                    <span v-else>{{ currentSeasonData?.posicao ? currentSeasonData.posicao + '°' : '---' }}</span>
+                                </template>
                                 <span v-else>---</span>
                             </td>
+                            <!-- Pontos (calculado) -->
                             <td class="fw-bold text-info">
-                                <span v-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.pontos || 0 }}</span>
-                                <span v-else>{{ selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias || 0) * 3) + Number(selectedEntry.copaMundo.empates || 0) : 0 }}</span>
+                                <template v-if="selectedEntry.tipo !== 'selecao'">
+                                    <span v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado">{{ (Number(selectedEntry.liga?.vitorias||0)*3)+Number(selectedEntry.liga?.empates||0) }}</span>
+                                    <span v-else>{{ currentSeasonData?.pontos || 0 }}</span>
+                                </template>
+                                <span v-else>{{ selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)*3)+Number(selectedEntry.copaMundo.empates||0) : 0 }}</span>
                             </td>
+                            <!-- Jogos (calculado) -->
                             <td>
-                                <span v-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.jogos || 0 }}</span>
-                                <span v-else>{{ selectedEntry.copaMundo ? Number(selectedEntry.copaMundo.vitorias || 0) + Number(selectedEntry.copaMundo.empates || 0) + Number(selectedEntry.copaMundo.derrotas || 0) : 0 }}</span>
+                                <template v-if="selectedEntry.tipo !== 'selecao'">
+                                    <span v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado">{{ Number(selectedEntry.liga?.vitorias||0)+Number(selectedEntry.liga?.empates||0)+Number(selectedEntry.liga?.derrotas||0) }}</span>
+                                    <span v-else>{{ currentSeasonData?.jogos || 0 }}</span>
+                                </template>
+                                <span v-else>{{ selectedEntry.copaMundo ? Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0) : 0 }}</span>
                             </td>
+                            <!-- Vitórias -->
                             <td>
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.vitorias" class="table-input">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.vitorias || 0 }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model.number="selectedEntry.liga.vitorias" class="table-input">
+                                    <span v-else>{{ currentSeasonData?.vitorias || 0 }}</span>
+                                </template>
                                 <span v-else>0</span>
                             </td>
+                            <!-- Empates -->
                             <td>
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.empates" class="table-input">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.empates || 0 }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model.number="selectedEntry.liga.empates" class="table-input">
+                                    <span v-else>{{ currentSeasonData?.empates || 0 }}</span>
+                                </template>
                                 <span v-else>0</span>
                             </td>
+                            <!-- Derrotas -->
                             <td>
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.derrotas" class="table-input">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.derrotas || 0 }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model.number="selectedEntry.liga.derrotas" class="table-input">
+                                    <span v-else>{{ currentSeasonData?.derrotas || 0 }}</span>
+                                </template>
                                 <span v-else>0</span>
                             </td>
+                            <!-- Gols Pró -->
                             <td>
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.golsPro" class="table-input">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.golsPro || 0 }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model.number="selectedEntry.liga.golsPro" class="table-input">
+                                    <span v-else>{{ currentSeasonData?.golsPro || 0 }}</span>
+                                </template>
                                 <span v-else>0</span>
                             </td>
+                            <!-- Gols Contra -->
                             <td>
                                 <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo" v-model.number="selectedEntry.copaMundo.golsContra" class="table-input">
-                                <span v-else-if="selectedEntry.tipo !== 'selecao'">{{ currentSeasonData?.golsContra || 0 }}</span>
+                                <template v-else-if="selectedEntry.tipo !== 'selecao'">
+                                    <input v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado" v-model.number="selectedEntry.liga.golsContra" class="table-input">
+                                    <span v-else>{{ currentSeasonData?.golsContra || 0 }}</span>
+                                </template>
                                 <span v-else>0</span>
                             </td>
-                            <td><span>{{ (selectedEntry.tipo === 'selecao' ? (selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.golsPro || 0) - Number(selectedEntry.copaMundo.golsContra || 0)) : 0) : (currentSeasonData?.saldo || 0)) }}</span></td>
+                            <!-- Saldo -->
+                            <td>
+                                <template v-if="selectedEntry.tipo !== 'selecao'">
+                                    <span v-if="selectedEntry.ligaManual || selectedEntry.cicloEncerrado">{{ Number(selectedEntry.liga?.golsPro||0)-Number(selectedEntry.liga?.golsContra||0) }}</span>
+                                    <span v-else>{{ currentSeasonData?.saldo || 0 }}</span>
+                                </template>
+                                <span v-else>{{ selectedEntry.copaMundo ? Number(selectedEntry.copaMundo.golsPro||0)-Number(selectedEntry.copaMundo.golsContra||0) : 0 }}</span>
+                            </td>
+                            <!-- % Aproveitamento -->
                             <td class="fw-black">
                                 <span v-if="selectedEntry.tipo === 'selecao'">
                                     {{ calculateWinRate({ 
@@ -1036,8 +1115,86 @@ const deleteCurrentEntry = async () => {
     alert('Temporada removida com sucesso.')
 }
 
+/**
+ * Encerra o ciclo da temporada atual.
+ * Congela os dados da liga (snapshot) e marca cicloEncerrado=true.
+ * Títulos automáticos do Universo deixam de ser atribuídos a este vínculo.
+ * Clicar novamente reabre o ciclo (volta ao automático).
+ */
+const encerrarCiclo = async () => {
+    if (!selectedEntry.value) return;
+    const entry = selectedEntry.value;
 
+    if (!entry.cicloEncerrado) {
+        const ok = confirm(
+            `Encerrar ciclo com "${entry.timeNome}"?\n\n` +
+            `Os dados da LIGA serão congelados no estado atual.\n` +
+            `Títulos automáticos futuros deste time não serão mais atribuídos a este período.\n` +
+            `Você poderá editar os dados manualmente após encerrar.`
+        );
+        if (!ok) return;
 
+        // Snapshot dos dados automáticos para congelar na liga
+        const snap = currentSeasonData.value;
+        if (snap) {
+            entry.liga = {
+                nome: snap.nome || entry.liga?.nome || 'LIGA',
+                posicao: snap.posicao || '',
+                pontos: snap.pontos || 0,
+                jogos: snap.jogos || 0,
+                vitorias: snap.vitorias || 0,
+                empates: snap.empates || 0,
+                derrotas: snap.derrotas || 0,
+                golsPro: snap.golsPro || 0,
+                golsContra: snap.golsContra || 0,
+                saldo: snap.saldo || 0
+            };
+        }
+        entry.ligaManual = true;   // força modo manual junto com o encerramento
+        entry.cicloEncerrado = true;
+    } else {
+        // Reabrir: remove encerramento e volta ao automático
+        entry.cicloEncerrado = false;
+        entry.ligaManual = false;
+    }
+
+    await careerStore.saveEntry(JSON.parse(JSON.stringify(entry)));
+}
+
+/**
+ * Ativa/desativa o modo de edição manual da linha LIGA.
+ * Ao ativar faz snapshot dos dados automáticos como ponto de partida.
+ * Ao desativar volta ao automático (dados do Universo).
+ */
+const toggleLigaManual = async () => {
+    if (!selectedEntry.value) return;
+    const entry = selectedEntry.value;
+
+    if (!entry.ligaManual) {
+        // Snapshot dos dados automáticos ao ativar modo manual
+        const snap = currentSeasonData.value;
+        if (snap) {
+            entry.liga = {
+                nome: snap.nome || entry.liga?.nome || '',
+                posicao: snap.posicao || '',
+                pontos: snap.pontos || 0,
+                jogos: snap.jogos || 0,
+                vitorias: snap.vitorias || 0,
+                empates: snap.empates || 0,
+                derrotas: snap.derrotas || 0,
+                golsPro: snap.golsPro || 0,
+                golsContra: snap.golsContra || 0,
+                saldo: snap.saldo || 0
+            };
+        }
+        entry.ligaManual = true;
+    } else {
+        // Desativar modo manual: limpa flag e volta ao automático
+        entry.ligaManual = false;
+    }
+
+    await careerStore.saveEntry(JSON.parse(JSON.stringify(entry)));
+}
 // Cálculo automático de JOGOS para Copas/Inter (V + E + D)
 const copasJogosCalculado = computed(() => {
     if (!selectedEntry.value) return 0
@@ -1094,21 +1251,25 @@ const totalStats = computed(() => {
 
 const calculateWinRate = (stats) => {
     if (!stats || !stats.jogos || stats.jogos === 0) return '0.00'
-    const v = stats.vitorias !== undefined ? stats.vitorias : Math.floor((stats.pontos || 0) / 3) // Fallback rústico se não houver V
-    const e = stats.empates !== undefined ? stats.empates : (stats.pontos || 0) % 3
-    
-    // NOVA FÓRMULA SOLICITADA: (V+E)/J
-    const totalPontuados = (v || 0) + (e || 0)
-    const rate = (totalPontuados / stats.jogos) * 100
+    const v = Number(stats.vitorias ?? Math.floor((stats.pontos || 0) / 3))
+    const e = Number(stats.empates ?? ((stats.pontos || 0) % 3))
+    const d = Number(stats.derrotas || 0)
+    const j = v + e + d || Number(stats.jogos)
+    if (j === 0) return '0.00'
+    // Fórmula: aproveitamento de pontos = pontos / (jogos × 3) × 100
+    // Empate vale 1pt, Vitória 3pts, Derrota 0pt — igual à tabela do futebol
+    const pts = (v * 3) + (e * 1)
+    const maxPts = j * 3
+    const rate = (pts / maxPts) * 100
     return rate.toFixed(2)
 }
 
 const getPerformanceStatus = (rate) => {
-    if (rate >= 90) return 'Excelente'
-    if (rate >= 75) return 'Ótimo'
-    if (rate >= 55) return 'Bom'
-    if (rate >= 30) return 'Regular'
-    return 'Ruim'
+    if (rate >= 85) return 'Excelente'   // ≥ 85% estreito — perfeito ou quase
+    if (rate >= 67) return 'Ótimo'       // ≥ 67% = 2V por 3J em média
+    if (rate >= 50) return 'Bom'         // ≥ 50% = 1V1E1D em 3J
+    if (rate >= 33) return 'Regular'     // ≥ 33% = só empates
+    return 'Ruim'                        // < 33% = mais derrotas do que empates
 }
 
 // Formatar estrelas baseado no número de títulos
@@ -1226,6 +1387,28 @@ const currentSeasonData = computed(() => {
             golsPro: baseData.golsPro || 0,
             golsContra: baseData.golsContra || 0,
             saldo: (baseData.golsPro || 0) - (baseData.golsContra || 0)
+        }
+    }
+
+    // Modo manual ativo ou ciclo encerrado: retornar entry.liga sem consultar o seasonStore.
+    // Garante que o gauge e o totalStats leiam os valores digitados pelo usuário.
+    if (selectedEntry.value.ligaManual || selectedEntry.value.cicloEncerrado) {
+        const v  = Number(baseData.vitorias  || 0)
+        const e  = Number(baseData.empates   || 0)
+        const d  = Number(baseData.derrotas  || 0)
+        const gp = Number(baseData.golsPro   || 0)
+        const gc = Number(baseData.golsContra|| 0)
+        return {
+            nome:      baseData.nome     || 'LIGA',
+            posicao:   baseData.posicao  || '',
+            jogos:     v + e + d,
+            pontos:    (v * 3) + e,
+            vitorias:  v,
+            empates:   e,
+            derrotas:  d,
+            golsPro:   gp,
+            golsContra:gc,
+            saldo:     gp - gc
         }
     }
 

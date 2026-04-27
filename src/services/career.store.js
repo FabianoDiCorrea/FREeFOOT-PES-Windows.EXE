@@ -132,12 +132,12 @@ export const careerStore = reactive({
         const targetComp = compName ? norm(compName) : null;
 
         return this.history.some(h => {
+            // Ciclo encerrado = usuário saiu no meio da temporada.
+            // Não conta mais como vínculo ativo (sem títulos automáticos, sem ícone de controller).
+            if (h.cicloEncerrado === true) return false;
+
             const isYearOk = yearMatch(h.temporada, seasonYear);
             const isTeamOk = teamMatch(h.timeNome, teamName);
-
-            if (smartNorm(teamName).includes('iguacu')) {
-                console.log(`DEBUG NOVA IGUACU: checking ${teamName} vs history ${h.timeNome}. seasonYear: ${seasonYear} vs history: ${h.temporada}. yearMatch: ${isYearOk}, teamMatch: ${isTeamOk}`);
-            }
 
             if (isYearOk && isTeamOk) {
                 return true;

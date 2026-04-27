@@ -196,11 +196,9 @@ const getStat = (row, field) => {
 const calculateAproveitamento = (row) => {
   const stats = parsedRow(row);
   if (!stats.jogos || stats.jogos === 0) return '0.00';
-  
-  // NOVA FÓRMULA SOLICITADA: % de aproveitamento (jogos em que pontuou)
-  // (Vitórias + Empates) / Total de Jogos
-  const totalPontuados = stats.vitorias + stats.empates;
-  const rate = (totalPontuados / stats.jogos) * 100;
+  // Fórmula: aproveitamento de pontos = pontos / (jogos × 3) × 100
+  // Derrota = 0pt, Empate = 1pt, Vitória = 3pts — igual à tabela real
+  const rate = (stats.pontos / (stats.jogos * 3)) * 100;
   return rate.toFixed(2);
 }
 </script>
@@ -371,7 +369,7 @@ const calculateAproveitamento = (row) => {
 
 .h-slant.pts { width: 40px; background: rgba(88, 204, 255, 0.1); } /* Reduzido de 45 */
 .h-slant.gp, .h-slant.gc, .h-slant.sg { width: 30px; } /* Reduzido de 34 */
-.h-slant.perc { width: 42px; } /* Aumentado de 36 para não colar no border */
+.h-slant.perc { width: 82px; }
 
 /* ROW STYLE */
 .tv-row-v2 {
@@ -461,7 +459,6 @@ const calculateAproveitamento = (row) => {
 .stats-group-v2 {
   display: flex;
   gap: 1.5px;
-  margin-right: -10px;
 }
 
 .stat-slant-v2 {
@@ -499,7 +496,7 @@ const calculateAproveitamento = (row) => {
 }
 
 .stat-slant-v2.gp, .stat-slant-v2.gc, .stat-slant-v2.sg { width: 30px; font-size: 0.75rem; }
-.stat-slant-v2.perc { width: 42px; font-size: 0.75rem; opacity: 0.7; }
+.stat-slant-v2.perc { width: 82px; font-size: 0.75rem; opacity: 0.7; }
 
 .text-neon-green {
   color: #39ff14;

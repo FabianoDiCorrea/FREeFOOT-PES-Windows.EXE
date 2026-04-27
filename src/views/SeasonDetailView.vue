@@ -200,7 +200,7 @@
            :style="{ 
              width: 'fit-content', 
              minWidth: season.competitionName === 'Sul-Americana' ? '700px' : 'auto', 
-             maxWidth: season.competitionName === 'Sul-Americana' ? '900px' : '750px' 
+             maxWidth: season.competitionName === 'Sul-Americana' ? '900px' : '750px'
            }">
         
         <!-- Caso Liga -->

@@ -1121,11 +1121,16 @@ onMounted(async () => {
    await refreshCompCounts()
 })
 
+onActivated(async () => {
+   await refreshCompCounts()
+})
+
 const getCompCount = (comp) => {
   if (!comp) return 0
-  // Tentar buscar por ID primeiro (mais preciso), depois por nome
-  if (comp.id && globalCompCounts.value[comp.id]) return globalCompCounts.value[comp.id]
-  return globalCompCounts.value[comp.nome] || 0
+  const countById = (comp.id && globalCompCounts.value[comp.id]) ? globalCompCounts.value[comp.id] : 0
+  const countByName = globalCompCounts.value[comp.nome] || 0
+  // Retornar o maior deles para cobrir casos onde algumas temporadas têm ID e outras apenas o Nome
+  return Math.max(countById, countByName)
 }
 
 const showNewSeasonForm = ref(false)
@@ -2038,6 +2043,7 @@ const openForm = () => {
     ano: lastYear ? getNextSeasonYear(lastYear) : '',
     campeao: '',
     vice: '',
+    competitionId: selectedCompetition.value?.id,
     competitionName: selectedCompetition.value?.nome,
     topScorers: [],
     participantes: [],
