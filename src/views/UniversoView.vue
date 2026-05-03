@@ -776,7 +776,7 @@
               </h4>
 
               <div class="row g-2 mb-3">
-                <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                <div v-for="idx in [0, 1, 2, 3, 4]" :key="idx" class="col-md col-sm-4 col-6">
                   <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
                     <input type="file" :id="'print-upload-copa-'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
                     <template v-if="newSeason.printsUrls[idx]">
@@ -916,7 +916,7 @@
               </div>
 
               <div class="row g-2 mb-3 mt-3">
-                <div v-for="idx in [0, 1, 2]" :key="idx" class="col-4">
+                <div v-for="idx in [0, 1, 2, 3, 4]" :key="idx" class="col-md col-sm-4 col-6">
                   <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
                     <input type="file" :id="'print-upload-tabela-'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
                     <template v-if="newSeason.printsUrls[idx]">
@@ -1242,6 +1242,8 @@ watch(() => route.query.reset, (newVal) => {
 
 const isEditing = ref(false)
 const currentEditId = ref(null)
+const isCloningForEdit = ref(false)
+const initialClassificacaoTxt = ref('')
 
 // 0. Pré-carregar estado de navegação para evitar flash visual
 const getSavedNav = () => {
@@ -1317,7 +1319,7 @@ const newSeason = ref({
   participantes: [],
   promovidosPlayoff: [],
   tabela: '',
-  printsUrls: ['', '', ''], // Novo: Suporte para até 3 prints
+  printsUrls: ['', '', '', '', ''], // Novo: Suporte para até 5 prints
   mundial: {
     semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
     semi2: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -1802,13 +1804,15 @@ const prepareEdit = async (s) => {
   try {
     isEditing.value = true
     currentEditId.value = s.id
+    isCloningForEdit.value = true
+    initialClassificacaoTxt.value = s.classificacaoCopaTxt || ''
     
     // Clone profundo para não afetar a store antes do save
     const clone = JSON.parse(JSON.stringify(s))
     
     newSeason.value = {
       ...clone,
-      printsUrls: clone.printsUrls || ['', '', ''],
+      printsUrls: clone.printsUrls || ['', '', '', '', ''],
       topScorers: clone.topScorers || (clone.artilheiro && clone.artilheiro.nome ? [clone.artilheiro] : []),
       participantes: clone.participantes || [],
       classificacaoCopaTxt: clone.classificacaoCopaTxt || '',
@@ -1843,6 +1847,10 @@ const prepareEdit = async (s) => {
     viewMode.value = 'form'
     // Carregar times da lib para este ano
     loadLibTeams(newSeason.value.ano)
+
+    setTimeout(() => {
+      isCloningForEdit.value = false
+    }, 100)
   } catch (e) {
     console.error("Erro ao preparar edição:", e)
     renderError.value = "Erro ao abrir o formulário de edição. Dados corrompidos ou incompletos."
@@ -2049,7 +2057,7 @@ const openForm = () => {
     participantes: [],
     tabela: '',
     classificacaoCopaTxt: '',
-    printsUrls: ['', '', ''], // Inicializado para garantir visibilidade da galeria
+    printsUrls: ['', '', '', '', ''], // Inicializado para garantir visibilidade da galeria
     promovidosPlayoff: [],
     mundial: {
       semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -2076,14 +2084,15 @@ const CUP_PHASES = [
   { tokens: ['elim. 16 avos', '16 avos', 'avos', '32'], label: '16 Avos', priority: 8 },
   { tokens: ['pre-copa', 'pré-copa', 'elim. pre', 'elim. pré', 'pre'], label: 'Pré-Copa', priority: 9 },
   { tokens: ['pre-libertadores', 'pré-libertadores', 'pre-lib', 'pré-lib'], label: 'Pré-Libertadores', priority: 10 },
-  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Fase de Grupos', priority: 11 },
-  { tokens: ['participante', 'participant'], label: 'Participante', priority: 12 },
+  { tokens: ['pre-champions', 'pré-champions', 'pre-champ', 'pré-champ'], label: 'Pré-Champions', priority: 11 },
+  { tokens: ['elim.', 'eliminado', 'fase de grupos', 'grupos', 'grupo'], label: 'Fase de Grupos', priority: 12 },
+  { tokens: ['participante', 'participant'], label: 'Participante', priority: 13 },
 ]
 
 const dynamicPlacements = computed(() => {
   return [
     'Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 
-    'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Copa', 'Pré-Libertadores', 'Eliminado', 'Participante'
+    'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Copa', 'Pré-Libertadores', 'Pré-Champions', 'Eliminado', 'Participante'
   ]
 })
 
@@ -2159,7 +2168,7 @@ const getCopaPhasesGrouped = (participantes) => {
   })
   
   // Ordenar de acordo com a prioridade das fases
-  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
+  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Pré-Champions', 'Eliminado', 'Participante']
   return Array.from(phaseMap.values()).sort((a, b) => {
     const ia = phaseOrder.findIndex(x => a.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
     const ib = phaseOrder.findIndex(x => b.label.toLowerCase().includes(x.toLowerCase().split(' ')[0]))
@@ -2169,6 +2178,8 @@ const getCopaPhasesGrouped = (participantes) => {
 
 // Watcher para parsear automaticamente a Classificação de Copa ao colar o texto
 watch(() => newSeason.value.classificacaoCopaTxt, (txt) => {
+  if (isCloningForEdit.value) return
+  if (isEditing.value && txt === initialClassificacaoTxt.value) return
   if (!txt || !txt.trim()) return
 
   const lines = txt.split('\n').filter(l => l.trim())

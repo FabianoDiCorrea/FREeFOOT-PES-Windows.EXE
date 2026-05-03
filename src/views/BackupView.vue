@@ -98,6 +98,16 @@
             </div>
           </div>
           
+          <div v-if="isSyncing" class="px-4 pb-3">
+             <div class="d-flex justify-content-between align-items-center mb-1 x-small fw-bold text-info text-uppercase">
+                <span><i class="bi bi-arrow-repeat spin me-2"></i>{{ syncProgressText || 'Sincronizando...' }}</span>
+                <span>{{ syncProgress }}%</span>
+             </div>
+             <div class="progress bg-dark border border-secondary border-opacity-25" style="height: 12px; border-radius: 6px; overflow: hidden;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" :style="{ width: syncProgress + '%' }" :aria-valuenow="syncProgress" aria-valuemin="0" aria-valuemax="100"></div>
+             </div>
+          </div>
+
           <div v-if="syncStatus" class="px-4 pb-1">
              <div :class="['alert py-2 px-3 m-0 small fw-bold d-flex align-items-center justify-content-between', syncStatus.type === 'error' ? 'alert-danger' : 'alert-success']">
                 <span><i :class="syncStatus.type === 'error' ? 'bi bi-exclamation-triangle-fill' : 'bi bi-check-circle-fill'" class="me-2"></i>{{ syncStatus.message }}</span>
@@ -162,6 +172,8 @@ const githubToken = ref(localStorage.getItem('ff_github_token') || '')
 const tempToken = ref('')
 const isSyncing = ref(false)
 const syncStatus = ref(null)
+const syncProgress = ref(0)
+const syncProgressText = ref('')
 const dbSize = ref(null)
 const imgCount = ref(0)
 const ghUser = ref(null)
@@ -208,8 +220,13 @@ const handleCloudUpload = async () => {
   
   isSyncing.value = true
   syncStatus.value = null
+  syncProgress.value = 0
+  syncProgressText.value = 'Iniciando upload...'
   try {
-    const res = await cloudSyncService.uploadData(githubToken.value)
+    const res = await cloudSyncService.uploadData(githubToken.value, (perc, statusText) => {
+      syncProgress.value = perc
+      syncProgressText.value = statusText
+    })
     syncStatus.value = {
       type: 'success',
       message: 'Dados enviados para a nuvem com sucesso!',
@@ -231,8 +248,13 @@ const handleCloudDownload = async () => {
   
   isSyncing.value = true
   syncStatus.value = null
+  syncProgress.value = 0
+  syncProgressText.value = 'Iniciando download...'
   try {
-    await cloudSyncService.downloadData(githubToken.value)
+    await cloudSyncService.downloadData(githubToken.value, (perc, statusText) => {
+      syncProgress.value = perc
+      syncProgressText.value = statusText
+    })
     syncStatus.value = {
       type: 'success',
       message: 'Dados baixados e restaurados! Recarregando sistema...',

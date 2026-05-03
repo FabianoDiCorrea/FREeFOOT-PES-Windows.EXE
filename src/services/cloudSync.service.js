@@ -63,12 +63,14 @@ export const cloudSyncService = {
     /**
      * Faz upload dos dados fragmentados para o Repositório (Suporta GBs)
      */
-    async uploadData(token) {
+    async uploadData(token, onProgress) {
         if (!token) throw new Error("Você precisa configurar seu Token do GitHub com permissão 'repo'.");
 
-        console.log("[CloudSync] Iniciando exportação do banco de dados...");
+        if (onProgress) onProgress(5, "Iniciando exportação do banco de dados...");
         const repo = await this.getOrCreateRepo(token);
+        if (onProgress) onProgress(10, "Lendo banco de dados...");
         const exportData = await db.exportDatabase();
+        if (onProgress) onProgress(15, "Processando dados principais...");
 
         // 1. Separar dados de texto das imagens
         const storeData = exportData.store || {};
@@ -79,7 +81,7 @@ export const cloudSyncService = {
         const treeEntries = [];
 
         // 2. Preparar e fragmentar blob de dados de texto (Store)
-        console.log("[CloudSync] Comprimindo dados principais (nível 9)...");
+        if (onProgress) onProgress(20, "Comprimindo banco de dados...");
         const dataJson = JSON.stringify({ store: storeData });
         const dataCompressed = pako.gzip(dataJson, { level: 9 });
         const totalDataSizeMB = (dataCompressed.length / (1024 * 1024)).toFixed(2);
@@ -97,6 +99,7 @@ export const cloudSyncService = {
         }
 
         // 3. Dividir imagens em fragmentos (chunks)
+        if (onProgress) onProgress(25, "Comprimindo imagens do banco...");
         const imageEntries = Object.entries(imagesData);
         let currentImgChunk = {};
         let currentChunkSize = 0;
@@ -133,7 +136,8 @@ export const cloudSyncService = {
         // 4. Criar BLOBS no GitHub para cada arquivo
         for (let i = 0; i < treeEntries.length; i++) {
             const entry = treeEntries[i];
-            console.log(`[CloudSync] Enviando arquivo ${i + 1}/${treeEntries.length}: ${entry.path}...`);
+            const perc = 30 + Math.round((i / treeEntries.length) * 55);
+            if (onProgress) onProgress(perc, `Enviando arquivo ${i + 1}/${treeEntries.length}: ${entry.path}...`);
 
             const blobRes = await fetch(`https://api.github.com/repos/${repo.full_name}/git/blobs`, {
                 method: 'POST',
@@ -159,7 +163,7 @@ export const cloudSyncService = {
         }
 
         // 5. Fluxo Git Data: Tree -> Commit -> Ref
-        console.log("[CloudSync] Finalizando commit no GitHub...");
+        if (onProgress) onProgress(85, "Registrando commit no GitHub...");
         const branchRes = await fetch(`https://api.github.com/repos/${repo.full_name}/branches/main`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -194,6 +198,7 @@ export const cloudSyncService = {
         });
         const commitData = await commitRes.json();
 
+        if (onProgress) onProgress(95, "Atualizando referências no GitHub...");
         await fetch(`https://api.github.com/repos/${repo.full_name}/git/refs/heads/main`, {
             method: 'PATCH',
             headers: {
@@ -203,20 +208,21 @@ export const cloudSyncService = {
             body: JSON.stringify({ sha: commitData.sha })
         });
 
-        console.log("[CloudSync] Sincronização concluída com sucesso!");
+        if (onProgress) onProgress(100, "Sincronização concluída com sucesso!");
         return true;
     },
 
     /**
      * Baixa os dados fragmentados e reconstrói o banco
      */
-    async downloadData(token) {
+    async downloadData(token, onProgress) {
         if (!token) throw new Error("Token não configurado.");
-        console.log("[CloudSync] Iniciando download do backup...");
+        if (onProgress) onProgress(5, "Iniciando download do backup...");
         const user = await this.authenticate(token);
         const repoFull = `${user.login}/${SYNC_REPO_NAME}`;
 
         // 1. Obter a Tree mais recente
+        if (onProgress) onProgress(10, "Buscando branches do repositório...");
         const branchRes = await fetch(`https://api.github.com/repos/${repoFull}/branches/main`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -224,6 +230,7 @@ export const cloudSyncService = {
         const branchData = await branchRes.json();
         const treeSha = branchData.commit.commit.tree.sha;
 
+        if (onProgress) onProgress(15, "Listando arquivos do backup...");
         const treeRes = await fetch(`https://api.github.com/repos/${repoFull}/git/trees/${treeSha}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -233,7 +240,9 @@ export const cloudSyncService = {
         const dataParts = [];
 
         // 2. Baixar fragmentos em paralelo
-        console.log(`[CloudSync] Baixando ${treeData.tree.length} arquivos de backup...`);
+        if (onProgress) onProgress(20, `Baixando ${treeData.tree.length} arquivos...`);
+        let completedCount = 0;
+
         const downloadPromises = treeData.tree.map(async (file) => {
             const isStorePart = file.path.startsWith('data_part_') || file.path === DATA_FILENAME;
             const isImagePart = file.path.startsWith(IMAGE_PREFIX);
@@ -262,13 +271,16 @@ export const cloudSyncService = {
                     Object.assign(combinedData.images, json);
                 }
             }
+            completedCount++;
+            const perc = 20 + Math.round((completedCount / treeData.tree.length) * 65);
+            if (onProgress) onProgress(perc, `Baixado arquivo ${completedCount}/${treeData.tree.length}: ${file.path}`);
         });
 
         await Promise.all(downloadPromises);
 
         // 3. Reconstruir Store (Dados de Texto)
         if (dataParts.length > 0) {
-            console.log("[CloudSync] Reconstruindo banco de dados principal...");
+            if (onProgress) onProgress(85, "Reconstruindo banco de dados principal...");
             // Ordenar partes pelo índice
             dataParts.sort((a, b) => a.index - b.index);
 
@@ -292,9 +304,9 @@ export const cloudSyncService = {
             }
         }
 
-        console.log("[CloudSync] Importando dados para o banco local...");
+        if (onProgress) onProgress(90, "Importando dados para o banco local...");
         await db.importDatabaseFromJSON(combinedData);
-        console.log("[CloudSync] Download e restauração concluídos!");
+        if (onProgress) onProgress(100, "Download e restauração concluídos!");
         return true;
     }
 };

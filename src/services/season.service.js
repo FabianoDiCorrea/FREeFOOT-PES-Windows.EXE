@@ -95,6 +95,14 @@ export const seasonService = {
             // Agora com proteção para não cruzar divisões (Serie A, Serie B, etc)
             const hasDiv = (name) => name.includes('serie') || name.includes('liga profissional') || name.includes('primera nacional') || name.includes('divisao');
 
+            // FIREWALL para diferentes Champions Leagues
+            const prefixes = ['concacaf', 'afc', 'caf'];
+            for (const p of prefixes) {
+                if ((cName.includes(p) && !sName.includes(p)) || (sName.includes(p) && !cName.includes(p))) {
+                    return false;
+                }
+            }
+
             if (cName.includes(sName) || sName.includes(cName)) {
                 // Se um tem "Serie B" e o outro não, não deve casar
                 if (cName.includes('serie b') && !sName.includes('serie b')) return false;

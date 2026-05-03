@@ -263,6 +263,7 @@ import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import { FEDERATIONS_DATA } from '../services/federations.data'
+import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 
 const activeTab = ref('clubes')
 const expandedSeasons = ref({})
@@ -298,17 +299,34 @@ const sortedRankings = computed(() => {
     const norm = (n) => n?.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 
     const rankingWithEvo = r.ranking.map(item => {
-      // Enriquecimento de federação para dados legados (Seleções)
+      // Enriquecimento de federação para dados legados e clubes
       let fedLogo = item.federationLogo
       let fedName = item.federationName
       
-      if (r.type === 'selecoes' && (!fedLogo || !fedName)) {
-          const found = dataSearchService.findNationalTeam(item.teamName)
-          if (found) {
-              fedLogo = fedLogo || found.federacao_logo || found.continente || ''
-              if (!fedName) {
-                  const fedEntry = Object.values(FEDERATIONS_DATA).find(f => f.logo === fedLogo)
-                  fedName = fedEntry ? fedEntry.nome : ''
+      const found = dataSearchService.search(item.teamName, r.type === 'selecoes' ? 'selecao' : 'clube')
+      if (found) {
+          if (r.type === 'clubes' || !fedLogo || !fedName) {
+              const cont = found.continente
+              if (cont) {
+                  const fedEntry = FEDERATIONS_DATA[cont] || 
+                                   Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+                  if (fedEntry) {
+                      fedLogo = fedEntry.logo
+                      fedName = fedEntry.nome
+                  }
+              }
+              if (!fedLogo && found.pais) {
+                  const contFound = ALL_COMPETITIONS_DATA.find(c => c.paises && c.paises.some(p => p.nome === found.pais))
+                  if (contFound) {
+                      const fedEntry = FEDERATIONS_DATA[contFound.continente]
+                      if (fedEntry) {
+                          fedLogo = fedEntry.logo
+                          fedName = fedEntry.nome
+                      }
+                  }
+              }
+              if (!fedLogo && found.federacao_logo) {
+                  fedLogo = found.federacao_logo
               }
           }
       }
@@ -442,14 +460,32 @@ const saveRanking = async () => {
     const rawName = lines[i].replace(/^\d+[\s.]+|[-|]+.*$/g, '').trim()
     const found = dataSearchService.search(rawName, activeTab.value === 'selecoes' ? 'selecao' : 'clube')
     
-    let fedLogo = found?.escudo_url || found?.federacao_logo || ''
+    let fedLogo = ''
     let fedName = ''
 
-    if (activeTab.value === 'selecoes' && found) {
-        fedLogo = found.federacao_logo || found.continente || ''
-        // Tenta encontrar o nome da federação pelo logo
-        const fedEntry = Object.values(FEDERATIONS_DATA).find(f => f.logo === fedLogo)
-        fedName = fedEntry ? fedEntry.nome : ''
+    if (found) {
+        const cont = found.continente
+        if (cont) {
+            const fedEntry = FEDERATIONS_DATA[cont] || 
+                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+            if (fedEntry) {
+                fedLogo = fedEntry.logo
+                fedName = fedEntry.nome
+            }
+        }
+        if (!fedLogo && found.pais) {
+            const contFound = ALL_COMPETITIONS_DATA.find(c => c.paises && c.paises.some(p => p.nome === found.pais))
+            if (contFound) {
+                const fedEntry = FEDERATIONS_DATA[contFound.continente]
+                if (fedEntry) {
+                    fedLogo = fedEntry.logo
+                    fedName = fedEntry.nome
+                }
+            }
+        }
+        if (!fedLogo && found.federacao_logo) {
+            fedLogo = found.federacao_logo
+        }
     }
 
     parsedRanking.push({
@@ -465,13 +501,32 @@ const saveRanking = async () => {
   let myTeam = null
   if (form.value.myTeamName) {
     const fMy = dataSearchService.search(form.value.myTeamName)
-    let myFedLogo = fMy?.federacao_logo || ''
+    let myFedLogo = ''
     let myFedName = ''
 
-    if (activeTab.value === 'selecoes' && fMy) {
-        myFedLogo = fMy.federacao_logo || fMy.continente || ''
-        const fedEntry = Object.values(FEDERATIONS_DATA).find(f => f.logo === myFedLogo)
-        myFedName = fedEntry ? fedEntry.nome : ''
+    if (fMy) {
+        const cont = fMy.continente
+        if (cont) {
+            const fedEntry = FEDERATIONS_DATA[cont] || 
+                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+            if (fedEntry) {
+                myFedLogo = fedEntry.logo
+                myFedName = fedEntry.nome
+            }
+        }
+        if (!myFedLogo && fMy.pais) {
+            const contFound = ALL_COMPETITIONS_DATA.find(c => c.paises && c.paises.some(p => p.nome === fMy.pais))
+            if (contFound) {
+                const fedEntry = FEDERATIONS_DATA[contFound.continente]
+                if (fedEntry) {
+                    myFedLogo = fedEntry.logo
+                    myFedName = fedEntry.nome
+                }
+            }
+        }
+        if (!myFedLogo && fMy.federacao_logo) {
+            myFedLogo = fMy.federacao_logo
+        }
     }
 
     myTeam = {

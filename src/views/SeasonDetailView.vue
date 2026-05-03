@@ -526,7 +526,8 @@ const getCopaPhasesGrouped = (participantes) => {
     else if (norm.includes('oitav') || norm === '16') colocacao = 'Oitavas'
     else if (norm.includes('16') || norm.includes('avos')) colocacao = '16 Avos'
     else if (norm.includes('libertadores') && (norm.includes('pre') || norm.includes('pré'))) colocacao = 'Pré-Libertadores'
-    else if (norm.includes('pre') || norm.includes('pré')) colocacao = (season.value?.competitionName?.includes('Libertadores')) ? 'Pré-Libertadores' : 'Pré-Copa'
+    else if (norm.includes('champions') && (norm.includes('pre') || norm.includes('pré'))) colocacao = 'Pré-Champions'
+    else if (norm.includes('pre') || norm.includes('pré')) colocacao = (season.value?.competitionName?.includes('Libertadores')) ? 'Pré-Libertadores' : (season.value?.competitionName?.includes('Champions') ? 'Pré-Champions' : 'Pré-Copa')
     else if (norm.includes('grupos') || norm.includes('grupo')) colocacao = 'Fase de Grupos'
     
     if (!phaseMap.has(colocacao)) {
@@ -535,7 +536,7 @@ const getCopaPhasesGrouped = (participantes) => {
     phaseMap.get(colocacao).teams.push(p)
   })
   
-  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
+  const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Pré-Champions', 'Eliminado', 'Participante']
   return Array.from(phaseMap.values()).sort((a, b) => {
     const ia = phaseOrder.indexOf(a.label)
     const ib = phaseOrder.indexOf(b.label)
@@ -546,7 +547,7 @@ const getCopaPhasesGrouped = (participantes) => {
 const dynamicPlacements = computed(() => {
   return [
     'CAMPEÃO', 'VICE', '3º COLOCADO', '4º COLOCADO', 'SEMIFINAL', 
-    'QUARTAS', 'OITAVAS', '16 AVOS', 'FASE DE GRUPOS', 'PRÉ-COPA', 'PRÉ-LIBERTADORES', 'ELIMINADO', 'PARTICIPANTE'
+    'QUARTAS', 'OITAVAS', '16 AVOS', 'FASE DE GRUPOS', 'PRÉ-COPA', 'PRÉ-LIBERTADORES', 'PRÉ-CHAMPIONS', 'ELIMINADO', 'PARTICIPANTE'
   ]
 })
 
@@ -613,7 +614,7 @@ const updateMundialField = (phase, field, value) => {
   season.value.mundial[phase][field] = value
 }
 
-const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Eliminado', 'Participante']
+const phaseOrder = ['Campeão', 'Vice', '3º COLOCADO', '4º COLOCADO', 'Semifinal', 'Quartas', 'Oitavas', '16 Avos', 'Fase de Grupos', 'Pré-Libertadores', 'Pré-Copa', 'Pré-Champions', 'Eliminado', 'Participante']
 
 const getPhaseRank = (coloc) => {
   if (!coloc) return 99
@@ -1974,6 +1975,8 @@ select.form-select.cup-input-select.pos-red-pre {
 .prints-count-1 { grid-template-columns: 1fr; }
 .prints-count-2 { grid-template-columns: 1fr 1fr; }
 .prints-count-3 { grid-template-columns: 1fr 1fr 1fr; }
+.prints-count-4 { grid-template-columns: repeat(2, 1fr); }
+.prints-count-5 { grid-template-columns: repeat(3, 1fr); }
 
 .print-item-wrapper {
   position: relative;

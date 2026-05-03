@@ -118,6 +118,7 @@ import { seasonStore } from '../services/season.store'
 import { careerStore } from '../services/career.store'
 import { getTrofeuPath, normalizeString } from '../services/utils'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
+import { seasonService } from '../services/season.service'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import TeamShield from '../components/TeamShield.vue'
@@ -132,15 +133,14 @@ const competitions = ref([])
 onMounted(async () => {
     countryName.value = decodeURIComponent(route.params.id)
     
-    if (seasonStore.list.length === 0) {
-        await seasonStore.loadAll()
-    }
+    // Sempre carrega todas as temporadas direto do serviço para garantir dados completos
+    const allSeasons = await seasonService.getAll()
     
     if (careerStore.history.length === 0) {
         await careerStore.loadAll()
     }
 
-    processCountryData()
+    processCountryData(allSeasons)
 })
 
 const handleImgError = (e) => {
@@ -150,7 +150,7 @@ const handleImgError = (e) => {
 /**
  * Agrupa todos os campeões de todas as temporadas do Universo que são relativas a copas e ligas deste país.
  */
-const processCountryData = () => {
+const processCountryData = (allSeasons) => {
     // 1. Extrair quais competições pertencem ao país
     const countryObj = ALL_COMPETITIONS_DATA
         .flatMap(cont => cont.paises || [])
@@ -168,24 +168,56 @@ const processCountryData = () => {
         }
     })
 
-    // 3. Varrer o SeasonStore inteiro procurando ocorrências destas ligas.
-    seasonStore.list.forEach(season => {
+    // 3. Varrer todas as temporadas encontradas
+    allSeasons.forEach(season => {
         const compName = season.competitionName
         const champion = season.campeao
 
         // Pular se não tiver campeão definido ou se não for uma competição deste país
         if (!champion || champion === '---' || champion.trim() === '') return
         
-        // Encontrar a "chave oficial" da competição ignorando maiusculas/minusculas
-        const officialCompKey = Object.keys(groupedData).find(key => normalizeString(key) === normalizeString(compName))
+        // Vamos checar se essa temporada pertence ao país selecionado:
+        // Caso A: O nome da competição já está mapeado em groupedData
+        let isCountryComp = Object.keys(groupedData).some(key => normalizeString(key) === normalizeString(compName))
 
-        if (officialCompKey) {
+        // Caso B: A temporada tem explicitamente o país preenchido e bate
+        if (!isCountryComp && season.pais && normalizeString(season.pais) === normalizeString(countryName.value)) {
+            isCountryComp = true
+        }
+
+        // Caso C: Inferência básica por nome se não houver país
+        if (!isCountryComp) {
+            const normComp = normalizeString(compName)
+            const normCountry = normalizeString(countryName.value)
+            if (normCountry === 'brasil' && (normComp.includes('brasileirao') || normComp.includes('copa do brasil'))) {
+                isCountryComp = true
+            } else if (normCountry === 'argentina' && (normComp.includes('liga profissional') || normComp.includes('argentin'))) {
+                isCountryComp = true
+            } else if (normCountry === 'inglaterra' && (normComp.includes('premier league') || normComp.includes('fa cup'))) {
+                isCountryComp = true
+            }
+        }
+
+        if (isCountryComp) {
             const yearStr = (season.ano || '').toString().trim()
             if (!yearStr) return
 
-            if (!groupedData[officialCompKey].championsMap[champion]) {
-                groupedData[officialCompKey].championsMap[champion] = {
-                    nome: champion,
+            // Adiciona ao groupedData dinamicamente se não existir (para competições customizadas)
+            let officialCompKey = Object.keys(groupedData).find(key => normalizeString(key) === normalizeString(compName))
+            if (!officialCompKey) {
+                groupedData[compName] = {
+                    compInfo: { nome: compName, tipo: season.tipo || 'Copa' },
+                    championsMap: {}
+                }
+                officialCompKey = compName
+            }
+
+            // Normaliza o nome do campeão para agrupar corretamente sem duplicatas de espaço ou capitalização
+            const champKey = champion.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+            if (!groupedData[officialCompKey].championsMap[champKey]) {
+                groupedData[officialCompKey].championsMap[champKey] = {
+                    nome: champion.trim(),
                     count: 0,
                     years: [],
                     isMyCareer: false
@@ -197,11 +229,17 @@ const processCountryData = () => {
                 (h.temporada.toString().includes(yearStr) || (h.titulos && h.titulos.some(t => normalizeString(t.nome) === normalizeString(compName))))
             )
 
-            groupedData[officialCompKey].championsMap[champion].count++
-            groupedData[officialCompKey].championsMap[champion].years.push({
-                year: yearStr,
-                isMyCareer: hasCareerTitle
-            })
+            const existingClub = groupedData[officialCompKey].championsMap[champKey]
+            existingClub.count++
+            
+            // Adiciona apenas se o ano ainda não tiver sido registrado
+            const hasYear = existingClub.years.some(y => y.year === yearStr)
+            if (!hasYear) {
+                existingClub.years.push({
+                    year: yearStr,
+                    isMyCareer: hasCareerTitle
+                })
+            }
         }
     })
 

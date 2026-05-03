@@ -15,22 +15,13 @@
         <button @click="handleBack" class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left me-2"></i>VOLTAR
         </button>
-        <button @click="repairClubData" class="btn btn-info fw-black" title="Corrigir Erros de Importação (Escudo/Continente)">
-          <i class="bi bi-wrench-adjustable me-2"></i>REPARAR DADOS
-        </button>
       </div>
       <div class="text-center flex-grow-1">
         <h2 class="fw-black text-uppercase m-0 ls-2 text-warning">
           <i class="bi bi-shield-shaded me-2"></i>GESTÃO DE CLUBES
         </h2>
-        <div class="small text-secondary fw-bold text-uppercase mt-1 opacity-75 d-flex align-items-center justify-content-center gap-2">
+        <div class="small text-secondary fw-bold text-uppercase mt-1 opacity-75">
           Navegue por país ou use a busca global
-          <span v-if="clubStore.needsExport" class="badge bg-danger pulse-red ms-2" title="Você adicionou times que ainda não estão no seu Excel. Exporte para atualizar!">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>ALTERAÇÕES PENDENTES
-          </span>
-          <span v-else class="badge bg-success opacity-50 ms-2">
-            <i class="bi bi-check-circle-fill me-1"></i>SINCRONIZADO
-          </span>
         </div>
       </div>
       <LogoFREeFOOT />
@@ -50,6 +41,8 @@
         {{ selectedCountry.nome }}
       </button>
     </div>
+
+
 
     <div class="row g-4">
       <!-- COLUNA ESQUERDA: NAVEGAÇÃO / LISTA -->
@@ -108,11 +101,24 @@
 
             <!-- NÍVEL 1: SELEÇÃO DE CONTINENTE -->
             <div v-else-if="!selectedContinent" class="continent-grid">
+              <!-- Cards de continentes existentes -->
               <div v-for="cont in orderedContinents" :key="cont.continente" 
                    class="continent-card" @click="selectContinent(cont)">
                 <img :src="cont.logo_continente" class="continent-logo mb-3">
                 <h4 class="m-0 fw-black text-uppercase">{{ cont.continente }}</h4>
                 <div class="small opacity-50 fw-bold">{{ cont.paises.length }} PAÍSES</div>
+              </div>
+
+              <!-- Card especial: Nacionalidades dos Jogadores -->
+              <div class="continent-card continent-card-nat" @click="$router.push('/clubes/nacionalidades')">
+                <img
+                  src="/logos/competitions/banner_nacionalidades.png"
+                  class="continent-logo mb-3"
+                  @error="(e) => e.target.style.display = 'none'"
+                >
+                <i class="bi bi-globe2 text-info mb-2 d-none"></i>
+                <h4 class="m-0 fw-black text-uppercase">PAÍSES</h4>
+                <div class="small opacity-50 fw-bold">JOGADORES</div>
               </div>
             </div>
 
@@ -609,6 +615,10 @@ const handleBack = () => {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .continent-card:hover {
@@ -619,7 +629,7 @@ const handleBack = () => {
 }
 
 .continent-logo {
-  height: 60px;
+  height: 120px;
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
@@ -738,5 +748,78 @@ const handleBack = () => {
 
 .sync-content {
   color: white;
+}
+
+/* ═══════════════════════════════════════════════════
+   CARD DE ACESSO: NACIONALIDADES DOS JOGADORES
+═══════════════════════════════════════════════════ */
+
+/* Container principal do card de acesso */
+.nationality-access-card {
+  position: relative;
+  background: rgba(0, 242, 255, 0.04);
+  border: 1px solid rgba(0, 242, 255, 0.15);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: stretch;
+  min-height: 80px;
+}
+
+.nationality-access-card:hover {
+  background: rgba(0, 242, 255, 0.08);
+  border-color: rgba(0, 242, 255, 0.4);
+  box-shadow: 0 0 30px rgba(0, 242, 255, 0.15), 0 8px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Área do banner (lado esquerdo) */
+.nat-card-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-right: 1px solid rgba(0, 242, 255, 0.1);
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+/* Imagem do banner */
+.nat-banner-img {
+  max-height: 54px;
+  max-width: 180px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 242, 255, 0.3));
+  transition: filter 0.3s ease;
+}
+
+.nationality-access-card:hover .nat-banner-img {
+  filter: drop-shadow(0 4px 16px rgba(0, 242, 255, 0.55));
+}
+
+/* Área de informações (centro) */
+.nat-card-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
+}
+
+/* Seta de navegação (lado direito) */
+.nat-card-arrow {
+  opacity: 0.5;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.nationality-access-card:hover .nat-card-arrow {
+  opacity: 1;
+  transform: translateX(4px);
 }
 </style>
