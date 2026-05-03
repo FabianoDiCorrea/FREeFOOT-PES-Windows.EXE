@@ -192,6 +192,7 @@ import TeamShield from '../components/TeamShield.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import { normalizeYearStrict, normalizeString, normalizeCountry } from '../services/utils'
+import { CLUBS_DATA } from '../data/clubs.data'
 
 const normalize = (s) => normalizeString(s)
 
