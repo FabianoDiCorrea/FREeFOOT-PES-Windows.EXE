@@ -181,6 +181,7 @@ import { ref, computed, onMounted } from 'vue'
 import { db } from '../services/db'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
+import { refreshCustomNationalities } from '../services/dataSearch.service'
 
 // ────────────────────────────────────────────────
 // Chave de persistência no localforage
@@ -282,6 +283,7 @@ const saveNationality = async () => {
     // Persiste no banco local
     await db.save(DB_KEY, lista)
     nationalities.value = lista
+    await refreshCustomNationalities()
 
     closeModal()
   } finally {
@@ -298,6 +300,7 @@ const removeNationality = async (nat) => {
   const lista = nationalities.value.filter(n => n.id !== nat.id)
   await db.save(DB_KEY, lista)
   nationalities.value = lista
+  await refreshCustomNationalities()
 
   // Limpa seleção se era o removido
   if (selectedNat.value?.id === nat.id) {

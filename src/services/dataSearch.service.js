@@ -8,6 +8,21 @@ import {
 } from '../data/competitions.data';
 import { NATIONAL_COMPETITIONS_STRUCTURE } from './national.data';
 import { normalizeString, normalizeCountry } from './utils';
+import { db } from './db';
+
+let cachedCustomNationalities = [];
+
+export const refreshCustomNationalities = async () => {
+    try {
+        const list = await db.getAll('player_nationalities') || [];
+        cachedCustomNationalities = list;
+    } catch (e) {
+        cachedCustomNationalities = [];
+    }
+};
+
+// Carrega imediatamente ao iniciar o arquivo
+refreshCustomNationalities();
 
 export const dataSearchService = {
     /**
@@ -56,11 +71,15 @@ export const dataSearchService = {
         const search = normalizeString(name);
 
         const exactMatch = NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome) === search) ||
-            NATIONAL_TEAMS_DATA.find(n => normalizeCountry(n.pais) === normalizeCountry(search));
+            NATIONAL_TEAMS_DATA.find(n => normalizeCountry(n.pais) === normalizeCountry(search)) ||
+            cachedCustomNationalities.find(n => normalizeString(n.nome) === search);
 
-        if (exactMatch || exactOnly) return exactMatch;
+        if (exactMatch) return exactMatch;
 
-        return NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome).includes(search));
+        if (exactOnly) return null;
+
+        return NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome).includes(search)) ||
+            cachedCustomNationalities.find(n => normalizeString(n.nome).includes(search));
     },
 
     /**

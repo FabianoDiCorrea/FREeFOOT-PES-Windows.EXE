@@ -1078,6 +1078,7 @@ import { imageCacheService } from '../services/imageCache.service'
 import MundialBracket from '../components/MundialBracket.vue'
 import { careerStore } from '../services/career.store'
 import { seasonService } from '../services/season.service'
+import { dataSearchService } from '../services/dataSearch.service'
 
 const globalCompCounts = ref({})
 const renderError = ref(null)
@@ -1649,7 +1650,7 @@ const getClubInfo = (clubName) => {
 
 const getNationalityFlag = (nationality) => {
   if (!nationality) return '';
-  const nation = NATIONAL_TEAMS_DATA.find(n => n.nome.toLowerCase().trim() === nationality.toLowerCase().trim());
+  const nation = dataSearchService.findNationalTeam(nationality);
   return nation ? nation.bandeira_url : '';
 }
 
