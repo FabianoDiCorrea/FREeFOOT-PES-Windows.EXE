@@ -1,7 +1,7 @@
 {
   "name": "freefoot-pes21",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "chart.js": "^4.5.1",
     "localforage": "^1.10.0",
     "pako": "^2.1.0",
+    "tesseract.js": "^7.0.0",
     "vue": "^3.5.25",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^4.6.4",

@@ -638,12 +638,38 @@
             <i class="bi" :class="isEditing ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
             {{ isEditing ? 'EDITAR' : 'REGISTRAR' }} TEMPORADA
           </h1>
-          <button class="btn-close-large" @click="viewMode = 'list'"><i class="bi bi-x-lg"></i></button>
+<button class="btn-close-large" @click="viewMode = 'list'"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <!-- NAVEGAÇÃO POR ABAS PARA OTIMIZAR O MODAL -->
+        <div class="d-flex flex-column align-items-center mb-4">
+          <ul class="nav nav-pills d-flex justify-content-center gap-2 game-tabs mb-3">
+            <li class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'geral' }" @click="formTab = 'geral'">Dados Gerais</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'tabela' }" @click="formTab = 'tabela'">Formato & Tabela</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'estatisticas' }" @click="formTab = 'estatisticas'">Estatísticas (IA)</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'premios' }" @click="formTab = 'premios'">Prêmios (IA)</button>
+            </li>
+          </ul>
+          
+          <div class="d-flex align-items-center gap-2 bg-dark p-2 rounded-pill border border-secondary border-opacity-25" style="transform: scale(0.9);">
+            <span class="text-secondary fw-bold x-small text-uppercase ps-2"><i class="bi bi-cpu me-1"></i> MOTOR IA:</span>
+            <select v-model="aiEngine" class="form-select form-select-sm bg-black text-white border-0 fw-bold rounded-pill" style="width: 140px; font-size: 0.75rem;">
+              <option value="gemini">Gemini (Grátis)</option>
+              <option value="chatgpt">ChatGPT (Pago)</option>
+            </select>
+          </div>
         </div>
 
         <div class="row g-5">
-          <!-- SEÇÃO 1: DADOS BSICOS (CAMPEÃO / VICE) -->
-          <div class="col-xl-7">
+          <!-- ABA: DADOS GERAIS -->
+          <div v-show="formTab === 'geral'" class="col-12">
             <div class="form-section-premium mb-5">
               <h4 class="text-warning fw-black mb-3 text-uppercase"><i class="bi bi-trophy-fill me-2"></i>DADOS DA TEMPORADA</h4>
               
@@ -762,7 +788,10 @@
                 NENHUM PARTICIPANTE ADICIONADO AINDA.
               </div>
             </div>
+            </div> <!-- FIM ABA DADOS GERAIS -->
 
+            <!-- ABA: FORMATO & TABELA -->
+            <div v-show="formTab === 'tabela'" class="col-12">
             <!-- SEÇÃO 1.8: CLASSIFICAÇÃO FINAL DE COPA -->
             <div class="form-section-premium mb-5">
               <h4 class="text-primary fw-black mb-1 text-uppercase d-flex align-items-center justify-content-between">
@@ -771,6 +800,10 @@
                   <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'classificacaoCopaTxt' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('classificacaoCopaTxt')">
                     IA AGENTE
                   </button>
+                  <select v-if="ocrWorkspace.activeField === 'classificacaoCopaTxt'" v-model="aiEngine" class="form-select form-select-sm bg-dark text-white border-secondary fw-bold ms-2" style="width: 140px; font-size: 0.7rem;">
+                    <option value="gemini">Gemini (Grátis)</option>
+                    <option value="chatgpt">ChatGPT (Pago)</option>
+                  </select>
                 </div>
                 <span v-if="newSeason.participantes && newSeason.participantes.length > 0" class="text-success animated-fade-in">✅ {{ newSeason.participantes.length }} times</span>
               </h4>
@@ -880,6 +913,10 @@
                   <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'tabela' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('tabela')">
                     <i class="bi bi-robot me-1"></i>IA AGENTE
                   </button>
+                  <select v-if="ocrWorkspace.activeField === 'tabela'" v-model="aiEngine" class="form-select form-select-sm bg-dark text-white border-secondary fw-bold ms-2" style="width: 140px; font-size: 0.7rem;">
+                    <option value="gemini">Gemini (Grátis)</option>
+                    <option value="chatgpt">ChatGPT (Pago)</option>
+                  </select>
                 </div>
                 <span v-if="newSeason.tabela" class="text-success animated-fade-in" title="Tabela Inserida">✅</span>
               </h4>
@@ -952,94 +989,281 @@
                 </div>
               </div>
             </div>
-          </div>
+            </div> <!-- FIM ABA FORMATO & TABELA -->
 
-          <!-- SEÇÃO 3: ARTILHEIRO (OPCIONAL) -->
-          <div class="col-xl-5">
-            <div class="form-section-premium h-100">
-              <h4 class="text-warning fw-black mb-3 text-uppercase"><i class="bi bi-person-badge-fill me-2"></i>ARTILHEIRO (OPCIONAL)</h4>
-              
-                <div 
-                class="player-photo-upload-full mb-3 mx-auto"
-                style="max-width: 250px; aspect-ratio: 3/4;"
-                tabindex="0"
-                @paste="handlePasteScorerPhoto"
-              >
-                <template v-if="playerPhotoPreview || scorerForm.fotoUrl">
-                   <img :src="getCachedLogo(playerPhotoPreview || scorerForm.fotoUrl)" class="img-fluid rounded-4 shadow-lg w-100 h-100" style="object-fit: cover;">
-                     <div class="change-photo-overlay-large" @click="$refs.scorerPhotoInput.click()">
-                       <i class="bi bi-camera shadow"></i>
-                       <span>Alterar Foto</span>
+            <!-- ABA: ESTATÍSTICAS (IA) -->
+            <div v-show="formTab === 'estatisticas'" class="col-12">
+              <div class="row g-4">
+                <!-- COLUNA 1: ARTILHEIROS -->
+                <div class="col-md-6">
+                  <div class="form-section-premium h-100">
+                    <h4 class="text-warning fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge-fill me-2"></i>ARTILHEIROS
+                        <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'artilheiros' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('artilheiros')">
+                          <i class="bi bi-robot me-1"></i>IA AGENTE
+                        </button>
+                      </div>
+                      <span class="badge bg-warning text-dark">{{ newSeason.topScorers?.length || 0 }}</span>
+                    </h4>
+
+                    <div v-if="ocrWorkspace.activeField === 'artilheiros'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                      <div class="ocr-dropzone p-4" @paste="(e) => handlePasteOcr(e, 'artilheiros')" tabindex="0">
+                         <i class="bi bi-card-image display-4 text-info mb-2 opacity-50"></i>
+                         <div class="fw-black text-uppercase small ls-1 text-info">COLE A LISTA DE ARTILHEIROS AQUI</div>
+                         <div class="x-small text-white opacity-50 mt-1">Aperte Ctrl+V com o print do PES</div>
+                      </div>
+                      <div v-if="ocrWorkspace.isProcessing" class="p-3 text-center bg-info bg-opacity-25 border-top border-info border-opacity-50 text-white fw-bold text-uppercase x-small">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Processando Artilheiros via IA...
+                      </div>
+                    </div>
+
+                    <!-- Lista de Artilheiros -->
+                    <div class="d-flex flex-column gap-2" style="max-height: 400px; overflow-y: auto;">
+                      <div v-for="(sc, idx) in newSeason.topScorers" :key="'art-'+idx" class="d-flex align-items-center bg-black bg-opacity-40 p-2 rounded-3 border border-secondary border-opacity-25 gap-3">
+                         <div class="fw-black text-warning fs-5" style="width: 30px; text-align: center;">{{ idx + 1 }}º</div>
+                         <!-- Foto miniatura -->
+                         <div style="width: 40px; height: 40px; border-radius: 5px; overflow: hidden; background: #000; flex-shrink: 0;" class="cursor-pointer" @click="editScorerInline(sc, idx, 'topScorers')" title="Clique para editar Foto/Nacionalidade">
+                           <img v-if="sc.fotoUrl" :src="getCachedLogo(sc.fotoUrl)" style="width: 100%; height: 100%; object-fit: cover;">
+                           <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50"><i class="bi bi-camera"></i></div>
+                         </div>
+                         <div class="flex-grow-1" style="min-width: 0;">
+                           <div class="fw-bold text-uppercase text-truncate" style="font-size: 0.85rem;">{{ sc.nome }}</div>
+                           <div class="x-small text-secondary text-truncate d-flex align-items-center gap-2">
+                             <span>{{ sc.clube }}</span>
+                             <span v-if="sc.nacionalidade" class="badge bg-secondary text-white">{{ sc.nacionalidade }}</span>
+                           </div>
+                         </div>
+                         <div class="fw-black text-warning bg-black bg-opacity-50 px-2 py-1 rounded">{{ sc.gols }} <small class="text-white opacity-50">G</small></div>
+                         <div class="d-flex gap-1">
+                           <button type="button" class="btn btn-sm btn-outline-info p-1" @click="editScorerInline(sc, idx, 'topScorers')" title="Editar Jogador"><i class="bi bi-pencil"></i></button>
+                           <button type="button" class="btn btn-sm btn-outline-danger p-1" @click="newSeason.topScorers.splice(idx, 1)"><i class="bi bi-trash"></i></button>
+                         </div>
+                      </div>
+                      <div v-if="!newSeason.topScorers || newSeason.topScorers.length === 0" class="text-center py-4 opacity-50 small">Nenhum artilheiro adicionado.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- COLUNA 2: ASSISTÊNCIAS -->
+                <div class="col-md-6">
+                  <div class="form-section-premium h-100">
+                    <h4 class="text-success fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-return-right me-2"></i>ASSISTÊNCIAS
+                        <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'assistencias' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('assistencias')">
+                          <i class="bi bi-robot me-1"></i>IA AGENTE
+                        </button>
+                      </div>
+                      <span class="badge bg-success text-dark">{{ newSeason.assistencias?.length || 0 }}</span>
+                    </h4>
+
+                    <div v-if="ocrWorkspace.activeField === 'assistencias'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                      <div class="ocr-dropzone p-4" @paste="(e) => handlePasteOcr(e, 'assistencias')" tabindex="0">
+                         <i class="bi bi-card-image display-4 text-info mb-2 opacity-50"></i>
+                         <div class="fw-black text-uppercase small ls-1 text-info">COLE A LISTA DE ASSISTÊNCIAS AQUI</div>
+                         <div class="x-small text-white opacity-50 mt-1">Aperte Ctrl+V com o print do PES</div>
+                      </div>
+                      <div v-if="ocrWorkspace.isProcessing" class="p-3 text-center bg-info bg-opacity-25 border-top border-info border-opacity-50 text-white fw-bold text-uppercase x-small">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Processando Assistências via IA...
+                      </div>
+                    </div>
+
+                    <!-- Lista de Assistências -->
+                    <div class="d-flex flex-column gap-2" style="max-height: 400px; overflow-y: auto;">
+                      <div v-for="(ast, idx) in newSeason.assistencias" :key="'ast-'+idx" class="d-flex align-items-center bg-black bg-opacity-40 p-2 rounded-3 border border-secondary border-opacity-25 gap-3">
+                         <div class="fw-black text-success fs-5" style="width: 30px; text-align: center;">{{ idx + 1 }}º</div>
+                         <!-- Foto miniatura -->
+                         <div style="width: 40px; height: 40px; border-radius: 5px; overflow: hidden; background: #000; flex-shrink: 0;" class="cursor-pointer" @click="editScorerInline(ast, idx, 'assistencias')" title="Clique para editar Foto/Nacionalidade">
+                           <img v-if="ast.fotoUrl" :src="getCachedLogo(ast.fotoUrl)" style="width: 100%; height: 100%; object-fit: cover;">
+                           <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50"><i class="bi bi-camera"></i></div>
+                         </div>
+                         <div class="flex-grow-1" style="min-width: 0;">
+                           <div class="fw-bold text-uppercase text-truncate" style="font-size: 0.85rem;">{{ ast.nome }}</div>
+                           <div class="x-small text-secondary text-truncate d-flex align-items-center gap-2">
+                             <span>{{ ast.clube }}</span>
+                             <span v-if="ast.nacionalidade" class="badge bg-secondary text-white">{{ ast.nacionalidade }}</span>
+                           </div>
+                         </div>
+                         <div class="fw-black text-success bg-black bg-opacity-50 px-2 py-1 rounded">{{ ast.gols || ast.passes }} <small class="text-white opacity-50">A</small></div>
+                         <div class="d-flex gap-1">
+                           <button type="button" class="btn btn-sm btn-outline-info p-1" @click="editScorerInline(ast, idx, 'assistencias')" title="Editar Jogador"><i class="bi bi-pencil"></i></button>
+                           <button type="button" class="btn btn-sm btn-outline-danger p-1" @click="newSeason.assistencias.splice(idx, 1)"><i class="bi bi-trash"></i></button>
+                         </div>
+                      </div>
+                      <div v-if="!newSeason.assistencias || newSeason.assistencias.length === 0" class="text-center py-4 opacity-50 small">Nenhuma assistência adicionada.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MODAL INLINE DE EDIÇÃO RAPIDA (FOTO E NOME) -->
+              <div v-if="inlineEditModal.show" class="game-modal-overlay animated-fade-in" style="z-index: 1060;" @click.self="inlineEditModal.show = false">
+                <div class="bg-dark p-4 rounded-4 shadow-lg border border-secondary" style="width: 350px;">
+                   <h5 class="text-white fw-bold text-uppercase mb-3">Editar Jogador</h5>
+                   
+                   <div 
+                     class="player-photo-upload-full mb-3 mx-auto"
+                     style="max-width: 150px; aspect-ratio: 3/4;"
+                     tabindex="0"
+                     @paste="handlePasteInlinePhoto"
+                   >
+                     <template v-if="inlineEditModal.data.fotoUrl">
+                        <img :src="getCachedLogo(inlineEditModal.data.fotoUrl)" class="img-fluid rounded-4 shadow-lg w-100 h-100" style="object-fit: cover;">
+                        <div class="change-photo-overlay-large" @click="$refs.inlinePhotoInput.click()"><i class="bi bi-camera shadow"></i></div>
+                     </template>
+                     <div v-else class="text-center py-4 opacity-50" @click="$refs.inlinePhotoInput.click()">
+                       <i class="bi bi-person-bounding-box display-4 d-block mb-2"></i>
+                       <div class="fw-bold x-small">CTRL+V FOTO</div>
                      </div>
-                     <button 
-                        v-if="playerPhotoPreview || scorerForm.fotoUrl" 
-                        @click.stop="removeScorerPhoto"
-                        class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 rounded-circle shadow-lg"
-                        style="width: 32px; height: 32px; z-index: 10;"
-                        title="Remover Foto"
-                     >
-                       <i class="bi bi-trash-fill"></i>
-                     </button>
-                </template>
-                <div v-else class="text-center py-4 opacity-50" @click="$refs.scorerPhotoInput.click()">
-                  <i class="bi bi-person-bounding-box display-6 d-block mb-2"></i>
-                  <div class="fw-bold small">UPLOAD OU CTRL+V</div>
-                  <div class="x-small mt-1 opacity-75">Foto do Jogador</div>
+                   </div>
+                   <input type="file" ref="inlinePhotoInput" class="d-none" @change="handleFileInlinePhoto" accept="image/*">
+
+                   <div class="row g-2 mb-2">
+                     <div class="col-8">
+                       <label class="x-small opacity-50 fw-bold">Nome</label>
+                       <input type="text" v-model="inlineEditModal.data.nome" class="form-control form-control-sm bg-black text-white border-secondary">
+                     </div>
+                     <div class="col-4">
+                       <label class="x-small opacity-50 fw-bold">Posição (PES)</label>
+                       <input type="text" v-model="inlineEditModal.data.posicaoCampo" class="form-control form-control-sm bg-black text-white border-secondary" placeholder="Ex: CA, MAT">
+                     </div>
+                   </div>
+                   <div class="row g-2 mb-3">
+                     <div class="col-7">
+                       <label class="x-small opacity-50 fw-bold">Clube</label>
+                       <input type="text" v-model="inlineEditModal.data.clube" class="form-control form-control-sm bg-black text-white border-secondary">
+                     </div>
+                     <div class="col-5">
+                       <label class="x-small opacity-50 fw-bold">Nacionalidade</label>
+                       <input type="text" v-model="inlineEditModal.data.nacionalidade" class="form-control form-control-sm bg-black text-white border-secondary" placeholder="Ex: BRASIL">
+                     </div>
+                   </div>
+                   
+                   <div class="d-flex gap-2">
+                     <button class="btn btn-sm btn-outline-secondary w-50" @click="inlineEditModal.show = false">CANCELAR</button>
+                     <button class="btn btn-sm btn-warning w-50 fw-bold" @click="saveInlineEdit">SALVAR</button>
+                   </div>
                 </div>
               </div>
-                                <input type="file" ref="scorerPhotoInput" class="d-none" @change="handleFileScorerPhoto" accept="image/*">
+            </div>
 
-              <div class="mb-3">
-                <label class="form-label fw-bold text-secondary text-uppercase small">Nome do Jogador</label>
-                <input type="text" v-model="scorerForm.nome" class="form-control game-input" placeholder="Ex: Erling Haaland">
-              </div>
+            <!-- ABA: PRÊMIOS (IA) -->
+            <div v-show="formTab === 'premios'" class="col-12">
+              <div class="row g-4">
+                <!-- COLUNA 1: TÍTULOS INDIVIDUAIS -->
+                <div class="col-md-5">
+                  <div class="form-section-premium h-100">
+                    <h4 class="text-warning fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-star-fill me-2"></i>TÍTULOS INDIVIDUAIS
+                        <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'titulos' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('titulos')">
+                          <i class="bi bi-robot me-1"></i>IA AGENTE
+                        </button>
+                      </div>
+                    </h4>
 
-              <div class="row g-3 mb-3">
-                <div class="col-6">
-                  <label class="form-label fw-bold text-secondary text-uppercase small">Posição</label>
-                  <input type="text" v-model="scorerForm.posicaoCampo" class="form-control game-input" placeholder="Ex: Atacante">
-                </div>
-                <div class="col-6">
-                  <label class="form-label fw-bold text-secondary text-uppercase small">Gols</label>
-                  <input type="number" v-model="scorerForm.gols" class="form-control game-input">
-                </div>
-              </div>
+                    <div v-if="ocrWorkspace.activeField === 'titulos'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                      <div class="ocr-dropzone p-4" @paste="(e) => handlePasteOcr(e, 'titulos')" tabindex="0">
+                         <i class="bi bi-card-image display-4 text-info mb-2 opacity-50"></i>
+                         <div class="fw-black text-uppercase small ls-1 text-info">COLE O PRINT DOS TÍTULOS INDIVIDUAIS AQUI</div>
+                         <div class="x-small text-white opacity-50 mt-1">O sistema vai extrair o Melhor Jogador e Técnico</div>
+                      </div>
+                      <div v-if="ocrWorkspace.isProcessing" class="p-3 text-center bg-info bg-opacity-25 border-top border-info border-opacity-50 text-white fw-bold text-uppercase x-small">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Processando via IA...
+                      </div>
+                    </div>
 
-              <div class="mb-3">
-                <label class="form-label fw-bold text-secondary text-uppercase small">Nacionalidade</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input type="text" v-model="scorerForm.nacionalidade" class="form-control game-input" placeholder="Ex: Noruega">
-                  <NationalFlag v-if="scorerForm.nacionalidade" :countryName="scorerForm.nacionalidade" :forceUrl="getNationalityFlag(scorerForm.nacionalidade)" :size="24" />
-                </div>
-              </div>
+                    <div class="d-flex flex-column gap-3">
+                      <!-- Melhor Jogador -->
+                      <div class="bg-black bg-opacity-40 p-3 rounded-3 border border-warning border-opacity-25 position-relative">
+                        <div class="fw-bold text-warning x-small text-uppercase mb-2"><i class="bi bi-trophy-fill me-1"></i> Jogador da Temporada</div>
+                        <div class="d-flex gap-3 align-items-center">
+                          <div style="width: 50px; height: 50px; border-radius: 5px; overflow: hidden; background: #000; flex-shrink: 0;" class="cursor-pointer" @click="editScorerInline(newSeason.titulos.melhorJogador, 'melhorJogador', 'titulos')">
+                             <img v-if="newSeason.titulos.melhorJogador?.fotoUrl" :src="getCachedLogo(newSeason.titulos.melhorJogador.fotoUrl)" style="width: 100%; height: 100%; object-fit: cover;">
+                             <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50"><i class="bi bi-camera"></i></div>
+                          </div>
+                          <div>
+                            <div class="fw-bold fs-5">{{ newSeason.titulos.melhorJogador?.nome || 'Não definido' }}</div>
+                            <div class="small text-secondary">{{ newSeason.titulos.melhorJogador?.clube || '-' }}</div>
+                          </div>
+                        </div>
+                      </div>
 
-              <div class="position-relative">
-                <label class="form-label fw-bold text-secondary text-uppercase small">Clube</label>
-                <div class="d-flex align-items-center gap-2">
-                  <input type="text" v-model="scorerForm.clube" 
-                         @focus="showTeamResults.clubeArtilheiro = true"
-                         class="form-control game-input" placeholder="Ex: Manchester City">
-                  <TeamShield v-if="scorerForm.clube" :teamName="scorerForm.clube" :size="32" />
+                      <!-- Melhor Técnico -->
+                      <div class="bg-black bg-opacity-40 p-3 rounded-3 border border-info border-opacity-25 position-relative">
+                        <div class="fw-bold text-info x-small text-uppercase mb-2"><i class="bi bi-person-workspace me-1"></i> Melhor Técnico</div>
+                        <div class="d-flex gap-3 align-items-center">
+                          <div style="width: 50px; height: 50px; border-radius: 5px; overflow: hidden; background: #000; flex-shrink: 0;" class="cursor-pointer" @click="editScorerInline(newSeason.titulos.melhorTecnico, 'melhorTecnico', 'titulos')">
+                             <img v-if="newSeason.titulos.melhorTecnico?.fotoUrl" :src="getCachedLogo(newSeason.titulos.melhorTecnico.fotoUrl)" style="width: 100%; height: 100%; object-fit: cover;">
+                             <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50"><i class="bi bi-camera"></i></div>
+                          </div>
+                          <div>
+                            <div class="fw-bold fs-5">{{ newSeason.titulos.melhorTecnico?.nome || 'Não definido' }}</div>
+                            <div class="small text-secondary">{{ newSeason.titulos.melhorTecnico?.clube || '-' }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <!-- Dropdown de Busca -->
-                <div v-if="showTeamResults.clubeArtilheiro && filteredTeams(scorerForm.clube).length > 0" class="team-search-dropdown shadow-lg">
-                  <div v-for="t in filteredTeams(scorerForm.clube)" :key="t.nome" 
-                       @click="selectTeam('clubeArtilheiro', t.nome)"
-                       class="team-search-item">
-                    <TeamShield :teamName="t.nome" :isNational="activeTab === 'selecoes'" :size="20" />
-                    <span class="fw-bold">{{ t.nome }}</span>
+
+                <!-- COLUNA 2: TIME DA TEMPORADA -->
+                <div class="col-md-7">
+                  <div class="form-section-premium h-100">
+                    <h4 class="text-primary fw-black mb-3 text-uppercase d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check me-2"></i>TIME DA TEMPORADA
+                        <button type="button" class="btn btn-sm" :class="ocrWorkspace.activeField === 'timeDaTemporada' ? 'btn-info' : 'btn-outline-info'" style="font-size: 0.65rem;" @click="toggleOcrZone('timeDaTemporada')">
+                          <i class="bi bi-robot me-1"></i>IA AGENTE
+                        </button>
+                      </div>
+                      <span class="badge bg-primary text-dark">{{ newSeason.timeDaTemporada?.length || 0 }} / 11</span>
+                    </h4>
+
+                    <div v-if="ocrWorkspace.activeField === 'timeDaTemporada'" class="ocr-capture-zone mb-3 animated-slide-down shadow-lg border-info border-opacity-50">
+                      <div class="ocr-dropzone p-4" @paste="(e) => handlePasteOcr(e, 'timeDaTemporada')" tabindex="0">
+                         <i class="bi bi-card-image display-4 text-info mb-2 opacity-50"></i>
+                         <div class="fw-black text-uppercase small ls-1 text-info">COLE O PRINT DO TIME DA TEMPORADA AQUI</div>
+                         <div class="x-small text-white opacity-50 mt-1">A IA vai extrair os 11 jogadores e posições</div>
+                      </div>
+                      <div v-if="ocrWorkspace.isProcessing" class="p-3 text-center bg-info bg-opacity-25 border-top border-info border-opacity-50 text-white fw-bold text-uppercase x-small">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Processando via IA...
+                      </div>
+                    </div>
+
+                    <!-- Lista Compacta do Time da Temporada -->
+                    <div class="row g-2" style="max-height: 400px; overflow-y: auto;">
+                      <div v-for="(jog, idx) in newSeason.timeDaTemporada" :key="'tts-'+idx" class="col-md-6">
+                        <div class="d-flex align-items-center bg-black bg-opacity-40 p-2 rounded-3 border border-secondary border-opacity-25 gap-2 h-100">
+                           <!-- Foto miniatura -->
+                           <div style="width: 35px; height: 35px; border-radius: 5px; overflow: hidden; background: #000; flex-shrink: 0;" class="cursor-pointer" @click="editScorerInline(jog, idx, 'timeDaTemporada')">
+                             <img v-if="jog.fotoUrl" :src="getCachedLogo(jog.fotoUrl)" style="width: 100%; height: 100%; object-fit: cover;">
+                             <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50" style="font-size: 0.7rem;"><i class="bi bi-camera"></i></div>
+                           </div>
+                           <div class="flex-grow-1" style="min-width: 0;">
+                             <div class="d-flex align-items-center gap-1">
+                               <span class="badge bg-secondary opacity-75" style="font-size: 0.55rem;">{{ jog.posicaoCampo || 'POS' }}</span>
+                               <span class="fw-bold text-uppercase text-truncate" style="font-size: 0.75rem;">{{ jog.nome }}</span>
+                             </div>
+                             <div class="x-small text-secondary text-truncate">{{ jog.clube }}</div>
+                           </div>
+                           <button type="button" class="btn btn-sm btn-outline-danger p-0 px-1 border-0 opacity-50" @click="newSeason.timeDaTemporada.splice(idx, 1)"><i class="bi bi-x"></i></button>
+                        </div>
+                      </div>
+                      <div v-if="!newSeason.timeDaTemporada || newSeason.timeDaTemporada.length === 0" class="col-12 text-center py-4 opacity-50 small">Nenhum jogador adicionado no time da temporada.</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="d-flex justify-content-end gap-3 mt-5 pb-5">
-          <button class="btn btn-lg btn-outline-secondary px-5 fw-bold" @click="viewMode = 'list'">CANCELAR</button>
-          <GameButton @click="saveNewSeason(true)">SALVAR E FECHAR</GameButton>
-          <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="saveNewSeason(false)">SALVAR</button>
-        </div>
+          <div class="d-flex justify-content-end gap-3 mt-5 pb-5 border-top border-secondary border-opacity-25 pt-4">
+            <button class="btn btn-lg btn-outline-secondary px-5 fw-bold" @click="viewMode = 'list'">CANCELAR</button>
+            <GameButton @click="saveNewSeason(true)">SALVAR E FECHAR</GameButton>
+            <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="saveNewSeason(false)">SALVAR</button>
+          </div>
 
         <!-- SEÇÃO 4: GALERIA DE PRINTS (DESATIVADA v8.20) -->
         <!-- <div v-if="['Copa', 'internacional'].includes(selectedCompetition?.tipo)" class="row mt-4">
@@ -1242,10 +1466,58 @@ watch(() => route.query.reset, (newVal) => {
 })
 
 const isEditing = ref(false)
+const formTab = ref('geral')
 const currentEditId = ref(null)
 const isCloningForEdit = ref(false)
 const initialClassificacaoTxt = ref('')
 
+const inlineEditModal = ref({
+  show: false,
+  data: {},
+  index: null,
+  type: ''
+})
+
+const editScorerInline = (item, idx, type) => {
+  inlineEditModal.value = {
+    show: true,
+    data: { ...item },
+    index: idx,
+    type: type
+  }
+}
+
+const saveInlineEdit = () => {
+  const { index, type, data } = inlineEditModal.value
+  newSeason.value[type][index] = { ...data }
+  inlineEditModal.value.show = false
+}
+
+const handleFileInlinePhoto = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (evt) => {
+    inlineEditModal.value.data.fotoUrl = evt.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const handlePasteInlinePhoto = (e) => {
+  const items = e.clipboardData.items
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf("image") !== -1) {
+      const file = items[i].getAsFile()
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        inlineEditModal.value.data.fotoUrl = evt.target.result
+      }
+      reader.readAsDataURL(file)
+      e.preventDefault()
+      break
+    }
+  }
+}
 // 0. Pré-carregar estado de navegação para evitar flash visual
 const getSavedNav = () => {
   try {
@@ -1317,6 +1589,12 @@ const newSeason = ref({
   vice: '',
   competitionName: '',
   topScorers: [],
+  assistencias: [],
+  timeDaTemporada: [],
+  titulos: {
+    melhorJogador: {},
+    melhorTecnico: {}
+  },
   participantes: [],
   promovidosPlayoff: [],
   tabela: '',
@@ -1327,6 +1605,12 @@ const newSeason = ref({
     final: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
     terceiro: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
   }
+})
+
+const aiEngine = ref(localStorage.getItem('aiEngine') || 'gemini')
+
+watch(aiEngine, (newVal) => {
+  localStorage.setItem('aiEngine', newVal)
 })
 
 // NOVO v8.6: Estado para OCR temporário (não salvo no DB)
@@ -1815,6 +2099,12 @@ const prepareEdit = async (s) => {
       ...clone,
       printsUrls: clone.printsUrls || ['', '', '', '', ''],
       topScorers: clone.topScorers || (clone.artilheiro && clone.artilheiro.nome ? [clone.artilheiro] : []),
+      assistencias: clone.assistencias || [],
+      timeDaTemporada: clone.timeDaTemporada || [],
+      titulos: clone.titulos || {
+        melhorJogador: { nome: '', clube: '', fotoUrl: '' },
+        melhorTecnico: { nome: '', clube: '', fotoUrl: '' }
+      },
       participantes: clone.participantes || [],
       classificacaoCopaTxt: clone.classificacaoCopaTxt || '',
       promovidosPlayoff: clone.promovidosPlayoff || [],
@@ -1950,64 +2240,222 @@ const interpretAttachedPrints = async () => {
   ocrWorkspace.value.isProcessing = false;
 }
 
-// NOVO v8.8: Método para Colagem Contínua e Unificação
+// NOVO v8.8: Método para Colagem Contínua e Unificação com Gemini/ChatGPT
 const handlePasteOcr = async (event, targetField) => {
   const items = event.clipboardData.items;
-  let imageBlob = null;
+  let imageFile = null;
 
   for (const item of items) {
     if (item.type.indexOf("image") !== -1) {
-      imageBlob = item.getAsFile();
+      imageFile = item.getAsFile();
       break;
     }
   }
 
-  if (!imageBlob) return;
+  if (!imageFile) return;
 
   ocrWorkspace.value.isProcessing = true;
   const isCopa = targetField === 'classificacaoCopaTxt';
 
-  try {
-    const formData = new FormData();
-    formData.append('file', imageBlob, 'ocr_capture.png');
-    formData.append('modo_copa', isCopa ? 'true' : 'false');
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64Image = e.target.result;
+    const base64Data = base64Image.split(',')[1];
+    const mimeType = imageFile.type;
 
-    const response = await fetch('http://localhost:5001/ocr/image', {
-      method: 'POST',
-      body: formData
-    });
+    let geminiKey = localStorage.getItem('gemini_api_key');
+    let openaiKey = localStorage.getItem('openai_api_key');
 
-    const data = await response.json();
-    if (data.sucesso && data.linhas.length > 0) {
-      const currentText = newSeason.value[targetField] || '';
-      const existingLines = currentText.split('\n').filter(l => l.trim());
-      const newLines = data.linhas;
-
-      const uniqueTeams = new Map();
-      existingLines.forEach(line => {
-        const parts = line.split(' ');
-        const name = isCopa ? line : (parts.length > 7 ? parts.slice(0, -7).join(' ') : line);
-        uniqueTeams.set(name.trim().toUpperCase(), line);
-      });
-
-      newLines.forEach(line => {
-        const parts = line.split(' ');
-        const name = isCopa ? line : (parts.length > 7 ? parts.slice(0, -7).join(' ') : line);
-        uniqueTeams.set(name.trim().toUpperCase(), line);
-      });
-
-      newSeason.value[targetField] = Array.from(uniqueTeams.values()).join('\n');
-      ocrWorkspace.value.lastCount = newLines.length;
-      ocrWorkspace.value.totalFound = uniqueTeams.size;
-    } else {
-      alert("IA: Nao consegui ler dados validos neste print. Verifique se e uma tabela de campeonato.");
+    let promptText = "Extraia a tabela de classificação desta imagem. Ignore cabeçalhos e a coluna de POSIÇÃO. Retorne APENAS um array JSON puro válido, sem blocos de código markdown. O array deve conter objetos com as seguintes chaves numéricas exatas: 'time' (string), 'p' (int), 'v' (int), 'e' (int), 'd' (int), 'gp' (int), 'gc' (int), 'sg' (int). NÃO inclua a coluna de Jogos (J). Exemplo: [{\"time\": \"Flamengo\", \"p\": 10, \"v\": 3, \"e\": 1, \"d\": 0, \"gp\": 5, \"gc\": 2, \"sg\": 3}]";
+    
+    if (isCopa) {
+        promptText = "Liste o nome dos times nesta tabela. Retorne APENAS um array JSON de strings puro, sem markdown. Exemplo: [\"Time A\", \"Time B\"]";
+    } else if (targetField === 'artilheiros') {
+        promptText = "Extraia a lista de artilheiros desta imagem. Tente inferir a nacionalidade do jogador baseado no nome ou na bandeira visível. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'gols' (numero inteiro), 'posicaoCampo' (string, a SIGLA exata da posição que aparece DENTRO DO RETÂNGULO COLORIDO À ESQUERDA do nome do jogador, ex: CA, SA, MAT, PTE, PTD), 'nacionalidade' (string, ex: BRASIL). NÃO INVENTE 'ATACANTE' OU 'MEIA', LEIA EXATAMENTE A SIGLA DA IMAGEM! Exemplo: [{\"nome\": \"Haaland\", \"clube\": \"Man. City\", \"gols\": 35, \"posicaoCampo\": \"CA\", \"nacionalidade\": \"NORUEGA\"}]";
+    } else if (targetField === 'assistencias') {
+        promptText = "Extraia a lista de assistências desta imagem. Tente inferir a nacionalidade do jogador baseado no nome ou na bandeira visível. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'passes' (numero inteiro de assistências), 'posicaoCampo' (string, a SIGLA exata da posição que aparece DENTRO DO RETÂNGULO COLORIDO À ESQUERDA do nome do jogador, ex: MLG, MAT, VOL, MLE), 'nacionalidade' (string, ex: BRASIL). NÃO INVENTE 'ATACANTE' OU 'MEIA', LEIA EXATAMENTE A SIGLA DA IMAGEM! Exemplo: [{\"nome\": \"De Bruyne\", \"clube\": \"Man. City\", \"passes\": 20, \"posicaoCampo\": \"MAT\", \"nacionalidade\": \"BÉLGICA\"}]";
+    } else if (targetField === 'titulos') {
+        promptText = "Extraia os vencedores dos títulos individuais (Melhor Jogador e Melhor Técnico). Tente inferir a nacionalidade baseado no nome ou bandeira. Retorne APENAS um objeto JSON puro válido, sem markdown. Estrutura obrigatória: { \"melhorJogador\": { \"nome\": \"Nome do Jogador\", \"clube\": \"Clube do Jogador\", \"nacionalidade\": \"BRASIL\" }, \"melhorTecnico\": { \"nome\": \"Nome do Tecnico\", \"clube\": \"Clube do Tecnico\", \"nacionalidade\": \"PORTUGAL\" } }";
+    } else if (targetField === 'timeDaTemporada') {
+        promptText = "Extraia a lista dos 11 jogadores do time da temporada desta imagem. Tente inferir a nacionalidade baseado no nome ou bandeira. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'posicaoCampo' (string, a SIGLA da posição no retângulo à esquerda do nome, ex: PT, ZC, LD, LE, VOL, MLG, MAT, PTE, PTD, CA), 'nacionalidade' (string, ex: BRASIL). Exemplo: [{\"nome\": \"Alisson\", \"clube\": \"Liverpool\", \"posicaoCampo\": \"PT\", \"nacionalidade\": \"BRASIL\"}]";
     }
-  } catch (err) {
-    console.error("Erro OCR Direto:", err);
-    alert("Erro de conexão com o AI Engine (Porta 5001).");
-  } finally {
-    ocrWorkspace.value.isProcessing = false;
-  }
+
+    let textResult = null;
+
+    try {
+      if (aiEngine.value === 'gemini') {
+        if (!geminiKey) throw new Error("Chave Gemini não configurada.");
+        console.log("Tentando API do Gemini...");
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: promptText },
+                { inline_data: { mime_type: mimeType, data: base64Data } }
+              ]
+            }]
+          })
+        });
+        
+        const data = await res.json();
+        if (data.error) throw new Error("Falha no Gemini: " + data.error.message);
+        textResult = data.candidates[0].content.parts[0].text.trim();
+      } 
+      else if (aiEngine.value === 'chatgpt') {
+        if (!openaiKey) throw new Error("Chave OpenAI não configurada.");
+        console.log("Tentando API da OpenAI...");
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: promptText },
+                  { type: "image_url", image_url: { url: base64Image } }
+                ]
+              }
+            ],
+            max_tokens: 1000
+          })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error("Erro na OpenAI: " + data.error.message);
+        textResult = data.choices[0].message.content.trim();
+      }
+
+      if (!textResult) throw new Error("Nenhuma resposta válida.");
+
+      let cleanText = textResult.replace(/```json/gi, '').replace(/```/g, '').trim();
+      let tabelaJson = JSON.parse(cleanText);
+
+      const isFirstPrint = !newSeason.value[targetField];
+
+      if (targetField === 'titulos') {
+        if (!newSeason.value.titulos) newSeason.value.titulos = {};
+        if (tabelaJson.melhorJogador) {
+          newSeason.value.titulos.melhorJogador = {
+            nome: tabelaJson.melhorJogador.nome || '',
+            clube: tabelaJson.melhorJogador.clube || '',
+            nacionalidade: (tabelaJson.melhorJogador.nacionalidade || '').toUpperCase(),
+            fotoUrl: newSeason.value.titulos.melhorJogador?.fotoUrl || ''
+          };
+        }
+        if (tabelaJson.melhorTecnico) {
+          newSeason.value.titulos.melhorTecnico = {
+            nome: tabelaJson.melhorTecnico.nome || '',
+            clube: tabelaJson.melhorTecnico.clube || '',
+            nacionalidade: (tabelaJson.melhorTecnico.nacionalidade || '').toUpperCase(),
+            fotoUrl: newSeason.value.titulos.melhorTecnico?.fotoUrl || ''
+          };
+        }
+        ocrWorkspace.value.lastCount = 2;
+        ocrWorkspace.value.totalFound = 2;
+        return; // Sai cedo, pois é objeto e não array
+      }
+
+      if (!Array.isArray(tabelaJson)) throw new Error("Formato inválido. Esperava um Array.");
+
+      if (isCopa) {
+        const nomesLimpados = tabelaJson.map(nome => String(nome).replace(/^[^a-zA-ZÀ-ÿ]+/, '').trim());
+        const existingLines = (newSeason.value[targetField] || '').split('\n').filter(l => l.trim());
+        const allTeams = Array.from(new Set([...existingLines, ...nomesLimpados]));
+        newSeason.value[targetField] = allTeams.join('\n');
+        ocrWorkspace.value.lastCount = nomesLimpados.length;
+        ocrWorkspace.value.totalFound = allTeams.length;
+      } else if (targetField === 'artilheiros') {
+        if (!newSeason.value.topScorers) newSeason.value.topScorers = [];
+        tabelaJson.forEach(row => {
+           if (!row.nome) return;
+           newSeason.value.topScorers.push({
+             nome: row.nome.trim(),
+             clube: (row.clube || '').trim(),
+             gols: parseInt(row.gols) || 0,
+             fotoUrl: '',
+             posicaoCampo: (row.posicaoCampo || '').toUpperCase(),
+             nacionalidade: (row.nacionalidade || '').toUpperCase()
+           });
+        });
+        ocrWorkspace.value.lastCount = tabelaJson.length;
+        ocrWorkspace.value.totalFound = newSeason.value.topScorers.length;
+      } else if (targetField === 'assistencias') {
+        if (!newSeason.value.assistencias) newSeason.value.assistencias = [];
+        tabelaJson.forEach(row => {
+           if (!row.nome) return;
+           newSeason.value.assistencias.push({
+             nome: row.nome.trim(),
+             clube: (row.clube || '').trim(),
+             passes: parseInt(row.passes) || 0,
+             fotoUrl: '',
+             posicaoCampo: (row.posicaoCampo || '').toUpperCase(),
+             nacionalidade: (row.nacionalidade || '').toUpperCase()
+           });
+        });
+        ocrWorkspace.value.lastCount = tabelaJson.length;
+        ocrWorkspace.value.totalFound = newSeason.value.assistencias.length;
+      } else if (targetField === 'timeDaTemporada') {
+        if (!newSeason.value.timeDaTemporada) newSeason.value.timeDaTemporada = [];
+        tabelaJson.forEach(row => {
+           if (!row.nome) return;
+           newSeason.value.timeDaTemporada.push({
+             nome: row.nome.trim(),
+             clube: (row.clube || '').trim(),
+             posicaoCampo: (row.posicaoCampo || 'POS').trim().toUpperCase(),
+             fotoUrl: '',
+             nacionalidade: (row.nacionalidade || '').toUpperCase()
+           });
+        });
+        ocrWorkspace.value.lastCount = tabelaJson.length;
+        ocrWorkspace.value.totalFound = newSeason.value.timeDaTemporada.length;
+      } else {
+        let tableStr = newSeason.value[targetField] || '';
+        const novosTimes = [];
+        
+        tabelaJson.forEach((row) => {
+           const time = String(row.time || '').replace(/^[^a-zA-ZÀ-ÿ]+/, '').trim();
+           if(!time) return;
+           novosTimes.push(time);
+           const pt = parseInt(row.p) || 0;
+           const v = parseInt(row.v) || 0;
+           const e = parseInt(row.e) || 0;
+           const d = parseInt(row.d) || 0;
+           const j = v + e + d;
+           const gp = parseInt(row.gp) || 0;
+           const gc = parseInt(row.gc) || 0;
+           const sg = parseInt(row.sg) || (gp - gc);
+           
+           tableStr += `${time}\t${pt}\t${j}\t${v}\t${e}\t${d}\t${gp}\t${gc}\t${sg}\n`;
+        });
+
+        newSeason.value[targetField] = tableStr;
+        ocrWorkspace.value.lastCount = novosTimes.length;
+        
+        // Auto-preenche campeão e vice se for a primeira colagem (1º e 2º times)
+        if (isFirstPrint && novosTimes.length >= 2) {
+          if (!newSeason.value.campeao) newSeason.value.campeao = novosTimes[0];
+          if (!newSeason.value.vice) newSeason.value.vice = novosTimes[1];
+        }
+
+        const countTotal = newSeason.value[targetField].split('\n').filter(l => l.trim()).length;
+        ocrWorkspace.value.totalFound = countTotal;
+      }
+    } catch (err) {
+      console.error("Erro IA:", err);
+      alert("Falha na IA: " + err.message + "\n\nRecorte os números melhor ou tente o outro motor.");
+    } finally {
+      ocrWorkspace.value.isProcessing = false;
+    }
+  };
+  
+  reader.readAsDataURL(imageFile);
 }
 
 const toggleOcrZone = (field) => {
@@ -2055,6 +2503,12 @@ const openForm = () => {
     competitionId: selectedCompetition.value?.id,
     competitionName: selectedCompetition.value?.nome,
     topScorers: [],
+    assistencias: [],
+    timeDaTemporada: [],
+    titulos: {
+      melhorJogador: { nome: '', clube: '', fotoUrl: '' },
+      melhorTecnico: { nome: '', clube: '', fotoUrl: '' }
+    },
     participantes: [],
     tabela: '',
     classificacaoCopaTxt: '',
@@ -2068,6 +2522,7 @@ const openForm = () => {
     },
     tipo: activeTab.value === 'selecoes' ? 'selecao' : 'clube'
   }
+  formTab.value = 'geral'
   resetScorerForm()
   viewMode.value = 'form'
 }
@@ -2573,28 +3028,8 @@ const confirmDelete = async (season) => {
 const saveNewSeason = async (shouldClose = true) => {
   if (!selectedCompetition.value) return
   
-  // Garantir que os artilheiros sejam processados se preenchidos no form nico
-  if (scorerForm.value?.nome) {
-    // Se houver dados no form de artilheiro, vamos "salvar" ele no array topScorers antes de persistir a temporada
-    const scorerToSave = JSON.parse(JSON.stringify(scorerForm.value));
-    
-    // Persistir foto se for base64
-    if (scorerToSave.fotoUrl && scorerToSave.fotoUrl.startsWith('data:')) {
-      const imageId = `artilheiro_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-      await db.saveImage(imageId, scorerToSave.fotoUrl);
-      cachedLogos.value[imageId] = scorerToSave.fotoUrl;
-      scorerToSave.fotoUrl = imageId;
-    }
-
-    // Se já existia esse artilheiro (edio), poderamos ter lgica aqui, 
-    // mas o requisito diz "adicionar uma temporada completa em UMA nica tela".
-    // Ento assumimos que se o form est preenchido, ele  o artilheiro principal.
-    newSeason.value.topScorers = [scorerToSave];
-  } else {
-    // Se o nome estiver vazio no form, entendemos que o usurio quer remover o artilheiro
-    newSeason.value.topScorers = [];
-    newSeason.value.artilheiro = {};
-  }
+  // NOTA: A persistência de topScorers, assistencias, timeDaTemporada e titulos
+  // já está ocorrendo diretamente no objeto newSeason.value manipulado na UI.
 
   try {
     if (isEditing.value) {

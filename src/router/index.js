@@ -26,6 +26,7 @@ const router = createRouter({
         { path: '/clube/:id/historico', name: 'club-history', component: () => import('../views/ClubHistoryView.vue') },
         { path: '/clube/:id/trofeus', name: 'club-trophies', component: () => import('../views/ClubTrophyRoomView.vue') },
         { path: '/clube/:id/estatisticas', name: 'club-dashboard', component: () => import('../views/ClubDashboardView.vue') },
+        { path: '/acr-treinamento', name: 'acr-training', component: () => import('../views/OcrTrainingView.vue') },
     ],
 });
 

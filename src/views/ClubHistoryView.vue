@@ -527,32 +527,122 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
       
       // Top Scorers
       const scList = s.topScorers || (s.artilheiro && s.artilheiro.nome ? [s.artilheiro] : [])
-      scList.forEach(sc => {
+      scList.forEach((sc, idx) => {
          if (isClubMatch(sc.clube, clubNorm, clubSmart)) {
              const description = `${sc.nome} (${sc.gols} Gols)`
              const statusClass = 'bg-info'
-             const badgeText = 'ARTILHEIRO'
+             const badgeText = idx === 0 ? 'ARTILHEIRO' : idx === 1 ? 'VICE-ARTILHEIRO' : '3º NA ARTILHARIA'
              events.push({
                  year: s.ano,
                  shortYear: getSeasonFinalYear(s.ano),
                  compName: 'ARTILHARIA',
                  type: 'award',
-                  badgeText,
-                  description: `${description} ${compName}`,
-                  statusClass,
+                 badgeText,
+                 description: `${description} ${compName}`,
+                 statusClass,
                  icon: 'bi-person-badge-fill',
                  badgeClass: 'bg-info text-dark',
                  isMyCareer, // Usa a detecção da temporada
                  sortYear: getSeasonFinalYear(s.ano),
-                 trophyUrl: 'logos/competitions/artilheiro.png',
+                 trophyUrl: idx === 0 ? 'logos/competitions/artilheiro.png' : null,
                  scFoto: sc.fotoUrl || sc.foto || sc.fotoJogador || null,
                  scNome: sc.nome
              })
          }
       })
-  })
 
-  // Awards Globais
+      // Assistencias
+      const astList = s.assistencias || []
+      astList.forEach((ast, idx) => {
+         if (isClubMatch(ast.clube, clubNorm, clubSmart)) {
+             const description = `${ast.nome} (${ast.passes || ast.gols} Passes)`
+             const statusClass = 'bg-success'
+             const badgeText = idx === 0 ? 'LÍDER ASSISTÊNCIAS' : idx === 1 ? 'VICE-LÍDER ASSISTÊNCIAS' : '3º EM ASSISTÊNCIAS'
+             events.push({
+                 year: s.ano,
+                 shortYear: getSeasonFinalYear(s.ano),
+                 compName: 'ASSISTÊNCIAS',
+                 type: 'award',
+                 badgeText,
+                 description: `${description} ${compName}`,
+                 statusClass,
+                 icon: 'bi-person-badge-fill',
+                 badgeClass: 'bg-success text-dark',
+                 isMyCareer, // Usa a detecção da temporada
+                 sortYear: getSeasonFinalYear(s.ano),
+                 trophyUrl: idx === 0 ? 'logos/competitions/lider_assistencia.png' : null,
+                 scFoto: ast.fotoUrl || ast.foto || ast.fotoJogador || null,
+                 scNome: ast.nome
+             })
+         }
+      })
+
+      // Títulos Individuais Locais (Melhor Jogador, Melhor Técnico)
+      if (s.titulos) {
+         if (s.titulos.melhorJogador && isClubMatch(s.titulos.melhorJogador.clube, clubNorm, clubSmart)) {
+             events.push({
+                 year: s.ano,
+                 shortYear: getSeasonFinalYear(s.ano),
+                 compName: compName,
+                 type: 'award',
+                 badgeText: 'CRAQUE DA TEMPORADA',
+                 description: `${s.titulos.melhorJogador.nome} - Melhor da Competição`,
+                 statusClass: 'bg-warning',
+                 icon: 'bi-star-fill',
+                 badgeClass: 'bg-warning text-dark',
+                 isMyCareer,
+                 sortYear: getSeasonFinalYear(s.ano),
+                 trophyUrl: 'logos/competitions/melhor_jogador_temporada.png',
+                 scFoto: s.titulos.melhorJogador.fotoUrl || null,
+                 scNome: s.titulos.melhorJogador.nome
+             })
+         }
+         if (s.titulos.melhorTecnico && isClubMatch(s.titulos.melhorTecnico.clube, clubNorm, clubSmart)) {
+             events.push({
+                 year: s.ano,
+                 shortYear: getSeasonFinalYear(s.ano),
+                 compName: compName,
+                 type: 'award',
+                 badgeText: 'MELHOR TÉCNICO',
+                 description: `${s.titulos.melhorTecnico.nome} - Técnico da Competição`,
+                 statusClass: 'bg-warning',
+                 icon: 'bi-person-gear',
+                 badgeClass: 'bg-warning text-dark',
+                 isMyCareer,
+                 sortYear: getSeasonFinalYear(s.ano),
+                 trophyUrl: 'logos/competitions/tecnico_temporada.png',
+                 scFoto: s.titulos.melhorTecnico.fotoUrl || null,
+                 scNome: s.titulos.melhorTecnico.nome
+             })
+         }
+      }
+
+      // Time da Temporada
+      if (s.timeDaTemporada && Array.isArray(s.timeDaTemporada)) {
+         s.timeDaTemporada.forEach(jog => {
+             if (isClubMatch(jog.clube, clubNorm, clubSmart)) {
+                 events.push({
+                     year: s.ano,
+                     shortYear: getSeasonFinalYear(s.ano),
+                     compName: compName,
+                     type: 'award',
+                     badgeText: 'SELEÇÃO DA TEMPORADA',
+                     description: `${jog.nome} - Time da Temporada`,
+                     statusClass: 'bg-pos-gold',
+                     icon: 'bi-people-fill',
+                     badgeClass: 'bg-pos-gold text-dark fw-bold',
+                     isMyCareer,
+                     sortYear: getSeasonFinalYear(s.ano),
+                     trophyUrl: null, // Sem troféu para seleção, foca no nome e rosto
+                     scFoto: jog.fotoUrl || null,
+                     scNome: jog.nome
+                 })
+             }
+         })
+      }
+   })
+
+   // Awards Globais
   awardsStore.list.forEach(aw => {
      // 0. Firewall de País para Prêmios
      if (clubCountry && aw.pais) {

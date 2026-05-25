@@ -41,6 +41,40 @@ def clear_ocr_parts():
     partes_memoria = []
     return jsonify({"sucesso": True, "mens": "Memória limpa."})
 
+@app.route('/ocr/take_screenshot', methods=['GET'])
+def take_screenshot():
+    import time
+    try:
+        from PIL import ImageGrab
+        import pygetwindow as gw
+        
+        # Procura a janela do PES
+        windows = gw.getWindowsWithTitle('eFootball PES 2021')
+        if not windows:
+            windows = gw.getWindowsWithTitle('PES 2021')
+            
+        if windows:
+            win = windows[0]
+            left, top, width, height = win.left, win.top, win.width, win.height
+            img = ImageGrab.grab(bbox=(left, top, left+width, top+height), all_screens=True).convert('RGB')
+            print(f"Janela encontrada em: {left}, {top} ({width}x{height})")
+        else:
+            img = ImageGrab.grab(all_screens=True).convert('RGB')
+            print("Janela do PES não encontrada, usando tela toda.")
+            
+        import os
+        captures_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../ocr_captures'))
+        if not os.path.exists(captures_dir):
+            os.makedirs(captures_dir)
+            
+        filename = f"acr_capture_{int(time.time() * 1000)}.png"
+        filepath = os.path.join(captures_dir, filename)
+        
+        img.save(filepath)
+        return jsonify({"sucesso": True, "filepath": filepath})
+    except Exception as e:
+        return jsonify({"sucesso": False, "erro": str(e)})
+
 def run_server():
     print("AI Engine Server rodando na porta 5001...")
     app.run(port=5001, debug=False, use_reloader=False)

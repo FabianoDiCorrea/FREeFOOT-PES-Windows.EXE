@@ -355,33 +355,37 @@
           </div>
           
           <div class="scorers-horizontal-container">
-            <div v-for="(sc, idx) in allScorers" :key="idx" class="premium-scorer-card-h">
+            <div v-for="(sc, idx) in allScorers" :key="idx" class="premium-scorer-card-h" :style="idx > 0 ? 'transform: scale(0.9); margin-bottom: -10px; opacity: 0.9;' : ''">
               
               <!-- DECORATION -->
               <div class="scorer-h-glow"></div>
               
               <div class="d-flex align-items-center w-100 h-100 position-relative z-2">
-                <!-- TROFÉU DESTAQUE (ESPAÇO DEDICADO) -->
-                <div class="scorer-trophy-box-h">
+                <!-- TROFÉU DESTAQUE APENAS PARA O 1º -->
+                <div v-if="idx === 0" class="scorer-trophy-box-h">
                   <img src="/logos/competitions/artilheiro.png" alt="Troféu">
                 </div>
+                <!-- RANKING PARA OS DEMAIS -->
+                <div v-else class="fw-black text-warning fs-3 px-4" style="width: 100px; text-align: center;">{{ idx + 1 }}º</div>
 
-                <!-- FOTO -->
-                <div class="scorer-photo-h" @click="openPhotoZoom(sc.fotoUrl)" :class="{ 'cursor-pointer': sc.fotoUrl }">
+                <!-- FOTO / CLUBE (Dependendo do Rank) -->
+                <div v-if="idx === 0" class="scorer-photo-h" @click="openPhotoZoom(sc.fotoUrl)" :class="{ 'cursor-pointer': sc.fotoUrl }">
                   <img v-if="sc.fotoUrl" :src="getCachedLogo(sc.fotoUrl)" class="player-img">
                   <div v-else class="sc-placeholder-h"><i class="bi bi-person"></i></div>
                 </div>
 
                 <!-- INFO (NOME E POSIÇÃO) -->
                 <div class="scorer-info-h">
-                  <div class="d-flex flex-column">
-                    <h3 class="scorer-name-h">{{ sc.nome }}</h3>
-                    <div class="scorer-pos-h">{{ sc.posicaoCampo || 'CA' }}</div>
+                  <div class="d-flex flex-column justify-content-center">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="scorer-pos-h d-flex justify-content-center align-items-center rounded fw-black" :style="`background-color: ${getPesPositionStyle(sc.posicaoCampo).bg}; color: ${getPesPositionStyle(sc.posicaoCampo).color}; width: 44px; height: 26px; font-size: 0.85rem; letter-spacing: 0.5px;`">{{ formatPesPosition(sc.posicaoCampo) }}</div>
+                      <h3 class="scorer-name-h mb-0 text-capitalize" style="font-size: 1.4rem;">{{ sc.nome }}</h3>
+                    </div>
                   </div>
                 </div>
 
                 <!-- NACIONALIDADE -->
-                <div class="scorer-nat-h">
+                <div class="scorer-nat-h" v-if="sc.nacionalidade">
                    <div class="v-divider-h"></div>
                    <div class="d-flex align-items-center gap-2 px-3">
                      <NationalFlag :countryName="sc.nacionalidade" :size="32" class="rounded-circle shadow" />
@@ -389,14 +393,14 @@
                    </div>
                 </div>
 
-                <!-- CLUBE -->
+                <!-- CLUBE (EXIBIDO PARA TODOS NA DIREITA) -->
                 <div class="scorer-club-h">
                   <div class="v-divider-h"></div>
                   <div class="d-flex align-items-center gap-2 px-3">
-                    <div class="club-shield-h-wrap">
-                      <TeamShield :teamName="sc.clube" :size="48" borderless :season="season.ano" />
+                    <div class="club-shield-h-wrap d-flex justify-content-center" style="width: 60px; flex-shrink: 0;">
+                      <TeamShield :teamName="sc.clube" :size="idx === 0 ? 48 : 38" borderless :season="season.ano" />
                     </div>
-                    <div class="d-flex flex-column">
+                    <div class="d-flex flex-column" style="width: 150px;">
                       <span class="club-name-h">{{ sc.clube }}</span>
                       <div class="d-flex align-items-center gap-1" style="font-size: 0.65rem;">
                         <NationalFlag :countryName="getClubInfo(sc.clube)?.pais" :size="10" />
@@ -408,7 +412,7 @@
 
                 <!-- GOLS (COMPACTO) -->
                 <div class="scorer-goals-h ms-auto">
-                  <div class="goals-box-h">
+                  <div class="goals-box-h text-dark" :style="idx === 0 ? 'background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);' : idx === 1 ? 'background: linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%); box-shadow: 0 0 20px rgba(158,158,158,0.4);' : idx === 2 ? 'background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%); box-shadow: 0 0 20px rgba(205,127,50,0.4);' : 'background: rgba(0,0,0,0.5); box-shadow: none; border: 1px solid var(--bs-warning); color: var(--bs-warning) !important;'">
                     <div class="val" style="font-size: 1.5rem;">{{ sc.gols }}</div>
                     <div class="lbl">GOLS</div>
                   </div>
@@ -417,9 +421,153 @@
 
             </div>
           </div>
+
+          <!-- ASSISTÊNCIAS -->
+          <template v-if="season.assistencias && season.assistencias.length > 0">
+            <div class="p-2 px-3 mt-3 bg-black bg-opacity-30 border-bottom border-secondary border-opacity-10 border-top">
+              <h6 class="m-0 text-success fw-black x-small text-uppercase ls-1">
+                <i class="bi bi-arrow-return-right me-2"></i>LÍDERES DE ASSISTÊNCIAS
+              </h6>
+            </div>
+            
+            <div class="scorers-horizontal-container pb-2" style="max-height: 350px;">
+              <div v-for="(ast, idx) in season.assistencias" :key="'ast'+idx" class="premium-scorer-card-h border-success border-opacity-25" :style="idx > 0 ? 'transform: scale(0.9); margin-bottom: -10px; opacity: 0.9;' : ''">
+                <div class="scorer-h-glow" style="background: radial-gradient(circle at 10% 50%, rgba(0, 255, 100, 0.15) 0%, transparent 70%);"></div>
+                <div class="d-flex align-items-center w-100 h-100 position-relative z-2">
+                  <!-- TROFÉU DESTAQUE APENAS PARA O 1º -->
+                  <div v-if="idx === 0" class="scorer-trophy-box-h" style="border-right-color: rgba(0, 255, 100, 0.2) !important;">
+                    <img src="/logos/competitions/lider_assistencia.png" alt="Troféu Assistência">
+                  </div>
+                  <!-- RANKING PARA OS DEMAIS -->
+                  <div v-else class="fw-black text-success fs-3 px-2 d-flex justify-content-center align-items-center" style="width: 110px; flex-shrink: 0;">{{ idx + 1 }}º</div>
+                  
+                  <!-- FOTO / CLUBE (Dependendo do Rank) -->
+                  <div v-if="idx === 0" class="scorer-photo-h" @click="openPhotoZoom(ast.fotoUrl)" :class="{ 'cursor-pointer': ast.fotoUrl }">
+                    <img v-if="ast.fotoUrl" :src="getCachedLogo(ast.fotoUrl)" class="player-img">
+                    <div v-else class="sc-placeholder-h"><i class="bi bi-person text-success"></i></div>
+                  </div>
+                  <!-- SPACER PARA ALINHAR OS NOMES -->
+                  <div v-else style="width: 140px; flex-shrink: 0;"></div>
+
+                  <div class="scorer-info-h">
+                    <div class="d-flex flex-column justify-content-center">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="scorer-pos-h d-flex justify-content-center align-items-center rounded fw-black" :style="`background-color: ${getPesPositionStyle(ast.posicaoCampo).bg}; color: ${getPesPositionStyle(ast.posicaoCampo).color}; width: 44px; height: 26px; font-size: 0.85rem; letter-spacing: 0.5px;`">{{ formatPesPosition(ast.posicaoCampo) }}</div>
+                        <h3 class="scorer-name-h mb-0 text-capitalize" style="font-size: 1.4rem;">{{ ast.nome }}</h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- NACIONALIDADE -->
+                  <div class="scorer-nat-h" v-if="ast.nacionalidade">
+                     <div class="v-divider-h"></div>
+                     <div class="d-flex align-items-center gap-2 px-3">
+                       <NationalFlag :countryName="ast.nacionalidade" :size="32" class="rounded-circle shadow" />
+                       <span class="text-uppercase fw-black" style="font-size: 0.8rem; letter-spacing: 1px;">{{ ast.nacionalidade }}</span>
+                     </div>
+                  </div>
+
+                  <!-- CLUBE (EXIBIDO PARA TODOS NA DIREITA) -->
+                  <div class="scorer-club-h">
+                    <div class="v-divider-h"></div>
+                    <div class="d-flex align-items-center gap-2 px-3">
+                      <div class="club-shield-h-wrap d-flex justify-content-center" style="width: 60px; flex-shrink: 0;">
+                        <TeamShield :teamName="ast.clube" :size="idx === 0 ? 38 : 32" borderless :season="season.ano" />
+                      </div>
+                      <div class="d-flex flex-column" style="width: 150px;">
+                        <span class="club-name-h">{{ ast.clube }}</span>
+                        <div class="d-flex align-items-center gap-1" style="font-size: 0.65rem;">
+                          <NationalFlag :countryName="getClubInfo(ast.clube)?.pais" :size="10" />
+                          <span class="fw-bold text-secondary">{{ getClubInfo(ast.clube)?.pais }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="scorer-goals-h ms-auto">
+                    <div class="goals-box-h text-dark" :style="idx === 0 ? 'background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);' : idx === 1 ? 'background: linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%); box-shadow: 0 0 20px rgba(158,158,158,0.4);' : idx === 2 ? 'background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%); box-shadow: 0 0 20px rgba(205,127,50,0.4);' : 'background: rgba(0,0,0,0.5); box-shadow: none; border: 1px solid var(--bs-success); color: var(--bs-success) !important;'">
+                      <div class="val" style="font-size: 1.5rem;">{{ ast.passes }}</div>
+                      <div class="lbl">PASSES</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
         </GamePanel>
       </div>
 
+    </div>
+
+    <!-- TÍTULOS INDIVIDUAIS -->
+    <div class="row g-2 mt-2" v-if="season.titulos && (season.titulos.melhorJogador?.nome || season.titulos.melhorTecnico?.nome)">
+      <div class="col-12">
+        <GamePanel customClass="p-4 border border-warning border-opacity-10 bg-dark text-center">
+          <h5 class="fw-black text-warning text-uppercase ls-1 mb-4">TÍTULOS INDIVIDUAIS</h5>
+          <div class="d-flex justify-content-center gap-4 flex-wrap">
+             <!-- Jogador da Temporada -->
+             <div v-if="season.titulos.melhorJogador?.nome" class="card bg-black border-warning border-opacity-25 p-4 rounded-4 shadow position-relative" style="width: 450px; overflow: hidden;">
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" style="background: radial-gradient(circle at center, var(--bs-warning), transparent 70%); pointer-events: none;"></div>
+                <div class="text-warning fw-black mb-3 text-uppercase ls-1 position-relative z-1 text-center"><i class="bi bi-star-fill me-2"></i>JOGADOR DA TEMPORADA</div>
+                <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 mt-2 text-start">
+                   <img src="/logos/competitions/melhor_jogador_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(255,193,7,0.4)); object-fit: contain;">
+                   <div class="flex-grow-1">
+                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">{{ season.titulos.melhorJogador.nome }}</div>
+                     <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
+                       <TeamShield :teamName="season.titulos.melhorJogador.clube" :size="32" borderless :season="season.ano" />
+                       <div class="text-secondary fw-bold fs-6">{{ season.titulos.melhorJogador.clube }}</div>
+                     </div>
+                   </div>
+                </div>
+             </div>
+
+             <!-- Melhor Técnico -->
+             <div v-if="season.titulos.melhorTecnico?.nome" class="card bg-black border-info border-opacity-25 p-4 rounded-4 shadow position-relative" style="width: 450px; overflow: hidden;">
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" style="background: radial-gradient(circle at center, var(--bs-info), transparent 70%); pointer-events: none;"></div>
+                <div class="text-info fw-black mb-3 text-uppercase ls-1 position-relative z-1 text-center"><i class="bi bi-person-workspace me-2"></i>MELHOR TÉCNICO</div>
+                <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 mt-2 text-start">
+                   <img src="/logos/competitions/tecnico_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(13,202,240,0.4)); object-fit: contain;">
+                   <div class="flex-grow-1">
+                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">{{ season.titulos.melhorTecnico.nome }}</div>
+                     <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
+                       <TeamShield :teamName="season.titulos.melhorTecnico.clube" :size="32" borderless :season="season.ano" />
+                       <div class="text-secondary fw-bold fs-6">{{ season.titulos.melhorTecnico.clube }}</div>
+                     </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        </GamePanel>
+      </div>
+    </div>
+
+    <!-- TIME DA TEMPORADA (CAMPO) -->
+    <div class="row g-2 mt-2 mb-5" v-if="season.timeDaTemporada && season.timeDaTemporada.length > 0">
+      <div class="col-12">
+        <GamePanel customClass="p-0 overflow-hidden border border-success border-opacity-20 position-relative shadow-lg" style="min-height: 600px;">
+           <img src="/logos/competitions/campo_futebol.png" alt="Campo" class="position-absolute top-0 start-0 w-100 h-100" style="object-fit: cover; z-index: 0;">
+           <div class="position-absolute top-0 w-100 p-3 bg-black bg-opacity-75 text-center z-2 shadow border-bottom border-white border-opacity-10">
+              <h4 class="m-0 text-white fw-black text-uppercase ls-2">TIME DA TEMPORADA</h4>
+           </div>
+           
+           <div class="pt-5 mt-5 position-relative z-1 d-flex flex-column justify-content-between pb-4" style="min-height: 500px;">
+              <div v-for="(linePlayers, lIdx) in timeDaTemporadaLines" :key="'linha-'+lIdx" class="d-flex justify-content-center flex-wrap gap-4 w-100 my-2">
+                 <div v-for="(jog, idx) in linePlayers" :key="'tt-'+lIdx+'-'+idx">
+                    <div class="d-flex align-items-center position-relative shadow-lg" style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 6px 10px; border: 2px solid #e1c784; width: 240px; border-radius: 2px;">
+                      <div style="flex-shrink: 0; background: rgba(0,0,0,0.1); padding: 2px; border-radius: 4px; margin-right: 8px;">
+                         <TeamShield :teamName="jog.clube" :size="32" borderless :season="season.ano" />
+                      </div>
+                      <div class="d-flex flex-column text-start" style="min-width: 0; flex-grow: 1;">
+                         <div class="fw-black text-dark text-truncate" style="font-size: 1rem; line-height: 1.1;">{{ jog.nome }}</div>
+                         <div class="mt-1 px-1 text-truncate text-uppercase text-light border border-dark border-opacity-25" style="background-color: #1a3c5a; font-size: 0.65rem; letter-spacing: 0.5px; opacity: 0.9;">{{ jog.clube }}</div>
+                      </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </GamePanel>
+      </div>
     </div>
 
 
@@ -467,11 +615,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { seasonStore } from '../services/season.store'
 import { careerStore } from '../services/career.store'
 import { seasonService } from '../services/season.service'
+import acrService from '../services/acr.service'
 import { CLUBS_DATA } from '../data/clubs.data'
 import { FEDERATIONS_DATA } from '../services/federations.data'
 import { getSeasonFinalYear, getTrofeuPath } from '../services/utils'
@@ -600,6 +749,8 @@ const openPhotoZoom = (url) => {
   zoomedPhotoUrl.value = url
   showPhotoZoom.value = true
 }
+
+// ==== LÓGICA DO ACR REMOVIDA (MOVIDA PARA UNIVERSOVIEW) ====
 
 const getCachedLogo = (url) => {
   if (!url) return null
@@ -891,6 +1042,21 @@ const headerBgStyle = computed(() => {
   return {};
 })
 
+const timeDaTemporadaLines = computed(() => {
+  if (!season.value?.timeDaTemporada) return [];
+  const lines = { gol: [], def: [], mei: [], ata: [] };
+  
+  season.value.timeDaTemporada.forEach(jog => {
+    const pos = (jog.posicaoCampo || '').toUpperCase();
+    if (pos.includes('GOL') || pos.includes('GK') || pos.includes('PT')) lines.gol.push(jog);
+    else if (pos.includes('ZAG') || pos.includes('LAT') || pos.includes('LE') || pos.includes('LD') || pos.includes('CB') || pos.includes('RB') || pos.includes('LB')) lines.def.push(jog);
+    else if (pos.includes('VOL') || pos.includes('MLG') || pos.includes('MAT') || pos.includes('MEI') || pos.includes('MD') || pos.includes('ME') || pos.includes('CMF') || pos.includes('DMF') || pos.includes('AMF') || pos.includes('LMF') || pos.includes('RMF')) lines.mei.push(jog);
+    else lines.ata.push(jog);
+  });
+  
+  return [lines.ata, lines.mei, lines.def, lines.gol];
+});
+
 const parsedTable = computed(() => {
   if (!season.value?.tabela) return []
   const lines = season.value.tabela.split('\n').filter(l => l?.trim())
@@ -967,7 +1133,42 @@ const getFedColorClass = (fedName) => {
   return '';
 }
 
+const getPesPositionStyle = (pos) => {
+    if (!pos) return { bg: '#222b2b', color: '#a1a1aa' }; // Default cinza
+    const p = pos.toUpperCase().trim();
+    
+    // Atacantes (Rosa PES)
+    if (['CA', 'SA', 'PTD', 'PTE', 'ATACANTE'].includes(p)) return { bg: '#222b2b', color: '#ff4d88' };
+    
+    // Meias (Verde PES)
+    if (['MAT', 'MLG', 'VOL', 'MLE', 'MLD', 'MEIA'].includes(p)) return { bg: '#222b2b', color: '#4ade80' };
+    
+    // Defensores (Azul PES)
+    if (['ZC', 'LD', 'LE', 'ZAGUEIRO', 'LATERAL'].includes(p)) return { bg: '#222b2b', color: '#38bdf8' };
+    
+    // Goleiro (Amarelo PES)
+    if (['PT', 'GL', 'GOLEIRO'].includes(p)) return { bg: '#222b2b', color: '#eab308' };
+    
+    // Fallback
+    return { bg: '#222b2b', color: '#a1a1aa' };
+}
+
+const formatPesPosition = (pos) => {
+    if (!pos) return 'POS';
+    const p = pos.toUpperCase().trim();
+    if (p === 'ATACANTE') return 'CA';
+    if (p === 'MEIA') return 'MLG';
+    if (p === 'ZAGUEIRO' || p === 'DEFENSOR') return 'ZC';
+    if (p === 'LATERAL') return 'LD';
+    if (p === 'GOLEIRO') return 'PT';
+    return p; // Se já for CA, SA, MLG, apenas retorna.
+}
+
 onMounted(async () => {
+  // Salva as chaves configuradas pelo usuário para que nunca se percam
+  localStorage.setItem('gemini_api_key', 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw');
+  localStorage.setItem('openai_api_key', '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');
+  
   await seasonStore.loadAll()
   await careerStore.loadAll()
   loadSeasonData()
@@ -978,6 +1179,10 @@ onMounted(async () => {
       season.value.participantes = [...season.value.participantes]
     }
   }, 100)
+})
+
+onUnmounted(() => {
+  // Limpeza de eventos globais, se houver
 })
 
 // Watcher para forçar re-aplicação de classes CSS quando dados mudam
@@ -1225,7 +1430,6 @@ const saveClassification = async () => {
 .scorer-name-h {
   font-weight: 900;
   font-size: 1.8rem;
-  text-transform: uppercase;
   margin: 0;
   letter-spacing: -0.5px;
   color: #fff;

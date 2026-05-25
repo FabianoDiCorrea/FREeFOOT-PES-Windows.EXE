@@ -12,6 +12,7 @@
           <router-link to="/premio-individual" class="nav-item" active-class="active">PRÊMIO INDIVIDUAL</router-link>
           <router-link to="/rankings" class="nav-item" active-class="active">RANKINGS</router-link>
           <router-link to="/backup" class="nav-item" active-class="active">BACKUP</router-link>
+
         </nav>
       </div>
 
@@ -20,6 +21,11 @@
         <span class="ms-3 pt-time fw-bold text-secondary">{{ currentTime }}</span>
       </div>
     </header>
+
+    <!-- Toast do ACR (Aparece no topo ao tirar foto) -->
+    <div v-if="alertAcr" class="acr-toast bg-success text-white shadow-lg fw-bold rounded px-4 py-2">
+      {{ alertAcr }}
+    </div>
 
     <main class="main-content">
       <!-- Error Boundary Global -->
@@ -50,6 +56,7 @@ import { clubStore } from './services/club.store'
 
 const currentTime = ref('')
 const appError = ref(null)
+const alertAcr = ref(null)
 
 onErrorCaptured((err, instance, info) => {
   console.error("ERRO GLOBAL:", err, info)
@@ -74,6 +81,26 @@ onMounted(async () => {
   
   // Inicializa o store de clubes (carrega customizações locais)
   await clubStore.init()
+
+  // Conecta a Ponte com o Electron (Ouvinte do F10)
+  if (window.require) {
+    try {
+      const { ipcRenderer } = window.require('electron')
+      ipcRenderer.on('acr-capture-saved', (event, filePath) => {
+        console.log("ACR Ponte: Print recebido em", filePath)
+        
+        // Dispara um evento global que a futura Tela de Dados vai escutar
+        const eventAcr = new CustomEvent('acr-screenshot', { detail: { filePath } })
+        window.dispatchEvent(eventAcr)
+
+        // Mostra o Toast verde rapidinho
+        alertAcr.value = "📸 Captura ACR Realizada!"
+        setTimeout(() => { alertAcr.value = null }, 3000)
+      })
+    } catch (e) {
+      console.warn("ACR: ipcRenderer não está disponível (rodando no navegador?)", e)
+    }
+  }
 })
 </script>
 
@@ -181,5 +208,20 @@ header.top-bar {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent);
+}
+
+/* ACR Toast Animado */
+.acr-toast {
+  position: fixed;
+  top: 90px;
+  right: 30px;
+  z-index: 9999;
+  border: 2px solid #000;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
