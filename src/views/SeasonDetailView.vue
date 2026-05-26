@@ -513,7 +513,10 @@
                 <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 mt-2 text-start">
                    <img src="/logos/competitions/melhor_jogador_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(255,193,7,0.4)); object-fit: contain;">
                    <div class="flex-grow-1">
-                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">{{ season.titulos.melhorJogador.nome }}</div>
+                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">
+                       <NationalFlag v-if="season.titulos.melhorJogador.nacionalidade" :countryName="season.titulos.melhorJogador.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
+                       {{ season.titulos.melhorJogador.nome }}
+                     </div>
                      <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
                        <TeamShield :teamName="season.titulos.melhorJogador.clube" :size="32" borderless :season="season.ano" />
                        <div class="text-secondary fw-bold fs-6">{{ season.titulos.melhorJogador.clube }}</div>
@@ -529,7 +532,10 @@
                 <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 mt-2 text-start">
                    <img src="/logos/competitions/tecnico_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(13,202,240,0.4)); object-fit: contain;">
                    <div class="flex-grow-1">
-                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">{{ season.titulos.melhorTecnico.nome }}</div>
+                     <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">
+                       <NationalFlag v-if="season.titulos.melhorTecnico.nacionalidade" :countryName="season.titulos.melhorTecnico.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
+                       {{ season.titulos.melhorTecnico.nome }}
+                     </div>
                      <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
                        <TeamShield :teamName="season.titulos.melhorTecnico.clube" :size="32" borderless :season="season.ano" />
                        <div class="text-secondary fw-bold fs-6">{{ season.titulos.melhorTecnico.clube }}</div>
@@ -552,18 +558,27 @@
            </div>
            
            <div class="pt-5 mt-5 position-relative z-1 d-flex flex-column justify-content-between pb-4" style="min-height: 500px;">
-              <div v-for="(linePlayers, lIdx) in timeDaTemporadaLines" :key="'linha-'+lIdx" class="d-flex justify-content-center flex-wrap gap-4 w-100 my-2">
-                 <div v-for="(jog, idx) in linePlayers" :key="'tt-'+lIdx+'-'+idx">
-                    <div class="d-flex align-items-center position-relative shadow-lg" style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 6px 10px; border: 2px solid #e1c784; width: 240px; border-radius: 2px;">
-                      <div style="flex-shrink: 0; background: rgba(0,0,0,0.1); padding: 2px; border-radius: 4px; margin-right: 8px;">
-                         <TeamShield :teamName="jog.clube" :size="32" borderless :season="season.ano" />
+              <div v-for="(line, lIdx) in timeDaTemporadaLines" :key="'linha-'+lIdx" class="d-flex flex-wrap w-100 my-2 justify-content-center align-items-center" :style="{ gap: getLineGap(line.id) }">
+                  <div v-for="(jog, idx) in line.list" :key="'tt-'+lIdx+'-'+idx"
+                       draggable="true"
+                       @dragstart="onNativeDragStart(jog)"
+                       @dragover.prevent
+                       @drop="onNativeDrop(jog)"
+                       :style="{ opacity: dragActiveItem === jog ? 0.5 : 1, transition: 'all 0.2s', cursor: 'pointer' }">
+                    <div class="d-flex align-items-center position-relative shadow-lg" 
+                         style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 8px 14px; border: 2px solid #e1c784; width: 280px; border-radius: 2px;">
+                      <div style="flex-shrink: 0; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px; margin-right: 12px;">
+                         <TeamShield :teamName="jog.clube" :size="42" borderless :season="season.ano" />
                       </div>
-                      <div class="d-flex flex-column text-start" style="min-width: 0; flex-grow: 1;">
-                         <div class="fw-black text-dark text-truncate" style="font-size: 1rem; line-height: 1.1;">{{ jog.nome }}</div>
-                         <div class="mt-1 px-1 text-truncate text-uppercase text-light border border-dark border-opacity-25" style="background-color: #1a3c5a; font-size: 0.65rem; letter-spacing: 0.5px; opacity: 0.9;">{{ jog.clube }}</div>
+                      <div class="d-flex flex-column text-start" style="min-width: 0; flex-grow: 1; pointer-events: none;">
+                         <div class="fw-black text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 1.1rem; line-height: 1.1;">
+                           <NationalFlag v-if="jog.nacionalidade" :countryName="jog.nacionalidade" :size="24" class="shadow-sm rounded-1" />
+                           {{ jog.nome }}
+                         </div>
+                         <div class="mt-1 px-1 text-truncate text-uppercase text-light border border-dark border-opacity-25" style="background-color: #1a3c5a; font-size: 0.7rem; letter-spacing: 0.5px; opacity: 0.9;">{{ jog.clube }}</div>
                       </div>
                     </div>
-                 </div>
+                  </div>
               </div>
            </div>
         </GamePanel>
@@ -1044,18 +1059,103 @@ const headerBgStyle = computed(() => {
 
 const timeDaTemporadaLines = computed(() => {
   if (!season.value?.timeDaTemporada) return [];
-  const lines = { gol: [], def: [], mei: [], ata: [] };
+  const lines = { gol: [], zag: [], lat: [], vol: [], mlg: [], mat: [], ata: [] };
   
   season.value.timeDaTemporada.forEach(jog => {
-    const pos = (jog.posicaoCampo || '').toUpperCase();
-    if (pos.includes('GOL') || pos.includes('GK') || pos.includes('PT')) lines.gol.push(jog);
-    else if (pos.includes('ZAG') || pos.includes('LAT') || pos.includes('LE') || pos.includes('LD') || pos.includes('CB') || pos.includes('RB') || pos.includes('LB')) lines.def.push(jog);
-    else if (pos.includes('VOL') || pos.includes('MLG') || pos.includes('MAT') || pos.includes('MEI') || pos.includes('MD') || pos.includes('ME') || pos.includes('CMF') || pos.includes('DMF') || pos.includes('AMF') || pos.includes('LMF') || pos.includes('RMF')) lines.mei.push(jog);
-    else lines.ata.push(jog);
+    const p = (jog.posicaoCampo || '').toUpperCase().trim();
+    
+    if (['GOL', 'GK', 'PT'].includes(p)) {
+      lines.gol.push(jog);
+    } 
+    else if (['ZG', 'ZC', 'ZAG', 'CB'].includes(p)) {
+      lines.zag.push(jog);
+    }
+    else if (['LAT', 'LE', 'LD', 'RB', 'LB'].includes(p)) {
+      lines.lat.push(jog);
+    }
+    else if (['VOL', 'DMF'].includes(p)) {
+      lines.vol.push(jog);
+    }
+    else if (['MLG', 'MEI', 'MD', 'ME', 'MLD', 'MLE', 'CMF', 'LMF', 'RMF'].includes(p)) {
+      lines.mlg.push(jog);
+    }
+    else if (['MAT', 'AMF'].includes(p)) {
+      lines.mat.push(jog);
+    }
+    else {
+      lines.ata.push(jog); // CA, SA, ATA, PTD, PTE, etc
+    }
   });
   
-  return [lines.ata, lines.mei, lines.def, lines.gol];
+  // O array define a ordem geométrica (de cima para baixo no HTML flexbox)
+  return [
+    { id: 'ata', list: lines.ata },
+    { id: 'mat', list: lines.mat },
+    { id: 'mlg', list: lines.mlg },
+    { id: 'vol', list: lines.vol },
+    { id: 'lat', list: lines.lat },
+    { id: 'zag', list: lines.zag },
+    { id: 'gol', list: lines.gol }
+  ].filter(line => line.list.length > 0); // Filtra as linhas vazias para evitar buracos irregulares
 });
+
+const getLineGap = (id) => {
+  // Laterais bem abertos nas extremidades (exatamente como aprovado no print 2)
+  if (id === 'lat') return '700px';
+  // Meias abertos, mas mais fechados que os laterais
+  if (id === 'mlg') return '350px';
+  // Zagueiros mais abertos que a média
+  if (id === 'zag') return '80px';
+  // Atacantes e outros no centro
+  return '150px';
+};
+
+// =====================================
+// DRAG AND DROP LÓGICO DE SWAP (TROCA)
+// =====================================
+const dragActiveItem = ref(null);
+
+const onNativeDragStart = (jog) => {
+  dragActiveItem.value = jog;
+};
+
+const onNativeDrop = async (targetJog) => {
+  const sourceJog = dragActiveItem.value;
+  if (!sourceJog || sourceJog === targetJog) {
+    dragActiveItem.value = null;
+    return;
+  }
+
+  const arr = season.value.timeDaTemporada;
+  const idxSource = arr.indexOf(sourceJog);
+  const idxTarget = arr.indexOf(targetJog);
+
+  if (idxSource !== -1 && idxTarget !== -1) {
+    // 1. Guarda a "posição tática" do alvo pra passar pro que está chegando
+    const posTarget = arr[idxTarget].posicaoCampo;
+    const posSource = arr[idxSource].posicaoCampo;
+    
+    // 2. Troca as posições lógicas no Array principal
+    arr[idxSource] = targetJog;
+    arr[idxTarget] = sourceJog;
+    
+    // 3. Herda as antigas posições de campo (para eles ficarem exatamente nas linhas corretas)
+    arr[idxSource].posicaoCampo = posSource; 
+    arr[idxTarget].posicaoCampo = posTarget; 
+    
+    // 4. Salva no servidor
+    try {
+      await seasonStore.updateSeason(season.value.id, { 
+        timeDaTemporada: JSON.parse(JSON.stringify(arr)) 
+      });
+    } catch(e) {
+      console.error("Erro ao salvar troca no time da temporada:", e);
+    }
+  }
+
+  dragActiveItem.value = null;
+};
+// =====================================
 
 const parsedTable = computed(() => {
   if (!season.value?.tabela) return []
