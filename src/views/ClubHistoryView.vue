@@ -807,7 +807,7 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
     if (lowName.includes('artilharia')) return 'logos/competitions/artilheiro.png'
 
-    return `logos/competitions/${name.replace(/\s+/g, '-')}.png`
+    return `/logos/competitions/${name.replace(/\s+/g, '-')}.png`
 }
 
 const parseTable = (tableStr) => {

@@ -128,7 +128,7 @@
                   </thead>
                   <tbody>
                     <template v-for="s in seasonStore.list" :key="s.id">
-                      <tr class="border-bottom border-secondary border-opacity-10">
+                      <tr class="border-bottom border-secondary border-opacity-10" @click="$router.push('/season/' + s.id)" style="cursor: pointer;" title="Abrir página da temporada">
                       <td class="fw-bold fs-5 text-nowrap">{{ s.ano }}</td>
                       <td class="text-nowrap">
                         <div class="d-flex align-items-center gap-2">
@@ -224,22 +224,22 @@
                         <div class="d-flex justify-content-center align-items-center gap-3">
                            <span v-if="(s.topScorers && s.topScorers.length > 0) || (s.artilheiro && s.artilheiro.nome)" 
                                  class="text-warning fs-4" title="Tem Artilheiro" style="text-shadow: 0 0 10px rgba(255,193,7,0.4)">⚽</span>
-                           <!-- O ícone de tabela agora aparece se houver tabela TEXTUAL ou PRINTS na galeria -->
-                           <span v-if="s.tabela || (s.printsUrls && s.printsUrls.some(u => u))" 
-                                 class="text-info fs-4" title="Tabela ou Prints Inseridos" style="text-shadow: 0 0 10px rgba(0,242,255,0.4)">📋</span>
+                           <!-- O ícone de prancheta aparece se houver tabela TEXTUAL, PRINTS na galeria, PARTICIPANTES ou CONFRONTO SUPERCOPA -->
+                           <span v-if="s.tabela || (s.printsUrls && s.printsUrls.some(u => u)) || (s.participantes && s.participantes.length > 0) || (s.supercopaMatch && s.supercopaMatch.time1)" 
+                                 class="text-info fs-4" title="Tabela, Prints, Participantes ou Jogo Inseridos" style="text-shadow: 0 0 10px rgba(0,242,255,0.4)">📋</span>
                         </div>
                       </td>
                       <td class="text-center text-nowrap">
                         <!-- ABRIR TEMPORADA -->
-                        <button class="btn btn-sm btn-info border-0 me-1 p-2 rounded-3 text-dark" @click="$router.push('/season/' + s.id)" title="Ver Página Individual">
+                        <button class="btn btn-sm btn-info border-0 me-1 p-2 rounded-3 text-dark" @click.stop="$router.push('/season/' + s.id)" title="Ver Página Individual">
                           <i class="bi bi-list-ul fs-6"></i>
                         </button>
                         <!-- EDITAR -->
-                        <button class="btn btn-sm btn-primary border-0 me-1 p-2 rounded-3" @click="prepareEdit(s)" title="Editar Temporada">
+                        <button class="btn btn-sm btn-primary border-0 me-1 p-2 rounded-3" @click.stop="prepareEdit(s)" title="Editar Temporada">
                           <i class="bi bi-pencil-square fs-6"></i>
                         </button>
                         <!-- EXCLUIR -->
-                        <button class="btn btn-sm btn-danger border-0 p-2 rounded-3" @click="confirmDelete(s)" title="Excluir Temporada">
+                        <button class="btn btn-sm btn-danger border-0 p-2 rounded-3" @click.stop="confirmDelete(s)" title="Excluir Temporada">
                           <i class="bi bi-trash fs-6"></i>
                         </button>
                       </td>
@@ -636,9 +636,9 @@
         <div class="d-flex justify-content-between align-items-center mb-5">
           <h1 class="fw-black text-uppercase m-0 ls-2">
             <i class="bi" :class="isEditing ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
-            {{ isEditing ? 'EDITAR' : 'REGISTRAR' }} TEMPORADA
+            {{ isEditing ? 'EDITAR' : 'REGISTRAR' }} TEMPORADA <span v-if="selectedCompetition?.nome">- {{ selectedCompetition.nome }}</span>
           </h1>
-<button class="btn-close-large" @click="viewMode = 'list'"><i class="bi bi-x-lg"></i></button>
+          <button class="btn-close-large" @click="viewMode = 'list'"><i class="bi bi-x-lg"></i></button>
         </div>
 
         <!-- NAVEGAÇÃO POR ABAS PARA OTIMIZAR O MODAL -->
@@ -647,13 +647,15 @@
             <li class="nav-item">
               <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'geral' }" @click="formTab = 'geral'">Dados Gerais</button>
             </li>
-            <li class="nav-item">
-              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'tabela' }" @click="formTab = 'tabela'">{{ selectedCompetition?.tipo === 'Copa' ? 'Chaveamento da Copa' : 'Formato & Tabela' }}</button>
+            <li v-if="!isSupercup" class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'tabela' }" @click="formTab = 'tabela'">
+                {{ selectedCompetition?.tipo === 'Copa' ? 'Chaveamento da Copa' : (selectedCompetition?.tipo === 'internacional' ? 'Chaveamento ' + selectedCompetition?.nome : 'Formato & Tabela') }}
+              </button>
             </li>
-            <li class="nav-item">
-              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'estatisticas' }" @click="formTab = 'estatisticas'">Estatísticas (IA)</button>
+            <li v-if="!isSupercup" class="nav-item">
+              <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'estatisticas' }" @click="formTab = 'estatisticas'">Artilheiros & Assistências</button>
             </li>
-            <li class="nav-item">
+            <li v-if="selectedCompetition?.tipo !== 'internacional' && !isSupercup" class="nav-item">
               <button class="nav-link fw-bold text-uppercase" :class="{ 'active bg-warning text-dark': formTab === 'premios' }" @click="formTab = 'premios'">Prêmios (IA)</button>
             </li>
           </ul>
@@ -678,6 +680,20 @@
                 <input type="text" v-model="newSeason.ano" class="form-control game-input text-center fs-3 fw-black text-warning" placeholder="EX: 2026 / 2027 = 2027" style="height: 60px;">
               </div>
 
+              <!-- FORM MUNDIAL -->
+              <template v-if="selectedCompetition?.modoRegistro === 'mundial' || selectedCompetition?.nome === 'Mundial de Clubes'">
+                <div class="row g-4 mt-2">
+                  <div class="col-12">
+                     <label class="form-label fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-diagram-3 me-2"></i>CHAVEAMENTO DO MUNDIAL</label>
+                     <div class="p-3 bg-black bg-opacity-25 rounded-4 border border-secondary border-opacity-10">
+                       <MundialBracket :mundial="newSeason.mundial" :isEditable="true" @updateMatch="updateMundialField" />
+                     </div>
+                  </div>
+                </div>
+              </template>
+
+              <!-- FORM COMUM (Campeão e Vice) -->
+              <template v-else-if="!isSupercup">
               <div class="row g-4">
                 <div class="col-md-6 position-relative">
                   <label class="form-label fw-bold text-secondary text-uppercase small">Campeão</label>
@@ -729,8 +745,85 @@
                   </div>
                 </div>
               </div>
+              </template>
+              <!-- SUPERCOPA MATCH PANEL -->
+              <div v-else class="supercopa-form p-4 border border-info border-opacity-25 rounded-4 bg-black bg-opacity-50 position-relative shadow-lg mt-4">
+                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" style="background: radial-gradient(circle at center, rgba(13,202,240,0.2), transparent); pointer-events: none;"></div>
+                <h5 class="text-info text-center fw-black mb-4 position-relative z-1"><i class="bi bi-controller me-2"></i>CONFRONTO DECISIVO</h5>
+                <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 flex-wrap">
+                  <!-- TIME 1 -->
+                  <div class="d-flex flex-column align-items-center" style="width: 260px;">
+                    <TeamShield :teamName="newSeason.supercopaMatch.time1" :size="80" />
+                    <input type="text" v-model="newSeason.supercopaMatch.time1" class="form-control text-center fw-bold mt-2" placeholder="Nome Time 1" @focus="showTeamResults.sTime1 = true">
+                    <!-- Dropdown de Busca Time 1 -->
+                    <div v-if="showTeamResults.sTime1 && filteredTeams(newSeason.supercopaMatch.time1).length > 0" class="team-search-dropdown shadow-lg position-absolute z-3" style="margin-top: 130px; width: 260px;">
+                      <div v-for="t in filteredTeams(newSeason.supercopaMatch.time1)" :key="'s1'+t.nome" 
+                           @click="selectTeam('sTime1', t.nome)"
+                           class="team-search-item">
+                        <TeamShield :teamName="t.nome" :size="24" />
+                        <span class="fw-bold">{{ t.nome }}</span>
+                      </div>
+                    </div>
+                    <select v-model="newSeason.supercopaMatch.origem1" class="form-select mt-2 text-center x-small bg-dark text-white fw-bold">
+                       <option value="">ORIGEM (Opcional)</option>
+                       <option value="Campeão da Liga">Campeão da Liga</option>
+                       <option value="Campeão da Copa">Campeão da Copa</option>
+                       <option value="Campeão Libertadores">Campeão Libertadores</option>
+                       <option value="Campeão Sul-Americana">Campeão Sul-Americana</option>
+                       <option value="Campeão Champions League">Campeão Champions League</option>
+                       <option value="Campeão Europa League">Campeão Europa League</option>
+                    </select>
+                  </div>
+
+                  <!-- PLACAR -->
+                  <div class="d-flex flex-column align-items-center gap-2">
+                    <div class="d-flex gap-3 align-items-center">
+                       <input type="number" v-model="newSeason.supercopaMatch.placar1" class="form-control text-center fs-2 fw-black p-0 border-info text-info bg-dark" style="width: 60px; height: 60px;">
+                       <span class="fs-4 text-secondary fw-black">X</span>
+                       <input type="number" v-model="newSeason.supercopaMatch.placar2" class="form-control text-center fs-2 fw-black p-0 border-info text-info bg-dark" style="width: 60px; height: 60px;">
+                    </div>
+                    
+                    <select v-model="newSeason.supercopaMatch.tipo" class="form-select form-select-sm text-center fw-bold mt-2 bg-dark text-white">
+                       <option value="normal">TEMPO NORMAL</option>
+                       <option value="prorrogacao">PRORROGAÇÃO</option>
+                       <option value="penaltis">PÊNALTIS</option>
+                    </select>
+
+                    <div v-if="newSeason.supercopaMatch.tipo === 'penaltis'" class="d-flex gap-2 align-items-center mt-2 p-2 bg-black rounded border border-warning border-opacity-50">
+                       <input type="number" v-model="newSeason.supercopaMatch.pen1" class="form-control form-control-sm text-center fw-bold text-warning" style="width: 45px;">
+                       <span class="x-small text-warning fw-black">PEN</span>
+                       <input type="number" v-model="newSeason.supercopaMatch.pen2" class="form-control form-control-sm text-center fw-bold text-warning" style="width: 45px;">
+                    </div>
+                  </div>
+
+                  <!-- TIME 2 -->
+                  <div class="d-flex flex-column align-items-center" style="width: 260px;">
+                    <TeamShield :teamName="newSeason.supercopaMatch.time2" :size="80" />
+                    <input type="text" v-model="newSeason.supercopaMatch.time2" class="form-control text-center fw-bold mt-2" placeholder="Nome Time 2" @focus="showTeamResults.sTime2 = true">
+                    <!-- Dropdown de Busca Time 2 -->
+                    <div v-if="showTeamResults.sTime2 && filteredTeams(newSeason.supercopaMatch.time2).length > 0" class="team-search-dropdown shadow-lg position-absolute z-3" style="margin-top: 130px; width: 260px;">
+                      <div v-for="t in filteredTeams(newSeason.supercopaMatch.time2)" :key="'s2'+t.nome" 
+                           @click="selectTeam('sTime2', t.nome)"
+                           class="team-search-item">
+                        <TeamShield :teamName="t.nome" :size="24" />
+                        <span class="fw-bold">{{ t.nome }}</span>
+                      </div>
+                    </div>
+                    <select v-model="newSeason.supercopaMatch.origem2" class="form-select mt-2 text-center x-small bg-dark text-white fw-bold">
+                       <option value="">ORIGEM (Opcional)</option>
+                       <option value="Campeão da Liga">Campeão da Liga</option>
+                       <option value="Campeão da Copa">Campeão da Copa</option>
+                       <option value="Campeão Libertadores">Campeão Libertadores</option>
+                       <option value="Campeão Sul-Americana">Campeão Sul-Americana</option>
+                       <option value="Campeão Champions League">Campeão Champions League</option>
+                       <option value="Campeão Europa League">Campeão Europa League</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
             </div>
- 
+            
             <!-- SEÇÃO 1.5: PARTICIPANTES (SOLO PARA COMPETIÇÕES ESPECÍFICAS) -->
             <div v-if="selectedCompetition?.modoRegistro === 'participantes' || selectedCompetition?.tipo === 'Copa'" class="form-section-premium mb-5">
               <h4 class="text-success fw-black mb-3 text-uppercase"><i class="bi bi-people-fill me-2"></i>PARTICIPANTES</h4>
@@ -810,7 +903,7 @@
 
               <div class="row g-2 mb-3">
                 <div v-for="idx in [0, 1, 2]" :key="idx" class="col-md-4 col-sm-4 col-12">
-                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" tabindex="0" style="height: 100px;">
+                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsUrls[idx] }" @paste="(e) => handlePastePrint(e, idx)" @dblclick="e => e.currentTarget.querySelector('input').click()" tabindex="0" style="height: 100px;">
                     <input type="file" :id="'print-upload-copa-'+idx" class="d-none" @change="(e) => handleFilePrint(e, idx)" accept="image/*">
                     <template v-if="newSeason.printsUrls[idx]">
                       <img :src="getCachedLogo(newSeason.printsUrls[idx])" class="print-preview-img">
@@ -818,10 +911,10 @@
                          <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="removePrint(idx)"><i class="bi bi-trash"></i></button>
                       </div>
                     </template>
-                    <label v-else :for="'print-upload-copa-'+idx" class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                    <div v-else class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
                       <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
-                      <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem; letter-spacing: 0px;"><i class="bi bi-camera me-1"></i>CLIQUE OU CTRL+V</div>
-                    </label>
+                      <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem; letter-spacing: 0px;"><i class="bi bi-camera me-1"></i>DUPLO CLIQUE OU CTRL+V</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -885,6 +978,143 @@
                           </div>
                         </td>
                         <td>
+                          <select :value="p.colocacao ? p.colocacao.toUpperCase() : null"
+                                  @change="p.colocacao = $event.target.value; updateChampViceFromManual(p)"
+                                  class="form-select form-select-sm fw-black x-small cup-input-select" 
+                                  :class="getPlacementColorClass(p.colocacao)">
+                            <option v-for="opt in dynamicPlacements" :key="opt" :value="opt" :class="getPlacementColorClass(opt)">{{ opt }}</option>
+                          </select>
+                        </td>
+                        <td class="text-center">
+                          <button class="btn btn-link btn-sm text-danger opacity-50 hover-opacity-100 p-0" @click="removeParticipant(idx)">
+                            <i class="bi bi-trash-fill"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="text-center py-4 opacity-25 border border-secondary border-dashed rounded-3 small fw-bold">
+                  USE O TEXTAREA ACIMA OU ADICIONE TIMES PARA DEFINIR A CLASSIFICAÇÃO.
+                </div>
+              </div>
+            </div>
+
+            <!-- SEÇÃO 1.9: CHAVEAMENTO INTERNACIONAL (LIBERTADORES) -->
+            <div v-if="selectedCompetition?.tipo === 'internacional'" class="form-section-premium mb-5">
+              <h4 class="text-primary fw-black mb-4 text-uppercase d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-diagram-3-fill me-2"></i>CHAVEAMENTO {{ selectedCompetition?.nome || 'INTERNACIONAL' }}
+                </div>
+              </h4>
+
+              <!-- Pré-Classificatória -->
+              <div v-if="!['Sul-Americana', 'Concacaf Champions League'].includes(selectedCompetition?.nome)">
+                <h6 class="text-warning fw-black mb-3 text-uppercase small">1. Pré-Classificatória</h6>
+                <div class="row g-2 mb-4">
+                  <div class="col-md-3 col-sm-4 col-12">
+                    <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsLibPre[0] }" @paste="(e) => handlePastePrintLib(e, 'pre', 0)" @dblclick="e => e.currentTarget.querySelector('input').click()" tabindex="0" style="height: 100px;">
+                      <input type="file" id="print-upload-lib-pre-0" class="d-none" @change="(e) => handleFilePrintLib(e, 'pre', 0)" accept="image/*">
+                      <template v-if="newSeason.printsLibPre[0]">
+                        <img :src="getCachedLogo(newSeason.printsLibPre[0])" class="print-preview-img">
+                        <div class="print-slot-overlay">
+                           <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="newSeason.printsLibPre[0] = ''"><i class="bi bi-trash"></i></button>
+                        </div>
+                      </template>
+                      <div v-else class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                        <span class="x-small fw-black text-center">PRÉ-CLASSIFICATÓRIA</span>
+                        <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem;"><i class="bi bi-camera me-1"></i>DUPLO CLIQUE OU CTRL+V</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grupos -->
+              <h6 class="text-info fw-black mb-3 text-uppercase small">2. Fase de Grupos</h6>
+              <div class="row g-2 mb-4">
+                <div v-for="idx in (selectedCompetition?.nome === 'Sul-Americana' ? 12 : 8)" :key="'grupo-'+idx" class="col-md-3 col-sm-4 col-6">
+                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsLibGrupos[idx-1] }" @paste="(e) => handlePastePrintLib(e, 'grupos', idx-1)" @dblclick="e => e.currentTarget.querySelector('input').click()" tabindex="0" style="height: 100px;">
+                    <input type="file" :id="'print-upload-lib-grupo-'+idx" class="d-none" @change="(e) => handleFilePrintLib(e, 'grupos', idx-1)" accept="image/*">
+                    <template v-if="newSeason.printsLibGrupos[idx-1]">
+                      <img :src="getCachedLogo(newSeason.printsLibGrupos[idx-1])" class="print-preview-img">
+                      <div class="print-slot-overlay">
+                         <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="newSeason.printsLibGrupos[idx-1] = ''"><i class="bi bi-trash"></i></button>
+                      </div>
+                    </template>
+                    <div v-else class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                      <span class="x-small fw-black">GRUPO {{ String.fromCharCode(64 + idx) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mata-Mata -->
+              <h6 class="text-danger fw-black mb-3 text-uppercase small">3. Mata-Mata</h6>
+              <div class="row g-2 mb-4">
+                <div v-for="idx in (selectedCompetition?.nome === 'Sul-Americana' ? 6 : 4)" :key="'mata-'+idx" class="col-md-3 col-sm-6 col-6">
+                  <div class="print-upload-slot w-100 position-relative" :class="{ 'has-image': newSeason.printsLibMata[idx-1] }" @paste="(e) => handlePastePrintLib(e, 'mata', idx-1)" @dblclick="e => e.currentTarget.querySelector('input').click()" tabindex="0" style="height: 100px;">
+                    <input type="file" :id="'print-upload-lib-mata-'+idx" class="d-none" @change="(e) => handleFilePrintLib(e, 'mata', idx-1)" accept="image/*">
+                    <template v-if="newSeason.printsLibMata[idx-1]">
+                      <img :src="getCachedLogo(newSeason.printsLibMata[idx-1])" class="print-preview-img">
+                      <div class="print-slot-overlay">
+                         <button class="btn btn-danger btn-xs rounded-circle" @click.stop.prevent="newSeason.printsLibMata[idx-1] = ''"><i class="bi bi-trash"></i></button>
+                      </div>
+                    </template>
+                    <div v-else class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
+                      <span class="x-small fw-black text-center text-uppercase">{{ selectedCompetition?.nome === 'Sul-Americana' ? ['16 Avos A', '16 Avos B', 'Oitavas', 'Quartas', 'Semi', 'Final'][idx-1] : ['Oitavas', 'Quartas', 'Semi', 'Final'][idx-1] }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-4 bg-dark rounded-3 border border-info border-opacity-25 text-center mt-2 mb-4">
+                  <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+                    <span class="text-secondary fw-bold x-small text-uppercase">MOTOR IA:</span>
+                    <select v-model="aiEngine" class="form-select form-select-sm bg-black text-white border-secondary fw-bold" style="width: 140px; font-size: 0.7rem;">
+                      <option value="gemini">Gemini (Grátis)</option>
+                      <option value="chatgpt">ChatGPT (Pago)</option>
+                    </select>
+                  </div>
+                  <button 
+                    @click="extractLibertadoresIA"
+                    class="btn btn-info w-100 fw-black text-uppercase shadow-sm py-3"
+                    :disabled="ocrWorkspace.isProcessing"
+                  >
+                    <span v-if="ocrWorkspace.isProcessing"><span class="spinner-border spinner-border-sm me-2"></span> ANALISANDO {{ selectedCompetition?.nome }}... ISSO PODE DEMORAR!</span>
+                    <span v-else><i class="bi bi-robot me-2"></i> EXTRAIR DADOS POR FASE (IA)</span>
+                  </button>
+              </div>
+
+              <!-- Ajuste Manual idêntico ao da copa -->
+              <div class="mt-4 pt-4 border-top border-white border-opacity-5">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <h6 class="text-warning fw-black text-uppercase small mb-0"><i class="bi bi-pencil-square me-2"></i>Ajuste Manual de Posições</h6>
+                </div>
+                <div v-if="newSeason.participantes && newSeason.participantes.length > 0" class="table-responsive rounded-3 border border-secondary border-opacity-10">
+                  <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="bg-black bg-opacity-50">
+                      <tr>
+                        <th class="x-small fw-black text-secondary ps-3">TIME</th>
+                        <th class="x-small fw-black text-secondary">POSIÇÃO / FASE</th>
+                        <th class="x-small fw-black text-secondary text-center" style="width: 50px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(p, idx) in newSeason.participantes" :key="idx" class="border-bottom border-white border-opacity-5">
+                        <td class="ps-3 py-2">
+                          <div class="d-flex align-items-center gap-2">
+                            <NationalFlag v-if="activeTab === 'selecoes'" :countryName="p.nome" :size="20" class="rounded-circle shadow-sm" />
+                            <TeamShield :teamName="p.nome" :size="20" borderless :isNational="activeTab === 'selecoes'" />
+                            <span class="fw-bold small d-flex align-items-center gap-1">
+                                <input v-model="p.nome" 
+                                       class="form-control form-control-sm bg-transparent border-0 text-white fw-bold shadow-none p-0 m-0 w-auto" 
+                                       style="max-width: 180px; font-size: inherit;" />
+                                <i v-if="isUserTeam(p.nome, newSeason?.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9em;"></i>
+                            </span>
+                          </div>
+                        </td>
+                        <td>
                           <select v-model="p.colocacao" 
                                   class="form-select form-select-sm fw-black x-small cup-input-select" 
                                   :class="getPlacementColorClass(p.colocacao)"
@@ -902,7 +1132,7 @@
                   </table>
                 </div>
                 <div v-else class="text-center py-4 opacity-25 border border-secondary border-dashed rounded-3 small fw-bold">
-                  USE O TEXTAREA ACIMA OU ADICIONE TIMES PARA DEFINIR A CLASSIFICAÇÃO.
+                  NENHUM PARTICIPANTE LIDO AINDA. ADICIONE TIMES OU USE A IA.
                 </div>
               </div>
             </div>
@@ -1224,8 +1454,8 @@
 
           <div class="d-flex justify-content-end gap-3 mt-5 pb-5 border-top border-secondary border-opacity-25 pt-4">
             <button class="btn btn-lg btn-outline-secondary px-5 fw-bold" @click="viewMode = 'list'">CANCELAR</button>
-            <GameButton @click="saveNewSeason(true)">SALVAR E FECHAR</GameButton>
-            <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="saveNewSeason(false)">SALVAR</button>
+            <GameButton @click="handleSaveSeason(true)">SALVAR E FECHAR</GameButton>
+            <button class="btn btn-lg btn-warning px-5 fw-black shadow-lg" @click="handleSaveSeason(false)">SALVAR</button>
           </div>
 
         <!-- SEÇÃO 4: GALERIA DE PRINTS (DESATIVADA v8.20) -->
@@ -1553,7 +1783,8 @@ const teamSearchQuery = ref({
 const showTeamResults = ref({ 
   campeao: false, vice: false, clubeArtilheiro: false, participantes: false,
   semi1t1: false, semi1t2: false, semi2t1: false, semi2t2: false,
-  finalt1: false, finalt2: false, terceirot1: false, terceirot2: false
+  finalt1: false, finalt2: false, terceirot1: false, terceirot2: false,
+  sTime1: false, sTime2: false
 })
 
 const libTeamsCurrentSeason = ref([])
@@ -1612,13 +1843,43 @@ const newSeason = ref({
   promovidosPlayoff: [],
   tabela: '',
   printsUrls: ['', '', '', '', ''], // Novo: Suporte para até 5 prints
+  printsLibPre: [''],
+  printsLibGrupos: ['', '', '', '', '', '', '', ''],
+  printsLibMata: ['', '', '', ''],
   mundial: {
-    semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-    semi2: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-    final: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-    terceiro: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
-  }
+    semi1: { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+    semi2: { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+    final: { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+    terceiro: { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
+  },
+  supercopaMatch: { time1: '', time2: '', placar1: 0, placar2: 0, tipo: 'normal', pen1: 0, pen2: 0, origem1: '', origem2: '' }
 })
+
+const isSupercup = computed(() => {
+  if (!selectedCompetition.value) return false;
+  const t = selectedCompetition.value.tipo;
+  const n = selectedCompetition.value.nome;
+  return t === 'Supercopa' || (n && (n.includes('Recopa') || n.includes('Super')));
+});
+
+const handleSaveSeason = (close) => {
+  if (isSupercup.value && newSeason.value.supercopaMatch?.time1 && newSeason.value.supercopaMatch?.time2) {
+    const s = newSeason.value.supercopaMatch;
+    const p1 = parseInt(s.placar1) || 0;
+    const p2 = parseInt(s.placar2) || 0;
+    const pn1 = parseInt(s.pen1) || 0;
+    const pn2 = parseInt(s.pen2) || 0;
+    
+    if (p1 > p2 || (p1 === p2 && pn1 > pn2)) {
+      newSeason.value.campeao = s.time1;
+      newSeason.value.vice = s.time2;
+    } else if (p2 > p1 || (p2 === p1 && pn2 > pn1)) {
+      newSeason.value.campeao = s.time2;
+      newSeason.value.vice = s.time1;
+    }
+  }
+  saveNewSeason(close);
+}
 
 const aiEngine = ref(localStorage.getItem('aiEngine') || 'gemini')
 
@@ -1705,6 +1966,12 @@ const selectTeam = (type, teamName) => {
     addParticipant(teamName);
     teamSearchQuery.value.participantes = '';
     showTeamResults.value.participantes = false;
+  } else if (type === 'sTime1') {
+    newSeason.value.supercopaMatch.time1 = teamName;
+    showTeamResults.value.sTime1 = false;
+  } else if (type === 'sTime2') {
+    newSeason.value.supercopaMatch.time2 = teamName;
+    showTeamResults.value.sTime2 = false;
   } else if (type.startsWith('mundial_')) {
     const slot = type.replace('mundial_', ''); // ex: semi1t1
     const parts = slot.match(/([a-z]+)(\d)t(\d)/); // [match, phase, num, team]
@@ -2111,6 +2378,9 @@ const prepareEdit = async (s) => {
     newSeason.value = {
       ...clone,
       printsUrls: clone.printsUrls || ['', '', '', '', ''],
+      printsLibPre: clone.printsLibPre || [''],
+      printsLibGrupos: clone.printsLibGrupos || ['', '', '', '', '', '', '', '', '', '', '', ''],
+      printsLibMata: clone.printsLibMata || ['', '', '', '', '', ''],
       topScorers: clone.topScorers || (clone.artilheiro && clone.artilheiro.nome ? [clone.artilheiro] : []),
       assistencias: clone.assistencias || [],
       timeDaTemporada: clone.timeDaTemporada || [],
@@ -2122,11 +2392,12 @@ const prepareEdit = async (s) => {
       classificacaoCopaTxt: clone.classificacaoCopaTxt || '',
       promovidosPlayoff: clone.promovidosPlayoff || [],
       mundial: {
-        semi1: clone.mundial?.semi1 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-        semi2: clone.mundial?.semi2 || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-        final: clone.mundial?.final || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
-        terceiro: clone.mundial?.terceiro || { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
+        semi1: clone.mundial?.semi1 || { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        semi2: clone.mundial?.semi2 || { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        final: clone.mundial?.final || { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
+        terceiro: clone.mundial?.terceiro || { time1: '', origem1: '', time2: '', origem2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
       },
+      supercopaMatch: clone.supercopaMatch || { time1: '', time2: '', placar1: 0, placar2: 0, tipo: 'normal', pen1: 0, pen2: 0, origem1: '', origem2: '' },
       tipo: clone.tipo || (activeTab.value === 'selecoes' ? 'selecao' : 'clube')
     }
 
@@ -2188,6 +2459,169 @@ const handleFilePrint = (event, index) => {
 
 const removePrint = (index) => {
   newSeason.value.printsUrls[index] = '';
+}
+
+const handlePastePrintLib = async (event, type, index) => {
+  const items = event.clipboardData.items;
+  for (const item of items) {
+    if (item.type.indexOf("image") !== -1) {
+      const blob = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (type === 'pre') newSeason.value.printsLibPre[index] = e.target.result;
+        else if (type === 'grupos') newSeason.value.printsLibGrupos[index] = e.target.result;
+        else if (type === 'mata') newSeason.value.printsLibMata[index] = e.target.result;
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
+}
+
+const handleFilePrintLib = (event, type, index) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (type === 'pre') newSeason.value.printsLibPre[index] = e.target.result;
+        else if (type === 'grupos') newSeason.value.printsLibGrupos[index] = e.target.result;
+        else if (type === 'mata') newSeason.value.printsLibMata[index] = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+const extractLibertadoresIA = async () => {
+  const printsPre = newSeason.value.printsLibPre.filter(u => u && u.trim() !== '');
+  const printsGrupos = newSeason.value.printsLibGrupos.filter(u => u && u.trim() !== '');
+  const printsMata = newSeason.value.printsLibMata.filter(u => u && u.trim() !== '');
+  const isSula = selectedCompetition.value?.nome === 'Sul-Americana';
+  
+  if (printsPre.length === 0 && printsGrupos.length === 0 && printsMata.length === 0) {
+    alert("Cole ou anexe pelo menos um print das fases da competição primeiro!");
+    return;
+  }
+  
+  ocrWorkspace.value.isProcessing = true;
+  
+  try {
+    let geminiKey = localStorage.getItem('gemini_api_key') || 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw';
+    let openaiKey = localStorage.getItem('openai_api_key') || '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';
+    
+    const callAI = async (prompt, printsArray) => {
+       if (printsArray.length === 0) return null;
+       const imagePartsGemini = [];
+       const imagePartsOpenAI = [];
+       for (const p of printsArray) {
+         if (p && p.startsWith('data:image/')) {
+           const mimeType = p.split(';')[0].split(':')[1];
+           const base64Data = p.split(',')[1];
+           imagePartsGemini.push({ inline_data: { mime_type: mimeType, data: base64Data } });
+           imagePartsOpenAI.push({ type: "image_url", image_url: { url: p } });
+         }
+       }
+       if (imagePartsGemini.length === 0) return null;
+
+       let textResult = null;
+       if (aiEngine.value === 'gemini') {
+         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+           method: 'POST', headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ contents: [{ parts: [ { text: prompt }, ...imagePartsGemini ] }] })
+         });
+         const data = await res.json();
+         if (data.error) throw new Error("Falha no Gemini: " + data.error.message);
+         textResult = data.candidates[0].content.parts[0].text.trim();
+       } else if (aiEngine.value === 'chatgpt') {
+         const res = await fetch('https://api.openai.com/v1/chat/completions', {
+           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
+           body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: [{ type: "text", text: prompt }, ...imagePartsOpenAI] }], max_tokens: 1500 })
+         });
+         const data = await res.json();
+         if (data.error) throw new Error("Erro na OpenAI: " + data.error.message);
+         textResult = data.choices[0].message.content.trim();
+       }
+       if (!textResult) return null;
+       let jsonStr = textResult;
+       const jsonMatch = textResult.match(/```json\n([\s\S]*?)\n```/i);
+       if (jsonMatch) jsonStr = jsonMatch[1];
+       else {
+         const curlyMatch = textResult.match(/\{[\s\S]*\}/) || textResult.match(/\[[\s\S]*\]/);
+         if (curlyMatch) jsonStr = curlyMatch[0];
+       }
+       return JSON.parse(jsonStr.replace(/```json/gi, '').replace(/```/g, '').trim());
+    }
+
+    const novosParticipantes = [];
+    let campeaoFinal = "";
+    let viceFinal = "";
+
+    // 1. Pré-Copa / Pré-Libertadores
+    if (printsPre.length > 0) {
+       const promptPre = `Esta imagem contém a eliminatória prévia. Identifique os PERDEDORES de cada confronto. Retorne APENAS um array JSON simples de strings contendo apenas os times eliminados nesta fase. Exemplo: ["Time Perdedor 1", "Time Perdedor 2"]`;
+       const resultPre = await callAI(promptPre, printsPre);
+       if (Array.isArray(resultPre)) {
+          const prePlacement = selectedCompetition.value?.nome === 'Champions League' ? 'Pré-Champions' : (selectedCompetition.value?.nome === 'Libertadores' ? 'Pré-Libertadores' : 'Pré-Copa');
+          resultPre.forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: prePlacement, clubeId: Date.now()+Math.random(), escudo: ''}); });
+       }
+    }
+
+    // 2. Fase de Grupos
+    if (printsGrupos.length > 0) {
+       const promptGrupos = `Esta imagem contém tabelas de Fase de Grupos. Identifique APENAS os times que ficaram em 3º e 4º lugar de cada grupo (ou seja, os eliminados do torneio principal que não avançam para Oitavas nem para 16 Avos). Retorne APENAS um array JSON de strings com os nomes dos eliminados na Fase de Grupos. Exemplo: ["Time C", "Time D"]`;
+       const resultGrupos = await callAI(promptGrupos, printsGrupos);
+       if (Array.isArray(resultGrupos)) {
+          resultGrupos.forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: 'Fase de Grupos', clubeId: Date.now()+Math.random(), escudo: ''}); });
+       }
+    }
+
+    // 3. Mata-Mata
+    if (printsMata.length > 0) {
+       const promptMata = isSula 
+           ? `Esta imagem contém o chaveamento de Mata-Mata final (Dezesseis Avos, Oitavas, Quartas, Semifinal e Final). Identifique o Campeão, o Vice-Campeão e os eliminados de CADA fase. Retorne APENAS um JSON válido neste formato exato:
+{
+  "Campeao": "Nome do Campeão",
+  "Vice": "Nome do Vice",
+  "Semifinal": ["Perdedor Semi 1", "Perdedor Semi 2"],
+  "Quartas": ["Perdedor 1", "Perdedor 2", "Perdedor 3", "Perdedor 4"],
+  "Oitavas": ["Perdedor 1", "Perdedor 2", "Perdedor 3", "Perdedor 4", "Perdedor 5", "Perdedor 6", "Perdedor 7", "Perdedor 8"],
+  "DezesseisAvos": ["Perdedor 1", "Perdedor 2", "Perdedor 3", "Perdedor 4", "Perdedor 5", "Perdedor 6", "Perdedor 7", "Perdedor 8", "Perdedor 9", "Perdedor 10", "Perdedor 11", "Perdedor 12", "Perdedor 13", "Perdedor 14", "Perdedor 15", "Perdedor 16"]
+}` 
+           : `Esta imagem contém o chaveamento de Mata-Mata final (Oitavas, Quartas, Semifinal e Final). Identifique o Campeão, o Vice-Campeão e os eliminados de CADA fase (Oitavas, Quartas e Semifinal). Retorne APENAS um JSON válido neste formato exato:
+{
+  "Campeao": "Nome do Campeão",
+  "Vice": "Nome do Vice",
+  "Semifinal": ["Perdedor Semi 1", "Perdedor Semi 2"],
+  "Quartas": ["Perdedor 1", "Perdedor 2", "Perdedor 3", "Perdedor 4"],
+  "Oitavas": ["Perdedor 1", "Perdedor 2", "Perdedor 3", "Perdedor 4", "Perdedor 5", "Perdedor 6", "Perdedor 7", "Perdedor 8"]
+}`;
+       const resultMata = await callAI(promptMata, printsMata);
+       if (resultMata) {
+          campeaoFinal = resultMata['Campeao'] || "";
+          viceFinal = resultMata['Vice'] || "";
+          if (campeaoFinal) novosParticipantes.push({ nome: campeaoFinal, colocacao: 'Campeão', clubeId: Date.now()+Math.random(), escudo: ''});
+          if (viceFinal) novosParticipantes.push({ nome: viceFinal, colocacao: 'Vice', clubeId: Date.now()+Math.random(), escudo: ''});
+          
+          if (Array.isArray(resultMata['Semifinal'])) resultMata['Semifinal'].forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: 'Semifinal', clubeId: Date.now()+Math.random(), escudo: ''}); });
+          if (Array.isArray(resultMata['Quartas'])) resultMata['Quartas'].forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: 'Quartas', clubeId: Date.now()+Math.random(), escudo: ''}); });
+          if (Array.isArray(resultMata['Oitavas'])) resultMata['Oitavas'].forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: 'Oitavas', clubeId: Date.now()+Math.random(), escudo: ''}); });
+          if (isSula && Array.isArray(resultMata['DezesseisAvos'])) resultMata['DezesseisAvos'].forEach(t => { if(t) novosParticipantes.push({ nome: String(t).trim(), colocacao: '16 Avos', clubeId: Date.now()+Math.random(), escudo: ''}); });
+       }
+    }
+
+    if (novosParticipantes.length > 0) {
+      newSeason.value.participantes = novosParticipantes;
+      if (campeaoFinal) newSeason.value.campeao = campeaoFinal;
+      if (viceFinal) newSeason.value.vice = viceFinal;
+      alert(`Sucesso! A IA processou as fases da competição de forma segmentada.`);
+    } else {
+      alert("A IA analisou os prints mas não encontrou resultados reconhecíveis ou ocorreu um erro na interpretação das respostas.");
+    }
+
+  } catch (error) {
+    console.error("Erro no processamento da Libertadores:", error);
+    alert("Erro ao extrair fases: " + error.message);
+  } finally {
+    ocrWorkspace.value.isProcessing = false;
+  }
 }
 
 const extractCupBracketIA = async () => {
@@ -2724,6 +3158,9 @@ const openForm = () => {
     tabela: '',
     classificacaoCopaTxt: '',
     printsUrls: ['', '', '', '', ''], // Inicializado para garantir visibilidade da galeria
+    printsLibPre: [''],
+    printsLibGrupos: ['', '', '', '', '', '', '', ''],
+    printsLibMata: ['', '', '', ''],
     promovidosPlayoff: [],
     mundial: {
       semi1: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
@@ -2731,6 +3168,7 @@ const openForm = () => {
       final: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 },
       terceiro: { time1: '', time2: '', placar1: 0, placar2: 0, pen1: 0, pen2: 0 }
     },
+    supercopaMatch: { time1: '', time2: '', placar1: 0, placar2: 0, tipo: 'normal', pen1: 0, pen2: 0, origem1: '', origem2: '' },
     tipo: activeTab.value === 'selecoes' ? 'selecao' : 'clube'
   }
   formTab.value = 'geral'
@@ -3084,10 +3522,14 @@ watch([() => newSeason.value.mundial.semi1, () => newSeason.value.mundial.semi2]
   if (s1.time1 && s1.time2) {
     if (s1.placar1 > s1.placar2 || (s1.placar1 === s1.placar2 && s1.pen1 > s1.pen2)) {
       newSeason.value.mundial.final.time1 = s1.time1
+      newSeason.value.mundial.final.origem1 = s1.origem1
       newSeason.value.mundial.terceiro.time1 = s1.time2
+      newSeason.value.mundial.terceiro.origem1 = s1.origem2
     } else if (s1.placar2 > s1.placar1 || (s1.placar2 === s1.placar1 && s1.pen2 > s1.pen1)) {
       newSeason.value.mundial.final.time1 = s1.time2
+      newSeason.value.mundial.final.origem1 = s1.origem2
       newSeason.value.mundial.terceiro.time1 = s1.time1
+      newSeason.value.mundial.terceiro.origem1 = s1.origem1
     }
   }
 
@@ -3095,13 +3537,23 @@ watch([() => newSeason.value.mundial.semi1, () => newSeason.value.mundial.semi2]
   if (s2.time1 && s2.time2) {
     if (s2.placar1 > s2.placar2 || (s2.placar1 === s2.placar2 && s2.pen1 > s2.pen2)) {
       newSeason.value.mundial.final.time2 = s2.time1
+      newSeason.value.mundial.final.origem2 = s2.origem1
       newSeason.value.mundial.terceiro.time2 = s2.time2
+      newSeason.value.mundial.terceiro.origem2 = s2.origem2
     } else if (s2.placar2 > s2.placar1 || (s2.placar2 === s2.placar1 && s2.pen2 > s2.pen1)) {
       newSeason.value.mundial.final.time2 = s2.time2
+      newSeason.value.mundial.final.origem2 = s2.origem2
       newSeason.value.mundial.terceiro.time2 = s2.time1
+      newSeason.value.mundial.terceiro.origem2 = s2.origem1
     }
   }
 }, { deep: true })
+
+const updateMundialField = (matchId, field, value) => {
+  if (newSeason.value?.mundial && newSeason.value.mundial[matchId]) {
+    newSeason.value.mundial[matchId][field] = value
+  }
+}
 
 const importFromIMLPES = () => {
   const jsonInput = prompt("Cole aqui o conteúdo do arquivo 'latest_ml_save.json' gerado pelo iMLPES:");

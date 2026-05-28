@@ -118,7 +118,26 @@ import { seasonStore } from '../services/season.store'
 import { careerStore } from '../services/career.store'
 import { getTrofeuPath, normalizeString } from '../services/utils'
 import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
+import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { seasonService } from '../services/season.service'
+
+const getCompetitionInfo = (name) => {
+    if (!name) return null
+    const lowName = normalizeString(name)
+    const allComps = [
+        ...ALL_COMPETITIONS_DATA.flatMap(c => c.paises.flatMap(p => p.competicoes || [])),
+        ...ALL_COMPETITIONS_DATA.flatMap(c => c.continentais || []),
+        ...INTERNATIONAL_DATA
+    ]
+    return allComps.find(c => {
+        const cNome = normalizeString(c.nome)
+        const isTargetSuper = lowName.includes('super');
+        const isCompSuper = cNome.includes('super');
+        if (isTargetSuper !== isCompSuper) return false;
+        return cNome === lowName || lowName.includes(cNome)
+    })
+}
+
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import NationalFlag from '../components/NationalFlag.vue'
 import TeamShield from '../components/TeamShield.vue'
@@ -151,12 +170,28 @@ const handleImgError = (e) => {
  * Agrupa todos os campeões de todas as temporadas do Universo que são relativas a copas e ligas deste país.
  */
 const processCountryData = (allSeasons) => {
-    // 1. Extrair quais competições pertencem ao país
+    // 1. Extrair quais competições pertencem ao país (ou continente)
+    let validComps = []
+    
+    // Testa se é um País normal
     const countryObj = ALL_COMPETITIONS_DATA
         .flatMap(cont => cont.paises || [])
         .find(p => normalizeString(p.nome) === normalizeString(countryName.value))
 
-    const validComps = countryObj ? (countryObj.competicoes || []) : []
+    if (countryObj) {
+        validComps = countryObj.competicoes || []
+    } else {
+        // Se for um Continente/Federação (FIFA, CONMEBOL, UEFA...)
+        const fedNorm = normalizeString(countryName.value)
+        const continentObj = ALL_COMPETITIONS_DATA.find(cont => normalizeString(cont.nome) === fedNorm)
+        if (continentObj && continentObj.continentais) {
+            validComps = [...continentObj.continentais]
+        }
+        validComps = [
+            ...validComps,
+            ...INTERNATIONAL_DATA.filter(c => normalizeString(c.continente) === fedNorm || fedNorm === 'mundo' || fedNorm === 'internacional' || (fedNorm === 'fifa' && normalizeString(c.continente) === 'fifa'))
+        ]
+    }
 
     // 2. Criar mapinha para agrupar -> { "Brasileirão Série A": { compObj, champions: { "Cruzeiro": [2027, 2026] } } }
     const groupedData = {}
@@ -205,8 +240,9 @@ const processCountryData = (allSeasons) => {
             // Adiciona ao groupedData dinamicamente se não existir (para competições customizadas)
             let officialCompKey = Object.keys(groupedData).find(key => normalizeString(key) === normalizeString(compName))
             if (!officialCompKey) {
+                const fetchedInfo = getCompetitionInfo(compName)
                 groupedData[compName] = {
-                    compInfo: { nome: compName, tipo: season.tipo || 'Copa' },
+                    compInfo: fetchedInfo ? fetchedInfo : { nome: compName, tipo: season.tipo || 'Copa' },
                     championsMap: {}
                 }
                 officialCompKey = compName

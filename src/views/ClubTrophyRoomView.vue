@@ -207,6 +207,7 @@ const getTrofeuPathByCompName = (name) => {
     if (!name) return null
     const lowName = normalizeString(name)
     
+    // Fallbacks manuais Hardcoded
     if (lowName.includes('brasileirao') && lowName.includes('serie a')) return getTrofeuPath('trofeu-brasileirao-serie-a')
     if (lowName.includes('brasileirao') && lowName.includes('serie b')) return getTrofeuPath('trofeu-brasileirao-serie-b')
     if (lowName.includes('brasileirao')) return getTrofeuPath('trofeu-brasileirao-serie-a')
@@ -214,11 +215,13 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('supercopa do brasil')) return getTrofeuPath('trofeu-supercopa-do-brasil')
     if (lowName.includes('libertadores') && !lowName.includes('recopa')) return getTrofeuPath('trofeu-libertadores')
     if (lowName.includes('recopa')) return getTrofeuPath('trofeu-recopa-sulamericana')
-    if (lowName.includes('sul-americana') || lowName.includes('sulamericana')) return getTrofeuPath('trofeu-sulamericana')
+    if (lowName.includes('sul americana') || lowName.includes('sulamericana')) return getTrofeuPath('trofeu-sulamericana')
+    if (lowName.includes('champions league') || lowName.includes('campeoes')) return getTrofeuPath('trofeu-champions-league')
+    if (lowName.includes('concacaf')) return getTrofeuPath('trofeu-concacaf-champions-league')
     if (lowName.includes('colombia')) return getTrofeuPath('trofeu-liga-colombia')
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
 
-    return `logos/competitions/${name.replace(/\s+/g, '-')}.png`
+    return `/logos/competitions/${name.replace(/\s+/g, '-')}.png`
 }
 
 onMounted(loadData)

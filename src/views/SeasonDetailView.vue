@@ -119,6 +119,85 @@
     </div>
 
 
+    <!-- CONFRONTO SUPERCOPA (Componente Novo) -->
+    <div v-if="season.supercopaMatch && season.supercopaMatch.time1 && season.supercopaMatch.time2" class="row g-2 mb-4 mt-2">
+      <div class="col-12">
+        <GamePanel customClass="p-0 overflow-hidden border border-info border-opacity-50 shadow-lg position-relative" style="min-height: 250px;">
+           <div class="position-absolute w-100 h-100" style="background: radial-gradient(circle at center, rgba(13,202,240,0.1), transparent); z-index: 0;"></div>
+           <div v-for="n in 20" :key="'c'+n" class="confetti-p" :style="`left: ${Math.random()*100}%; animation-delay: ${Math.random()*2}s; background-color: ${['#ffd700', '#0dcaf0', '#ffffff'][Math.floor(Math.random()*3)]}`"></div>
+           
+           <div class="position-relative z-1 d-flex flex-column align-items-center justify-content-center h-100 p-4">
+             <div class="d-flex flex-column align-items-center mb-4">
+               <img v-if="competitionInfo?.trofeu" :src="getTrofeuPath(competitionInfo.trofeu)" style="height: 150px; object-fit: contain; filter: drop-shadow(0 15px 20px rgba(0,0,0,0.6)); margin-bottom: 10px; z-index: 2;" @error="e => e.target.style.display='none'">
+               <h4 class="text-info fw-black text-uppercase ls-2 m-0 d-flex align-items-center gap-2 position-relative" style="z-index: 3; text-shadow: 0 4px 10px rgba(0,0,0,0.8);">
+                 <i class="bi bi-trophy-fill text-warning"></i>
+                 CONFRONTO DECISIVO
+                 <i class="bi bi-trophy-fill text-warning"></i>
+               </h4>
+             </div>
+             
+             <div class="d-flex align-items-center justify-content-center w-100 gap-5">
+                <!-- TIME 1 -->
+                <div class="d-flex flex-column align-items-center position-relative" style="width: 250px;">
+                  <img v-if="getOrigemPatch(season.supercopaMatch.origem1)" :src="getCachedLogo(getOrigemPatch(season.supercopaMatch.origem1))" 
+                       class="position-absolute" style="top: -5px; left: -90px; height: 120px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5)); z-index: 1; transition: all 0.3s;" @error="e => e.target.style.display='none'">
+                  <TeamShield :teamName="season.supercopaMatch.time1" :size="100" :season="season.ano" />
+                  <h3 class="fw-black text-uppercase mt-3 mb-0 text-center">{{ season.supercopaMatch.time1 }}</h3>
+                  
+                  <div v-if="getClubInfo(season.supercopaMatch.time1)" class="d-flex align-items-center gap-2 mt-2 opacity-75">
+                    <NationalFlag :countryName="getClubInfo(season.supercopaMatch.time1).pais" :forceUrl="getClubInfo(season.supercopaMatch.time1).bandeira" :size="16" />
+                    <span class="x-small fw-bold text-uppercase">{{ getClubInfo(season.supercopaMatch.time1).pais }}</span>
+                  </div>
+
+                  <div v-if="season.supercopaMatch.origem1" class="d-flex align-items-center gap-2 mt-2">
+                     <img v-if="getOrigemLogo(season.supercopaMatch.origem1)" :src="getCachedLogo(getOrigemLogo(season.supercopaMatch.origem1))" style="height: 20px;" @error="e => e.target.style.display='none'">
+                     <div class="badge bg-dark border border-secondary text-info px-3 py-1 text-uppercase">{{ season.supercopaMatch.origem1 }}</div>
+                  </div>
+                </div>
+
+                <!-- PLACAR -->
+                <div class="d-flex flex-column align-items-center justify-content-center">
+                  <div class="d-flex align-items-center gap-3 mt-4">
+                    <div class="fs-1 fw-black text-white bg-black bg-opacity-50 rounded px-4 py-2 border border-secondary">{{ season.supercopaMatch.placar1 }}</div>
+                    
+                    <div class="d-flex flex-column align-items-center" v-if="season.supercopaMatch.tipo !== 'normal'">
+                       <div class="text-info fw-black mb-1 ls-1 small text-uppercase">{{ season.supercopaMatch.tipo === 'prorrogacao' ? 'PR' : 'PN' }}</div>
+                       <div v-if="season.supercopaMatch.tipo === 'penaltis'" class="d-flex align-items-center gap-2">
+                         <span class="fw-black text-warning fs-4">{{ season.supercopaMatch.pen1 }}</span>
+                         <span class="text-secondary">-</span>
+                         <span class="fw-black text-warning fs-4">{{ season.supercopaMatch.pen2 }}</span>
+                       </div>
+                       <div v-else class="text-secondary fs-4">-</div>
+                    </div>
+                    <div v-else class="text-secondary fs-4 fw-black px-2">X</div>
+
+                    <div class="fs-1 fw-black text-white bg-black bg-opacity-50 rounded px-4 py-2 border border-secondary">{{ season.supercopaMatch.placar2 }}</div>
+                  </div>
+                </div>
+
+                <!-- TIME 2 -->
+                <div class="d-flex flex-column align-items-center position-relative" style="width: 250px;">
+                  <img v-if="getOrigemPatch(season.supercopaMatch.origem2)" :src="getCachedLogo(getOrigemPatch(season.supercopaMatch.origem2))" 
+                       class="position-absolute" style="top: -5px; right: -90px; height: 120px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5)); z-index: 1; transition: all 0.3s;" @error="e => e.target.style.display='none'">
+                  <TeamShield :teamName="season.supercopaMatch.time2" :size="100" :season="season.ano" />
+                  <h3 class="fw-black text-uppercase mt-3 mb-0 text-center">{{ season.supercopaMatch.time2 }}</h3>
+                  
+                  <div v-if="getClubInfo(season.supercopaMatch.time2)" class="d-flex align-items-center gap-2 mt-2 opacity-75">
+                    <NationalFlag :countryName="getClubInfo(season.supercopaMatch.time2).pais" :forceUrl="getClubInfo(season.supercopaMatch.time2).bandeira" :size="16" />
+                    <span class="x-small fw-bold text-uppercase">{{ getClubInfo(season.supercopaMatch.time2).pais }}</span>
+                  </div>
+
+                  <div v-if="season.supercopaMatch.origem2" class="d-flex align-items-center gap-2 mt-2">
+                     <img v-if="getOrigemLogo(season.supercopaMatch.origem2)" :src="getCachedLogo(getOrigemLogo(season.supercopaMatch.origem2))" style="height: 20px;" @error="e => e.target.style.display='none'">
+                     <div class="badge bg-dark border border-secondary text-info px-3 py-1 text-uppercase">{{ season.supercopaMatch.origem2 }}</div>
+                  </div>
+                </div>
+             </div>
+           </div>
+        </GamePanel>
+      </div>
+    </div>
+
     <!-- CHAVEAMENTO MUNDIAL DE CLUBES (Componente Novo) -->
     <div v-if="competitionInfo?.modoRegistro === 'mundial' || season.competitionName === 'Mundial de Clubes'" class="row g-2 mb-4">
       <div class="col-12">
@@ -140,20 +219,21 @@
     </div>
 
     <!-- GALERIA DE PRINTS (COPAS / INTERNACIONAIS) -->
-    <div v-if="season.printsUrls && season.printsUrls.filter(u => u).length > 0" class="row g-2 mb-4">
+    <div v-if="allSeasonPrints.length > 0" class="row g-2 mb-4">
       <div class="col-12">
         <GamePanel customClass="p-3 border border-info border-opacity-10 overflow-hidden">
           <h5 class="m-0 fw-black text-info text-uppercase ls-1 mb-3">
             <i class="bi bi-images me-2"></i>GALERIA DE PRINTS
           </h5>
           
-          <div class="prints-gallery-container" :class="'prints-count-' + season.printsUrls.filter(u => u).length">
-            <div v-for="(url, idx) in season.printsUrls.filter(u => u)" 
+          <div class="d-flex flex-wrap gap-2">
+            <div v-for="(url, idx) in allSeasonPrints" 
                  :key="idx" 
-                 class="print-item-wrapper"
+                 class="print-item-wrapper shadow-sm border border-secondary border-opacity-25"
+                 style="width: 180px; height: 110px; flex: 0 0 auto; border-radius: 8px; overflow: hidden;"
                  @click="openPhotoZoom(url)"
             >
-              <img :src="getCachedLogo(url)" class="print-img-detail" />
+              <img :src="getCachedLogo(url)" class="w-100 h-100" style="object-fit: cover;" />
               <div class="print-zoom-hint">
                 <i class="bi bi-zoom-in"></i>
               </div>
@@ -321,7 +401,8 @@
 
                   <div class="stat-slant-cup select-col" :class="getPlacementColorClass(p.colocacao)">
                     <div class="slant-content">
-                      <select v-model="p.colocacao" 
+                      <select :value="p.colocacao ? p.colocacao.toUpperCase() : null"
+                              @change="p.colocacao = $event.target.value"
                               class="form-select cup-input-select fw-black"
                               :class="getPlacementColorClass(p.colocacao)">
                          <option :value="null" class="bg-dark text-white">SELECIONAR</option>
@@ -765,12 +846,39 @@ const openPhotoZoom = (url) => {
   showPhotoZoom.value = true
 }
 
+const allSeasonPrints = computed(() => {
+  if (!season.value) return []
+  let prints = [...(season.value.printsUrls || [])]
+  if (season.value.printsLibPre) prints = [...prints, ...season.value.printsLibPre]
+  if (season.value.printsLibGrupos) prints = [...prints, ...season.value.printsLibGrupos]
+  if (season.value.printsLibMata) prints = [...prints, ...season.value.printsLibMata]
+  return prints.filter(u => u && String(u).trim() !== '')
+})
+
 // ==== LÓGICA DO ACR REMOVIDA (MOVIDA PARA UNIVERSOVIEW) ====
 
 const getCachedLogo = (url) => {
   if (!url) return null
   if (url.startsWith('data:')) return url
   return cachedLogos.value[url] || url
+}
+
+const getOrigemLogo = (origem) => {
+  if (!origem) return ''
+  const o = origem.toLowerCase()
+  if (o.includes('libertadores')) return 'logos/competitions/copa-libertadores.png'
+  if (o.includes('sul-americana')) return 'logos/competitions/copa-sulamericana.png'
+  if (o.includes('champions league')) return 'logos/competitions/champions-league.png'
+  if (o.includes('europa league')) return 'logos/competitions/europa-league.png'
+  return ''
+}
+
+const getOrigemPatch = (origem) => {
+  if (!origem) return ''
+  const o = origem.toLowerCase()
+  if (o.includes('libertadores')) return 'logos/competitions/patch_liberta.png'
+  if (o.includes('sul-americana')) return 'logos/competitions/patch_sula.png'
+  return ''
 }
 
 const showMundialModal = ref(false)
@@ -827,34 +935,50 @@ const computeMundialResults = () => {
   // Semi 1
   if (m.semi1.placar1 > m.semi1.placar2) {
     m.final.time1 = m.semi1.time1;
+    m.final.origem1 = m.semi1.origem1;
     m.terceiro.time1 = m.semi1.time2;
+    m.terceiro.origem1 = m.semi1.origem2;
   } else if (m.semi1.placar2 > m.semi1.placar1) {
     m.final.time1 = m.semi1.time2;
+    m.final.origem1 = m.semi1.origem2;
     m.terceiro.time1 = m.semi1.time1;
+    m.terceiro.origem1 = m.semi1.origem1;
   } else if (m.semi1.pen1 || m.semi1.pen2) {
     if (m.semi1.pen1 > m.semi1.pen2) {
       m.final.time1 = m.semi1.time1;
+      m.final.origem1 = m.semi1.origem1;
       m.terceiro.time1 = m.semi1.time2;
+      m.terceiro.origem1 = m.semi1.origem2;
     } else {
       m.final.time1 = m.semi1.time2;
+      m.final.origem1 = m.semi1.origem2;
       m.terceiro.time1 = m.semi1.time1;
+      m.terceiro.origem1 = m.semi1.origem1;
     }
   }
 
   // Semi 2
   if (m.semi2.placar1 > m.semi2.placar2) {
     m.final.time2 = m.semi2.time1;
+    m.final.origem2 = m.semi2.origem1;
     m.terceiro.time2 = m.semi2.time2;
+    m.terceiro.origem2 = m.semi2.origem2;
   } else if (m.semi2.placar2 > m.semi2.placar1) {
     m.final.time2 = m.semi2.time2;
+    m.final.origem2 = m.semi2.origem2;
     m.terceiro.time2 = m.semi2.time1;
+    m.terceiro.origem2 = m.semi2.origem1;
   } else if (m.semi2.pen1 || m.semi2.pen2) {
     if (m.semi2.pen1 > m.semi2.pen2) {
       m.final.time2 = m.semi2.time1;
+      m.final.origem2 = m.semi2.origem1;
       m.terceiro.time2 = m.semi2.time2;
+      m.terceiro.origem2 = m.semi2.origem2;
     } else {
       m.final.time2 = m.semi2.time2;
+      m.final.origem2 = m.semi2.origem2;
       m.terceiro.time2 = m.semi2.time1;
+      m.terceiro.origem2 = m.semi2.origem1;
     }
   }
 

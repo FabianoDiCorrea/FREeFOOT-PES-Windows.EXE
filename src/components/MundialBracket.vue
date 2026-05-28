@@ -6,53 +6,40 @@
         <div class="bracket-node">
           <div class="node-header">SEMIFINAL 1</div>
           <div class="node-match" :class="{ 'editable-match': isEditable }">
-            <TeamSlot :team="mundial.semi1.time1" :placar="mundial.semi1.placar1" :pen="mundial.semi1.pen1" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi1', 'time1', val)" @update:placar="val => $emit('updateMatch', 'semi1', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'semi1', 'pen1', val)" position="top" />
+            <TeamSlot :team="mundial.semi1.time1" :origem="mundial.semi1.origem1" :placar="mundial.semi1.placar1" :other-score="mundial.semi1.placar2" :pen="mundial.semi1.pen1" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi1', 'time1', val)" @update:origem="val => $emit('updateMatch', 'semi1', 'origem1', val)" @update:placar="val => $emit('updateMatch', 'semi1', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'semi1', 'pen1', val)" position="top" />
             <div class="match-divider">X</div>
-            <TeamSlot :team="mundial.semi1.time2" :placar="mundial.semi1.placar2" :pen="mundial.semi1.pen2" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi1', 'time2', val)" @update:placar="val => $emit('updateMatch', 'semi1', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'semi1', 'pen2', val)" position="bottom" />
+            <TeamSlot :team="mundial.semi1.time2" :origem="mundial.semi1.origem2" :placar="mundial.semi1.placar2" :other-score="mundial.semi1.placar1" :pen="mundial.semi1.pen2" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi1', 'time2', val)" @update:origem="val => $emit('updateMatch', 'semi1', 'origem2', val)" @update:placar="val => $emit('updateMatch', 'semi1', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'semi1', 'pen2', val)" position="bottom" />
           </div>
         </div>
 
-        <div class="bracket-node">
+        <div class="bracket-node mt-2">
           <div class="node-header">SEMIFINAL 2</div>
           <div class="node-match" :class="{ 'editable-match': isEditable }">
-            <TeamSlot :team="mundial.semi2.time1" :placar="mundial.semi2.placar1" :pen="mundial.semi2.pen1" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi2', 'time1', val)" @update:placar="val => $emit('updateMatch', 'semi2', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'semi2', 'pen1', val)" position="top" />
+            <TeamSlot :team="mundial.semi2.time1" :origem="mundial.semi2.origem1" :placar="mundial.semi2.placar1" :other-score="mundial.semi2.placar2" :pen="mundial.semi2.pen1" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi2', 'time1', val)" @update:origem="val => $emit('updateMatch', 'semi2', 'origem1', val)" @update:placar="val => $emit('updateMatch', 'semi2', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'semi2', 'pen1', val)" position="top" />
             <div class="match-divider">X</div>
-            <TeamSlot :team="mundial.semi2.time2" :placar="mundial.semi2.placar2" :pen="mundial.semi2.pen2" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi2', 'time2', val)" @update:placar="val => $emit('updateMatch', 'semi2', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'semi2', 'pen2', val)" position="bottom" />
+            <TeamSlot :team="mundial.semi2.time2" :origem="mundial.semi2.origem2" :placar="mundial.semi2.placar2" :other-score="mundial.semi2.placar1" :pen="mundial.semi2.pen2" :is-editable="isEditable" @update:team="val => $emit('updateMatch', 'semi2', 'time2', val)" @update:origem="val => $emit('updateMatch', 'semi2', 'origem2', val)" @update:placar="val => $emit('updateMatch', 'semi2', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'semi2', 'pen2', val)" position="bottom" />
           </div>
         </div>
-      </div>
-
-      <!-- CONECTORES (LINHAS) -->
-      <div class="bracket-connectors">
-        <div class="connector-group">
-            <div class="line-horizontal"></div>
-            <div class="line-vertical"></div>
-        </div>
-        <div class="connector-group">
-            <div class="line-horizontal"></div>
-            <div class="line-vertical"></div>
-        </div>
-        <div class="line-final-horizontal"></div>
       </div>
 
       <!-- FINAL -->
-      <div class="bracket-column centered">
-        <div class="bracket-node final-node">
-          <div class="node-header final"><i class="bi bi-trophy-fill me-2"></i>GRANDE FINAL</div>
-          <div class="node-match large" :class="{ 'editable-match': isEditable }">
-             <TeamSlot :team="mundial.final.time1" :placar="mundial.final.placar1" :pen="mundial.final.pen1" :is-editable="isEditable" :large="true" @update:team="val => $emit('updateMatch', 'final', 'time1', val)" @update:placar="val => $emit('updateMatch', 'final', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'final', 'pen1', val)" position="top" />
-             <div class="match-divider-large">VS</div>
-             <TeamSlot :team="mundial.final.time2" :placar="mundial.final.placar2" :pen="mundial.final.pen2" :is-editable="isEditable" :large="true" @update:team="val => $emit('updateMatch', 'final', 'time2', val)" @update:placar="val => $emit('updateMatch', 'final', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'final', 'pen2', val)" position="bottom" />
+      <div class="bracket-column centered" style="padding-left: 2rem; flex: 0 1 850px;">
+        <div class="bracket-node final-node mx-auto" style="max-width: 850px; width: 100%;">
+          <div class="node-header final-title">FINAL</div>
+          <div class="node-match large d-flex flex-row flex-nowrap align-items-center justify-content-center gap-3 p-3" :class="{ 'editable-match': isEditable }">
+             <TeamSlot :team="mundial.final.time1" :origem="mundial.final.origem1" :placar="mundial.final.placar1" :other-score="mundial.final.placar2" :pen="mundial.final.pen1" :is-editable="isEditable" :is-final-or-third="true" :large="true" @update:team="val => $emit('updateMatch', 'final', 'time1', val)" @update:placar="val => $emit('updateMatch', 'final', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'final', 'pen1', val)" position="left" style="flex: 1;" />
+             <div class="match-divider-large text-warning fw-black" style="min-width: 20px; text-align: center;">-</div>
+             <TeamSlot :team="mundial.final.time2" :origem="mundial.final.origem2" :placar="mundial.final.placar2" :other-score="mundial.final.placar1" :pen="mundial.final.pen2" :is-editable="isEditable" :is-final-or-third="true" :large="true" @update:team="val => $emit('updateMatch', 'final', 'time2', val)" @update:placar="val => $emit('updateMatch', 'final', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'final', 'pen2', val)" position="right" style="flex: 1;" />
           </div>
         </div>
 
         <!-- 3º LUGAR -->
-        <div class="bracket-node third-node mt-4">
-          <div class="node-header small">DISPUTA 3º LUGAR</div>
-          <div class="node-match small-match" :class="{ 'editable-match': isEditable }">
-             <TeamSlot :team="mundial.terceiro.time1" :placar="mundial.terceiro.placar1" :pen="mundial.terceiro.pen1" :is-editable="isEditable" :compact="true" @update:team="val => $emit('updateMatch', 'terceiro', 'time1', val)" @update:placar="val => $emit('updateMatch', 'terceiro', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'terceiro', 'pen1', val)" position="left" />
-             <div class="match-divider-small">-</div>
-             <TeamSlot :team="mundial.terceiro.time2" :placar="mundial.terceiro.placar2" :pen="mundial.terceiro.pen2" :is-editable="isEditable" :compact="true" @update:team="val => $emit('updateMatch', 'terceiro', 'time2', val)" @update:placar="val => $emit('updateMatch', 'terceiro', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'terceiro', 'pen2', val)" position="right" />
+        <div class="bracket-node third-node mt-4 mx-auto" style="max-width: 850px; width: 100%;">
+          <div class="node-header small third-title">DISPUTA DO 3º LUGAR</div>
+          <div class="node-match small-match d-flex flex-row flex-nowrap align-items-center justify-content-center gap-3 p-3" :class="{ 'editable-match': isEditable }">
+             <TeamSlot :team="mundial.terceiro.time1" :origem="mundial.terceiro.origem1" :placar="mundial.terceiro.placar1" :other-score="mundial.terceiro.placar2" :pen="mundial.terceiro.pen1" :is-editable="isEditable" :is-final-or-third="true" @update:team="val => $emit('updateMatch', 'terceiro', 'time1', val)" @update:placar="val => $emit('updateMatch', 'terceiro', 'placar1', val)" @update:pen="val => $emit('updateMatch', 'terceiro', 'pen1', val)" position="left" style="flex: 1;" />
+             <div class="match-divider-small" style="min-width: 20px; text-align: center;">-</div>
+             <TeamSlot :team="mundial.terceiro.time2" :origem="mundial.terceiro.origem2" :placar="mundial.terceiro.placar2" :other-score="mundial.terceiro.placar1" :pen="mundial.terceiro.pen2" :is-editable="isEditable" :is-final-or-third="true" @update:team="val => $emit('updateMatch', 'terceiro', 'time2', val)" @update:placar="val => $emit('updateMatch', 'terceiro', 'placar2', val)" @update:pen="val => $emit('updateMatch', 'terceiro', 'pen2', val)" position="right" style="flex: 1;" />
           </div>
         </div>
       </div>
@@ -92,7 +79,7 @@ const emit = defineEmits(['updateMatch'])
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 3rem;
   position: relative;
 }
 
@@ -100,7 +87,7 @@ const emit = defineEmits(['updateMatch'])
   display: flex;
   flex-direction: column;
   height: 450px;
-  width: 320px;
+  width: 380px;
   z-index: 2;
 }
 
@@ -118,33 +105,38 @@ const emit = defineEmits(['updateMatch'])
 }
 
 .node-header {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.4);
+  color: #fff;
   margin-bottom: 5px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding-left: 10px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
 }
 
-.node-header.final {
-    color: var(--bs-warning);
-    font-size: 0.9rem;
+.final-title {
+    background: #8e7a46; /* Dourado escuro parecido com a foto */
+    color: white;
     text-align: center;
-    margin-bottom: 15px;
-    text-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
 }
 
-.node-header.small {
+.third-title {
+    background: #7a6e4d;
+    color: white;
     text-align: center;
-    color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
 }
 
 .node-match {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   min-height: 121px; /* 2x60 + 1 */
 }
