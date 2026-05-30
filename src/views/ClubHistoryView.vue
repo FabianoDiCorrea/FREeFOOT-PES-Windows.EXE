@@ -410,10 +410,7 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
       const isVice = isClubMatch(s.vice, clubNorm, clubSmart)
 
       // Career Check
-      const isMyCareer = careerStore.history.some(h => {
-          return isClubMatch(h.timeNome, clubNorm, clubSmart) && 
-                 (h.temporada && (h.temporada.toString().includes(s.ano.split('/')[0]) || h.temporada.toString() === s.ano))
-      })
+      const isMyCareer = careerStore.isUserTeam(clubName.value, s.ano)
 
       let eventAdded = false
       const prints = s.printsUrls ? s.printsUrls.filter(u => u) : []
@@ -653,19 +650,16 @@ const loadTimeline = async (clubNorm, clubSmart, clubCountry) => {
      const awClub = normalizeString(aw.clube)
      if (awClub === clubNorm || (clubSmart && awClub.includes(clubSmart))) {
          const awYear = aw.season ? aw.season.toString() : '2025'
-         const awTrophy = trophyMap[aw.tipo] || '/logos/competitions/premio-trofeu.png'
+         const awTrophy = trophyMap[aw.tipo] || './logos/competitions/premio-trofeu.png'
          
          // Career Check simplificado: se o prêmio é do clube e você estava no clube nesse ano
-         const isMyCareerAward = careerStore.history.some(h => {
-             return isClubMatch(h.timeNome, clubNorm, clubSmart) && 
-                    (h.temporada && (h.temporada.toString().includes(awYear.split('/')[0]) || h.temporada.toString() === awYear))
-         })
+         const isMyCareerAward = careerStore.isUserTeam(clubName.value, awYear)
 
          events.push({
             year: awYear,
             shortYear: getSeasonFinalYear(awYear),
             compName: 'PREMIAÇÃO INDIVIDUAL',
-            compLogo: '/logos/competitions/premio-individual.png',
+            compLogo: './logos/competitions/premio-individual.png',
             type: 'award',
             badgeText: 'PRÊMIO',
             description: `${aw.nome} - ${aw.tipo}`,
@@ -807,7 +801,7 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
     if (lowName.includes('artilharia')) return 'logos/competitions/artilheiro.png'
 
-    return `/logos/competitions/${name.replace(/\s+/g, '-')}.png`
+    return `./logos/competitions/${name.replace(/\s+/g, '-')}.png`
 }
 
 const parseTable = (tableStr) => {

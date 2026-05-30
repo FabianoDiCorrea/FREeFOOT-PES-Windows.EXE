@@ -260,9 +260,9 @@ const processCountryData = (allSeasons) => {
                 }
             }
             // Verificar se o título tbm pertence à Career do usuário naquele Time e Ano específico ou Manual
-            const hasCareerTitle = careerStore.history.some(h => 
+            const hasCareerTitle = careerStore.isUserTeam(champion, yearStr) || careerStore.history.some(h => 
                 normalizeString(h.timeNome) === normalizeString(champion) && 
-                (h.temporada.toString().includes(yearStr) || (h.titulos && h.titulos.some(t => normalizeString(t.nome) === normalizeString(compName))))
+                h.titulos && h.titulos.some(t => normalizeString(t.nome) === normalizeString(compName))
             )
 
             const existingClub = groupedData[officialCompKey].championsMap[champKey]

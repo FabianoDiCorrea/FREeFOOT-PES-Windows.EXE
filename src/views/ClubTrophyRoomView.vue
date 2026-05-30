@@ -221,7 +221,7 @@ const getTrofeuPathByCompName = (name) => {
     if (lowName.includes('colombia')) return getTrofeuPath('trofeu-liga-colombia')
     if (lowName.includes('mundial')) return getTrofeuPath('trofeu-mundial-de-clubes')
 
-    return `/logos/competitions/${name.replace(/\s+/g, '-')}.png`
+    return `./logos/competitions/${name.replace(/\s+/g, '-')}.png`
 }
 
 onMounted(loadData)

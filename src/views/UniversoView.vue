@@ -2504,8 +2504,8 @@ const extractLibertadoresIA = async () => {
   ocrWorkspace.value.isProcessing = true;
   
   try {
-    let geminiKey = localStorage.getItem('gemini_api_key') || 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw';
-    let openaiKey = localStorage.getItem('openai_api_key') || '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';
+      let geminiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+      let openaiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
     
     const callAI = async (prompt, printsArray) => {
        if (printsArray.length === 0) return null;
@@ -2634,17 +2634,9 @@ const extractCupBracketIA = async () => {
   ocrWorkspace.value.isProcessing = true;
   
   try {
-    let geminiKey = localStorage.getItem('gemini_api_key');
-    if (!geminiKey) {
-      geminiKey = 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw';
-      localStorage.setItem('gemini_api_key', geminiKey);
-    }
+    let geminiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
     
-    let openaiKey = localStorage.getItem('openai_api_key');
-    if (!openaiKey) {
-      openaiKey = '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';
-      localStorage.setItem('openai_api_key', openaiKey);
-    }
+    let openaiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
 
     const promptText = `NÃO tente mapear a árvore visualmente. Sua ÚNICA função agora é extrair com 100% de perfeição OS NOMES DE TODOS OS TIMES presentes. Você não pode pular ou esquecer nenhum time da imagem.
 Ao todo, a imagem contém quase 40 times. Liste TODOS.
@@ -2899,17 +2891,9 @@ const handlePasteOcr = async (event, targetField) => {
     const base64Data = base64Image.split(',')[1];
     const mimeType = imageFile.type;
 
-    let geminiKey = localStorage.getItem('gemini_api_key');
-    if (!geminiKey) {
-      geminiKey = 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw';
-      localStorage.setItem('gemini_api_key', geminiKey);
-    }
+    let geminiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
     
-    let openaiKey = localStorage.getItem('openai_api_key');
-    if (!openaiKey) {
-      openaiKey = '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';
-      localStorage.setItem('openai_api_key', openaiKey);
-    }
+    let openaiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
 
     let promptText = "Extraia a tabela de classificação desta imagem. Ignore cabeçalhos e a coluna de POSIÇÃO. Retorne APENAS um array JSON puro válido, sem blocos de código markdown. O array deve conter objetos com as seguintes chaves numéricas exatas: 'time' (string), 'p' (int), 'v' (int), 'e' (int), 'd' (int), 'gp' (int), 'gc' (int), 'sg' (int). NÃO inclua a coluna de Jogos (J). Exemplo: [{\"time\": \"Flamengo\", \"p\": 10, \"v\": 3, \"e\": 1, \"d\": 0, \"gp\": 5, \"gc\": 2, \"sg\": 3}]";
     
@@ -3243,11 +3227,7 @@ const getCopaBadgeClass = (colocacao) => {
 }
 
 const isUserTeam = (teamName, compName = null) => {
-    if (!careerStore.history) return false
-    return careerStore.history.some(h => {
-        // Aproveitar o método robusto da store
-        return careerStore.isUserTeam(teamName, newSeason.value.ano, compName)
-    })
+    return careerStore.isUserTeam(teamName, newSeason.value.ano, compName)
 }
 
 const updateChampViceFromManual = (p) => {

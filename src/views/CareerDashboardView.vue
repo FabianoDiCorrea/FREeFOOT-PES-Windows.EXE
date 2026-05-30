@@ -504,8 +504,8 @@ const trophyMap = {
   'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
   'Melhor da CONCACAF': imgMelhorConcacaf,
   'Bola de Ouro': imgMelhorMundo,
-  'Chuteira de Ouro': '/logos/competitions/chuteira-de-ouro.png',
-  'Luva de Ouro': '/logos/competitions/luva-de-ouro.png'
+  'Chuteira de Ouro': './logos/competitions/chuteira-de-ouro.png',
+  'Luva de Ouro': './logos/competitions/luva-de-ouro.png'
 }
 
 const getAwardTrophy = (awardType) => {
@@ -993,8 +993,18 @@ const interCharts = computed(() => {
     };
 
     for (const [compName, dataPoints] of Object.entries(compsFound)) {
-        const fullDataArray = Array(sorted.length).fill(null);
-        dataPoints.forEach(dp => fullDataArray[dp.idx] = dp);
+        const fullDataArray = sorted.map((s, idx) => {
+            const found = dataPoints.find(dp => dp.idx === idx);
+            if (found) return found;
+            return {
+                x: normalizedLabels[idx],
+                y: null,
+                time: s.timeNome,
+                compName: compName,
+                pais: s.pais,
+                temporadaLonga: s.temporada
+            };
+        });
         
         const color = getLeagueColors(compName);
 
@@ -1464,6 +1474,7 @@ const myTopScorers = computed(() => {
             
             // Verifica se o user estava gerenciando na mesma temporada e mesmo clube/seleção
             const managerEntry = historyEntries.find(h => {
+                if (h.cicloEncerrado) return false;
                 const sameSeason = (h.temporada.includes(season.ano) || season.ano.includes(h.temporada));
                 const sameTeam = h.timeNome.toLowerCase().trim() === scorerTeam?.toLowerCase().trim();
                 return sameSeason && sameTeam;
@@ -1491,6 +1502,7 @@ const myAwardedPlayers = computed(() => {
     const historyEntries = filteredHistory.value;
     return awardsStore.list.filter(award => {
         return historyEntries.some(h => {
+            if (h.cicloEncerrado) return false;
             // Separa os anos para dar match exato ou flexível
             const hYear = h.temporada;
             const aYear = award.season;

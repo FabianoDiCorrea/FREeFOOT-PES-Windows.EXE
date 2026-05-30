@@ -466,7 +466,7 @@
                 </div>
 
                 <!-- NACIONALIDADE -->
-                <div class="scorer-nat-h" v-if="sc.nacionalidade">
+                <div class="scorer-nat-h" v-if="shouldShowNationality(sc.nacionalidade)">
                    <div class="v-divider-h"></div>
                    <div class="d-flex align-items-center gap-2 px-3">
                      <NationalFlag :countryName="sc.nacionalidade" :size="32" class="rounded-circle shadow" />
@@ -540,7 +540,7 @@
                   </div>
 
                   <!-- NACIONALIDADE -->
-                  <div class="scorer-nat-h" v-if="ast.nacionalidade">
+                  <div class="scorer-nat-h" v-if="shouldShowNationality(ast.nacionalidade)">
                      <div class="v-divider-h"></div>
                      <div class="d-flex align-items-center gap-2 px-3">
                        <NationalFlag :countryName="ast.nacionalidade" :size="32" class="rounded-circle shadow" />
@@ -595,7 +595,7 @@
                    <img src="/logos/competitions/melhor_jogador_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(255,193,7,0.4)); object-fit: contain;">
                    <div class="flex-grow-1">
                      <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">
-                       <NationalFlag v-if="season.titulos.melhorJogador.nacionalidade" :countryName="season.titulos.melhorJogador.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
+                       <NationalFlag v-if="shouldShowNationality(season.titulos.melhorJogador.nacionalidade)" :countryName="season.titulos.melhorJogador.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
                        {{ season.titulos.melhorJogador.nome }}
                      </div>
                      <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
@@ -614,7 +614,7 @@
                    <img src="/logos/competitions/tecnico_temporada.png" style="width: 110px; filter: drop-shadow(0 0 15px rgba(13,202,240,0.4)); object-fit: contain;">
                    <div class="flex-grow-1">
                      <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.6rem;">
-                       <NationalFlag v-if="season.titulos.melhorTecnico.nacionalidade" :countryName="season.titulos.melhorTecnico.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
+                       <NationalFlag v-if="shouldShowNationality(season.titulos.melhorTecnico.nacionalidade)" :countryName="season.titulos.melhorTecnico.nacionalidade" :size="32" class="me-2 shadow-sm rounded-1" />
                        {{ season.titulos.melhorTecnico.nome }}
                      </div>
                      <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
@@ -653,7 +653,7 @@
                       </div>
                       <div class="d-flex flex-column text-start" style="min-width: 0; flex-grow: 1; pointer-events: none;">
                          <div class="fw-black text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 1.1rem; line-height: 1.1;">
-                           <NationalFlag v-if="jog.nacionalidade" :countryName="jog.nacionalidade" :size="24" class="shadow-sm rounded-1" />
+                           <NationalFlag v-if="shouldShowNationality(jog.nacionalidade)" :countryName="jog.nacionalidade" :size="24" class="shadow-sm rounded-1" />
                            {{ jog.nome }}
                          </div>
                          <div class="mt-1 px-1 text-truncate text-uppercase text-light border border-dark border-opacity-25" style="background-color: #1a3c5a; font-size: 0.7rem; letter-spacing: 0.5px; opacity: 0.9;">{{ jog.clube }}</div>
@@ -1181,6 +1181,16 @@ const headerBgStyle = computed(() => {
   return {};
 })
 
+const shouldShowNationality = (playerNationality) => {
+  if (!playerNationality) return false;
+  const compCountry = competitionInfo.value?.pais;
+  if (!compCountry || compCountry.trim() === '') return true;
+  
+  const normalize = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  
+  return normalize(playerNationality) !== normalize(compCountry);
+}
+
 const timeDaTemporadaLines = computed(() => {
   if (!season.value?.timeDaTemporada) return [];
   const lines = { gol: [], zag: [], lat: [], vol: [], mlg: [], mat: [], ata: [] };
@@ -1390,8 +1400,8 @@ const formatPesPosition = (pos) => {
 
 onMounted(async () => {
   // Salva as chaves configuradas pelo usuário para que nunca se percam
-  localStorage.setItem('gemini_api_key', 'AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw');
-  localStorage.setItem('openai_api_key', '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');
+  // localStorage.setItem('gemini_api_key', '');
+  // localStorage.setItem('openai_api_key', '');
   
   await seasonStore.loadAll()
   await careerStore.loadAll()

@@ -499,7 +499,10 @@
                                     <i v-if="careerStore.isUserTeam(selectedEntry.timeNome, selectedEntry.temporada, result.competicao)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.7rem;"></i>
                                 </span>
                             </div>
-                            <span :class="['position-badge', getPlacementClass(result.posicao)]">{{ result.posicao }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span :class="['position-badge', getPlacementClass(result.posicao)]">{{ result.posicao }}</span>
+                                <button class="btn btn-sm p-0 ms-2 opacity-50 hover-opacity-100 text-danger" @click="ignoreAutoCompetition(result.competicao)" title="Ocultar (Não participei)"><i class="bi bi-eye-slash-fill"></i></button>
+                            </div>
                         </div>
                     </div>
                     
@@ -529,6 +532,17 @@
                     <button class="btn btn-sm btn-outline-warning text-uppercase x-small fw-bold mt-2" @click="openTrophyModal">
                         <i class="bi bi-plus"></i> Adicionar Resultado Manual
                     </button>
+                    
+                    <!-- Lista de Competições Ignoradas -->
+                    <div v-if="selectedEntry.ignoreCompetitions?.length > 0" class="mt-3 border-top border-secondary border-opacity-25 pt-2 text-start">
+                        <div class="x-small fw-bold opacity-50 mb-2">COMPETIÇÕES OCULTADAS (NÃO PARTICIPEI):</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span v-for="comp in selectedEntry.ignoreCompetitions" :key="comp" class="badge bg-black border border-secondary d-flex align-items-center gap-2 px-2 py-1">
+                                <span class="opacity-50 text-decoration-line-through">{{ comp }}</span>
+                                <i class="bi bi-arrow-counterclockwise cursor-pointer text-warning fs-6" @click="restoreAutoCompetition(comp)" title="Restaurar"></i>
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1096,6 +1110,18 @@ const saveEntry = async () => {
     showForm.value = false
 }
 
+const ignoreAutoCompetition = (compName) => {
+    if (!selectedEntry.value.ignoreCompetitions) selectedEntry.value.ignoreCompetitions = []
+    if (!selectedEntry.value.ignoreCompetitions.includes(compName)) {
+        selectedEntry.value.ignoreCompetitions.push(compName)
+    }
+}
+
+const restoreAutoCompetition = (compName) => {
+    if (!selectedEntry.value.ignoreCompetitions) return
+    selectedEntry.value.ignoreCompetitions = selectedEntry.value.ignoreCompetitions.filter(c => c !== compName)
+}
+
 const confirmDeleteEntry = () => {
     if (confirm(`Tem certeza que deseja excluir a temporada ${selectedEntry.value.temporada} no ${selectedEntry.value.timeNome}? Esta ação não pode ser desfeita.`)) {
         deleteCurrentEntry()
@@ -1603,6 +1629,8 @@ const allCompetitionResults = computed(() => {
     const matchingSeasons = seasonStore.list.filter(s => normalizeYearStrict(s.ano) === matchingYear)
     
     matchingSeasons.forEach(season => {
+        if (selectedEntry.value.ignoreCompetitions?.includes(season.competitionName)) return;
+        
         let badge = ''
         let ordem = 99
         let found = false

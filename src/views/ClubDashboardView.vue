@@ -353,7 +353,7 @@
                             <div class="scorer-club-h d-none d-md-flex">
                               <div class="v-divider-h"></div>
                               <div class="d-flex align-items-center justify-content-center gap-2 px-3">
-                                <NationalFlag v-if="scorer.pais" :countryName="scorer.pais" :size="38" class="rounded-circle shadow" />
+                                <NationalFlag v-if="scorer.nacionalidade" :countryName="scorer.nacionalidade" :size="38" class="rounded-circle shadow" />
                                 <div class="club-shield-h-wrap d-flex align-items-center justify-content-center" v-if="contextType === 'clube'">
                                   <TeamShield :teamName="scorer.clube" :size="38" borderless />
                                 </div>
@@ -410,7 +410,7 @@
                             <div class="scorer-club-h d-none d-md-flex">
                               <div class="v-divider-h"></div>
                               <div class="d-flex align-items-center justify-content-center gap-2 px-3">
-                                <NationalFlag v-if="contextType === 'selecao' || award.nacionalidade" :countryName="award.nacionalidade" :size="38" class="rounded-circle shadow" />
+                                <NationalFlag v-if="award.nacionalidade" :countryName="award.nacionalidade" :size="38" class="rounded-circle shadow" />
                                 <div class="club-shield-h-wrap d-flex align-items-center justify-content-center" v-if="contextType === 'clube'">
                                   <TeamShield :teamName="award.clube" :size="38" borderless />
                                 </div>
@@ -501,8 +501,8 @@ const trophyMap = {
   'Melhor da CONMEBOL (Rei da América)': imgMelhorAmerica,
   'Melhor da CONCACAF': imgMelhorConcacaf,
   'Bola de Ouro': imgMelhorMundo,
-  'Chuteira de Ouro': '/logos/competitions/chuteira-de-ouro.png',
-  'Luva de Ouro': '/logos/competitions/luva-de-ouro.png'
+  'Chuteira de Ouro': './logos/competitions/chuteira-de-ouro.png',
+  'Luva de Ouro': './logos/competitions/luva-de-ouro.png'
 }
 
 const getAwardTrophy = (awardType) => {
@@ -985,8 +985,18 @@ const interCharts = computed(() => {
     let colorIndex = 0;
 
     for (const [compName, dataPoints] of Object.entries(compsFound)) {
-        const fullDataArray = Array(sorted.length).fill(null);
-        dataPoints.forEach(dp => fullDataArray[dp.idx] = dp);
+        const fullDataArray = sorted.map((s, idx) => {
+            const found = dataPoints.find(dp => dp.idx === idx);
+            if (found) return found;
+            return {
+                x: normalizedLabels[idx],
+                y: null,
+                time: s.timeNome,
+                compName: compName,
+                pais: s.pais,
+                temporadaLonga: s.temporada
+            };
+        });
         
         const color = colors[colorIndex % colors.length];
         colorIndex++;
@@ -1189,8 +1199,9 @@ const processedSeasons = computed(() => {
              
              const cNameLower = (s.competitionName || '').toLowerCase();
              const isInter = cNameLower.includes('libertadores') || cNameLower.includes('sul-americana') || cNameLower.includes('champions') || cNameLower.includes('europa') || cNameLower.includes('concacaf') || cNameLower.includes('mundial') || cNameLower.includes('recopa') || cNameLower.includes('supercopa da uefa');
+             const isSupercopa = cNameLower.includes('supercopa') && !cNameLower.includes('supercopa da uefa');
              
-             if (!s.isCup && !isInter) {
+             if (!s.isCup && !isInter && !isSupercopa) {
                  byYear[normalizedYear].posicoesLiga.push({ pos, ligaNome: s.competitionName || 'Liga' });
                  if(!byYear[normalizedYear].pais && s.pais) byYear[normalizedYear].pais = s.pais;
                  
@@ -1468,6 +1479,7 @@ const myTopScorers = computed(() => {
                     foto: scorer.fotoUrl || scorer.foto || scorer.fotoJogador || null,
                     gols: scorer.gols || '?',
                     clube: scorer.clube || scorer.clubeArtilheiro,
+                    nacionalidade: scorer.nacionalidade || scorer.paisJogador || '',
                     pais: clubStore.list.find(c => c.nome.toLowerCase() === searchName)?.pais || '',
                     temporada: season.ano,
                     campeonato: season.nome || season.competitionName

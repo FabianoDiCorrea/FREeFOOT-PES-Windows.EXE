@@ -336,10 +336,7 @@ const timelineGroups = computed(() => {
             }
         }
 
-        const isUser = (careerStore.history || []).some(h => {
-            return isTeamMatch(h.timeNome, searchNorm) && 
-                   (h.temporada && (h.temporada.toString().includes(s.ano.split('/')[0]) || h.temporada.toString() === s.ano))
-        })
+        const isUser = careerStore.isUserTeam(searchNorm, s.ano)
 
         if (isChamp || isVice || partInfo) {
             const compName = s.competitionName || ''
@@ -391,7 +388,7 @@ const timelineGroups = computed(() => {
                     year: awYr, shortYear: getSeasonFinalYear(awYr), compName: 'PREMIAÇÃO INDIVIDUAL', type: 'award', badgeText: 'PRÊMIO',
                     description: `${aw.nome} - ${aw.tipo}`, statusClass: 'bg-warning', icon: aw.tipo?.includes('Técnico') ? 'bi-person-gear' : 'bi-star-fill',
                     badgeClass: 'bg-warning text-dark', isMyCareer: false, sortYear: getSeasonFinalYear(awYr),
-                    trophyUrl: trophyMap[aw.tipo] || '/logos/competitions/premio-trofeu.png', scFoto: aw.fotoJogador || aw.foto || null
+                    trophyUrl: trophyMap[aw.tipo] || './logos/competitions/premio-trofeu.png', scFoto: aw.fotoJogador || aw.foto || null
                 })
             }
         })

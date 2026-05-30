@@ -4,7 +4,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-warning border-opacity-25">
        <div class="d-flex align-items-center gap-3">
           <LogoFREeFOOT size="2rem" />
-          <h2 class="m-0 fw-black text-uppercase ls-2 text-warning gold-glow-text">RANKINGS</h2>
+          <div class="d-flex flex-column">
+              <h2 class="m-0 fw-black text-uppercase ls-2 text-warning gold-glow-text">RANKINGS</h2>
+              <span v-if="activeTab === 'clubes'" class="text-secondary small fw-bold text-uppercase ls-1">Atualizado em: 26 de Junho</span>
+          </div>
        </div>
        <div class="d-flex gap-2">
           <button @click="activeTab = 'clubes'" class="btn btn-sm fw-black px-4 ripple prestige-btn" 
@@ -309,7 +312,8 @@ const sortedRankings = computed(() => {
               const cont = found.continente
               if (cont) {
                   const fedEntry = FEDERATIONS_DATA[cont] || 
-                                   Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+                                   Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
+                                   Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
                   if (fedEntry) {
                       fedLogo = fedEntry.logo
                       fedName = fedEntry.nome
@@ -467,7 +471,8 @@ const saveRanking = async () => {
         const cont = found.continente
         if (cont) {
             const fedEntry = FEDERATIONS_DATA[cont] || 
-                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
+                             Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
             if (fedEntry) {
                 fedLogo = fedEntry.logo
                 fedName = fedEntry.nome
@@ -508,7 +513,8 @@ const saveRanking = async () => {
         const cont = fMy.continente
         if (cont) {
             const fedEntry = FEDERATIONS_DATA[cont] || 
-                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase())
+                             Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
+                             Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
             if (fedEntry) {
                 myFedLogo = fedEntry.logo
                 myFedName = fedEntry.nome
