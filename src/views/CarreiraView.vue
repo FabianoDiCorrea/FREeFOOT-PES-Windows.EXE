@@ -127,7 +127,7 @@
                         </div>
 
                         <div>
-                            <div class="text-warning x-small fw-black text-uppercase ls-2 mb-1">Contrato Atual</div>
+                            <div class="text-warning x-small fw-black text-uppercase ls-2 mb-1">{{ selectedEntry.tipo === 'selecao' ? 'SELEÇÃO' : 'CLUBE' }} DA TEMPORADA</div>
                             <div class="d-flex align-items-center gap-3">
                                 <h1 class="m-0 fw-black text-uppercase d-flex align-items-center gap-2" style="font-size: 2.8rem;">
                                     {{ selectedEntry?.timeNome }}
@@ -156,29 +156,6 @@
                         <div class="header-main-h3 text-uppercase fw-black mb-2">
                             {{ selectedEntry ? normalizeYearStrict(selectedEntry.temporada) : '' }}
                         </div>
-                        <div class="d-flex gap-2 flex-wrap justify-content-end">
-                            <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold x-small" @click="editCurrentEntry">
-                                <i class="bi bi-pencil-fill me-1"></i> Editar Dados
-                            </button>
-                            <!-- Botão ENCERRAR / REABRIR CICLO -->
-                            <button
-                                v-if="!selectedEntry.cicloEncerrado"
-                                class="btn btn-sm btn-outline-info text-uppercase fw-bold x-small"
-                                @click="encerrarCiclo"
-                                title="Marca que você saiu deste time no meio da temporada. Os dados da liga são congelados e títulos automáticos deste período não são mais atribuídos.">
-                                <i class="bi bi-sign-stop me-1"></i> ENCERRAR CICLO
-                            </button>
-                            <button
-                                v-else
-                                class="btn btn-sm btn-info text-uppercase fw-bold x-small"
-                                @click="encerrarCiclo"
-                                title="Ciclo encerrado — clique para reabrir e voltar ao modo automático.">
-                                <i class="bi bi-lock-fill me-1"></i> CICLO ENCERRADO
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger text-uppercase fw-bold x-small" @click="confirmDeleteEntry">
-                                <i class="bi bi-trash-fill me-1"></i> Excluir Temporada
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -186,13 +163,26 @@
 
         <!-- Navigation between career seasons -->
         <div v-if="filteredHistory.length > 0" class="col-12 px-2 mb-3">
-            <div class="career-nav d-flex gap-2 justify-content-center flex-wrap">
-                <button v-for="(h, idx) in filteredHistory" :key="h.id" 
-                        class="btn btn-sm d-flex align-items-center gap-1" :class="selectedEntry?.id === h.id ? 'btn-warning' : 'btn-outline-secondary'"
-                        @click="selectedEntry = sanitizeEntry(h); careerIndex = idx">
-                    <span>{{ normalizeYearStrict(h.temporada) }}</span>
-                    <span v-if="hasDuplicateYear(h.temporada)" class="x-small opacity-75">({{ h.timeNome }})</span>
-                </button>
+            <div class="career-nav-scroll-container">
+                <div class="career-nav-track d-flex gap-2 pb-2">
+                    <div v-for="(h, idx) in filteredHistory" :key="h.id" 
+                         class="season-card-nav position-relative shadow-sm"
+                         :class="{ 'active-season': selectedEntry?.id === h.id }"
+                         @click="selectedEntry = sanitizeEntry(h); careerIndex = idx">
+                         
+                         <div v-if="selectedEntry?.id === h.id" class="active-dot"></div>
+                         
+                         <div class="d-flex align-items-center gap-2">
+                            <TeamShield v-if="h.tipo === 'clube'" :teamName="h.timeNome" :size="32" borderless />
+                            <NationalFlag v-else :countryName="h.timeNome" :size="26" class="rounded-circle" />
+                            
+                            <div class="d-flex flex-column text-start">
+                                <span class="season-year fw-black text-white" style="font-size: 0.95rem; line-height: 1;">{{ normalizeYearStrict(h.temporada) }}</span>
+                                <span class="season-team x-small fw-bold text-uppercase text-truncate" style="max-width: 120px; color: #a0aec0; line-height: 1.2;">{{ h.timeNome }}</span>
+                            </div>
+                         </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -200,7 +190,31 @@
         <div v-if="selectedEntry" class="col-xl-8 px-2">
             <div class="table-container p-0">
                 <!-- Tabela de Temporada -->
-                <div class="table-section-header text-center py-1 text-uppercase small fw-bold">{{ normalizeYearStrict(selectedEntry.temporada) }}</div>
+                <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-75 py-2 px-3 border-bottom border-secondary border-opacity-25 rounded-top">
+                    <div class="text-uppercase small fw-bold text-warning"><i class="bi bi-table me-2"></i>Estatísticas da Temporada</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;" @click="editCurrentEntry">
+                            <i class="bi bi-pencil-fill me-1"></i> Editar Dados
+                        </button>
+                        <button
+                            v-if="!selectedEntry.cicloEncerrado"
+                            class="btn btn-sm btn-outline-info text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;"
+                            @click="encerrarCiclo"
+                            title="Marca que você saiu deste time no meio da temporada. Os dados da liga são congelados e títulos automáticos deste período não são mais atribuídos.">
+                            <i class="bi bi-sign-stop me-1"></i> Encerrar Ciclo
+                        </button>
+                        <button
+                            v-else
+                            class="btn btn-sm btn-info text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;"
+                            @click="encerrarCiclo"
+                            title="Ciclo encerrado — clique para reabrir e voltar ao modo automático.">
+                            <i class="bi bi-lock-fill me-1"></i> Ciclo Encerrado
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;" @click="confirmDeleteEntry">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </div>
+                </div>
                 <table class="career-table">
                     <thead>
                         <tr>
@@ -673,7 +687,7 @@
                 <h4 class="fw-black text-uppercase ls-2 mb-2">Sua Galeria de Conquistas</h4>
                 <p class="text-secondary small text-uppercase ls-1 mb-4">Visualize todos os troféus conquistados na sua carreira</p>
                 
-                <button @click="$router.push('/sala-de-trofeus')" class="btn btn-outline-warning btn-lg fw-bold text-uppercase px-5 py-3 hover-glow">
+                <button @click="$router.push({ path: '/sala-de-trofeus', query: { type: activeType } })" class="btn btn-outline-warning btn-lg fw-bold text-uppercase px-5 py-3 hover-glow">
                     <i class="bi bi-box-arrow-in-right me-2"></i>ACESSAR SALA DE TROFÉUS
                 </button>
             </div>
@@ -2510,6 +2524,51 @@ watch(selectedEntry, async (newVal) => {
 .row-sel-copinhas { background: linear-gradient(90deg, rgba(40, 25, 35, 0.95), rgba(20, 10, 15, 0.95)) !important; color: #eee !important; border-left: 3px solid #e74c3c !important; }
 .row-sel-amistosos { background: linear-gradient(90deg, rgba(25, 40, 30, 0.95), rgba(10, 20, 15, 0.95)) !important; color: #eee !important; border-left: 3px solid #2ecc71 !important; }
 .row-sel-copa input, .row-sel-elim input, .row-sel-copinhas input, .row-sel-amistosos input { color: #eee !important; }
+
+/* --- SELETOR DE TEMPORADAS HORIZONTAL --- */
+.career-nav-scroll-container {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+.career-nav-scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+.career-nav-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+.career-nav-track {
+    min-width: min-content;
+}
+.season-card-nav {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 170px;
+}
+.season-card-nav:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.2);
+}
+.season-card-nav.active-season {
+    background: rgba(255,193,7,0.1);
+    border-color: var(--bs-warning);
+    box-shadow: 0 0 15px rgba(255,193,7,0.1);
+}
+.active-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--bs-warning);
+    border-radius: 50%;
+    box-shadow: 0 0 5px var(--bs-warning);
+}
 
 </style>
 

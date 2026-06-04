@@ -84,6 +84,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { careerStore } from '../services/career.store'
 import { seasonStore } from '../services/season.store'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
@@ -92,7 +93,9 @@ import NationalFlag from '../components/NationalFlag.vue'
 import { getTrofeuPath, normalizeString } from '../services/utils'
 import { SOUTH_AMERICA_COMPETITIONS, UEFA_COMPETITIONS, CONCACAF_COMPETITIONS, INTERNATIONAL_COMPETITIONS } from '../data/competitions.data'
 
-const history = computed(() => careerStore.history)
+const route = useRoute()
+const historyType = computed(() => route.query.type || 'clube')
+const history = computed(() => careerStore.history.filter(h => h.tipo === historyType.value))
 
 onMounted(async () => {
     if (careerStore.history.length === 0) {

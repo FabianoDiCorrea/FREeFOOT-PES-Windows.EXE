@@ -11,6 +11,7 @@
           <router-link to="/carreira" class="nav-item" active-class="active">MINHA CARREIRA</router-link>
           <router-link to="/premio-individual" class="nav-item" active-class="active">PRÊMIO INDIVIDUAL</router-link>
           <router-link to="/rankings" class="nav-item" active-class="active">RANKINGS</router-link>
+          <router-link to="/calendario" class="nav-item" active-class="active">CALENDÁRIO</router-link>
           <router-link to="/backup" class="nav-item" active-class="active">BACKUP</router-link>
 
         </nav>

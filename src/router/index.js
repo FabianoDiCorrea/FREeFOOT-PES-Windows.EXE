@@ -20,6 +20,7 @@ const router = createRouter({
         { path: '/selecao/:id/historico', name: 'nationalHistory', component: () => import('../views/NationalHistoryView.vue') },
         { path: '/selecao/:id/matriz', name: 'nationalMatrix', component: () => import('../views/NationalSeasonMatrixView.vue') },
         { path: '/checklist', name: 'season-checklist', component: () => import('../views/SeasonChecklistView.vue') },
+        { path: '/calendario', name: 'calendario', component: () => import('../views/CalendarioView.vue') },
         { path: '/sala-de-trofeus', name: 'trophy-room', component: () => import('../views/TrophyRoomView.vue') },
         { path: '/clubes', name: 'club-management', component: () => import('../views/ClubManagementView.vue') },
         { path: '/clubes/nacionalidades', name: 'player-nationalities', component: () => import('../views/PlayerNationalitiesView.vue') },

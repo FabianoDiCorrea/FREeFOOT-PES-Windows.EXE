@@ -2,7 +2,7 @@ CHAVES DE API (BACKUP)
 ========================
 
 Chave Gemini:
-AIzaSyC2Hofw64llDRM9hNU4nUGirvJIXiY9UJw
+[COLOQUE SUA NOVA CHAVE AQUI]
 
 Chave ChatGPT (OpenAI):
-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
+[COLOQUE SUA NOVA CHAVE AQUI]
