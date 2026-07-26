@@ -18,7 +18,7 @@
       </div>
 
       <div class="system-status d-flex align-items-center">
-        <span class="badge bg-secondary opacity-55 x-small">v.0.1.5</span>
+        <span class="badge bg-secondary opacity-55 x-small">v.0.1.6</span>
         <span class="ms-3 pt-time fw-bold text-secondary">{{ currentTime }}</span>
       </div>
     </header>

@@ -912,7 +912,7 @@
                       </div>
                     </template>
                     <div v-else class="print-slot-empty w-100 h-100 d-flex flex-column align-items-center justify-content-center m-0 cursor-pointer" style="padding: 10px;">
-                      <span class="x-small fw-black">SLOT {{ idx + 1 }}</span>
+                      <span class="x-small fw-black text-center" style="font-size: 0.65rem;">PRINT {{ idx + 1 }}</span>
                       <div class="x-small opacity-50 mt-1 text-center" style="font-size: 0.6rem; letter-spacing: 0px;"><i class="bi bi-camera me-1"></i>DUPLO CLIQUE OU CTRL+V</div>
                     </div>
                   </div>
@@ -972,7 +972,7 @@
                             <span class="fw-bold small d-flex align-items-center gap-1">
                                 <input v-model="p.nome" 
                                        class="form-control form-control-sm bg-transparent border-0 text-white fw-bold shadow-none p-0 m-0 w-auto" 
-                                       style="max-width: 180px; font-size: inherit;" />
+                                       style="max-width: 180px; font-size: inherit;" @change="updateChampViceFromManual(p)" />
                                 <i v-if="isUserTeam(p.nome, newSeason?.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9em;"></i>
                             </span>
                           </div>
@@ -1109,7 +1109,7 @@
                             <span class="fw-bold small d-flex align-items-center gap-1">
                                 <input v-model="p.nome" 
                                        class="form-control form-control-sm bg-transparent border-0 text-white fw-bold shadow-none p-0 m-0 w-auto" 
-                                       style="max-width: 180px; font-size: inherit;" />
+                                       style="max-width: 180px; font-size: inherit;" @change="updateChampViceFromManual(p)" />
                                 <i v-if="isUserTeam(p.nome, newSeason?.competitionName)" class="bi bi-controller text-neon-green pulse-neon ms-1" style="font-size: 0.9em;"></i>
                             </span>
                           </div>
@@ -2644,10 +2644,11 @@ Ao todo, a imagem contém quase 40 times. Liste TODOS.
 MÉTODO RIGOROSO:
 1. O usuário colou imagens lado a lado. Pode haver "Listas de Jogos" (placares grandes com '-' no meio, ex: "Criciúma 4 - 0 Ituano") e "Chaveamento" (árvore).
 2. Para as "Listas de Jogos" (Pré-Copa): Identifique claramente quem fez MENOS gols (o perdedor) em cada linha, e coloque o nome desses times derrotados na categoria "PréCopa".
-   - ATENÇÃO A PÊNALTIS: Se o placar for empate (ex: 6 - 6) e houver "PN" ou números embaixo indicando pênaltis, o perdedor é aquele que fez MENOS gols nos pênaltis. Não erre o vencedor! (Ex: Botafogo 6 PN 3 vs 6 PN 4 Cuiabá -> Botafogo é o perdedor, então Cuiabá NÂO vai pra Pré-Copa).
+   - ATENÇÃO A PÊNALTIS: Se o placar for empate (ex: 6 - 6), o perdedor é aquele que fez MENOS gols nos pênaltis.
+   - IMPORTANTE: IGNORE COMPLETAMENTE OS TIMES VENCEDORES DESTAS LISTAS DE JOGOS. NÃO OS INCLUA EM NENHUM LUGAR DO JSON!
 3. Identifique o Campeão e o Vice (geralmente estão na grande caixa central da árvore, lado a lado com a taça).
-4. Jogue TODOS OS OUTROS TIMES que você enxergar em qualquer lugar da imagem na categoria "Participantes". Leia com cuidado para não esquecer NENHUM.
-   - REGRA DE REPETIÇÃO: Se o MESMO NOME de time aparecer DUAS VEZES (Ex: "Botafogo" jogando em um lado, e outro "Botafogo" jogando no outro), você DEVE colocar a palavra "Botafogo" DUAS VEZES no array. Não remova duplicatas. O jogo PES tem dois Botafogos com o mesmo nome. Nunca remova times repetidos! Conte na sua mente, não pule times!
+4. Jogue TODOS OS OUTROS TIMES que você enxergar NAS IMAGENS DE CHAVEAMENTO (ÁRVORE) na categoria "Participantes". Leia com cuidado para não esquecer NENHUM.
+   - REGRA DE REPETIÇÃO: Se o MESMO NOME de time aparecer DUAS VEZES no CHAVEAMENTO (Ex: "Botafogo" jogando em um lado, e outro "Botafogo" jogando no outro), você DEVE colocar a palavra "Botafogo" DUAS VEZES no array. Não remova duplicatas! O jogo tem dois Botafogos com o mesmo nome. Nunca remova times repetidos do chaveamento!
 
 Retorne APENAS um JSON válido e limpo:
 \`\`\`json
@@ -2895,10 +2896,10 @@ const handlePasteOcr = async (event, targetField) => {
     
     let openaiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
 
-    let promptText = "Extraia a tabela de classificação desta imagem. Ignore cabeçalhos e a coluna de POSIÇÃO. Retorne APENAS um array JSON puro válido, sem blocos de código markdown. O array deve conter objetos com as seguintes chaves numéricas exatas: 'time' (string), 'p' (int), 'v' (int), 'e' (int), 'd' (int), 'gp' (int), 'gc' (int), 'sg' (int). NÃO inclua a coluna de Jogos (J). Exemplo: [{\"time\": \"Flamengo\", \"p\": 10, \"v\": 3, \"e\": 1, \"d\": 0, \"gp\": 5, \"gc\": 2, \"sg\": 3}]";
+    let promptText = "Extraia a tabela de classificação desta imagem. Ignore cabeçalhos e a coluna de POSIÇÃO. Retorne APENAS um array JSON puro válido, sem blocos de código markdown. O array deve conter objetos com as seguintes chaves numéricas exatas: 'time' (string), 'j' (int), 'p' (int), 'v' (int), 'e' (int), 'd' (int), 'gp' (int), 'gc' (int), 'sg' (int). ATENÇÃO: As colunas numéricas na imagem estão EXATAMENTE nesta ordem e SÃO APENAS 7: Pontos (P), Vitórias (V), Empates (E), Derrotas (D), Gols Pró (GP), Gols Contra (GC) e Saldo de Gols (SG). IMPORTANTE: NÃO EXISTE COLUNA DE JOGOS (J) NA IMAGEM. Leia os 7 números da imagem e atribua para p, v, e, d, gp, gc, sg. Em seguida, VOCÊ DEVE calcular o total de Jogos (j) somando Vitórias (v) + Empates (e) + Derrotas (d). Exemplo: [{\"time\": \"Flamengo\", \"j\": 38, \"p\": 66, \"v\": 18, \"e\": 12, \"d\": 8, \"gp\": 49, \"gc\": 31, \"sg\": 18}]";
     
     if (isCopa) {
-        promptText = "Liste o nome dos times nesta tabela. Retorne APENAS um array JSON de strings puro, sem markdown. Exemplo: [\"Time A\", \"Time B\"]";
+        promptText = "Você receberá uma imagem de uma Copa. Regra 1: Se a imagem for uma lista de CONFRONTOS com placares (fase Pré-Copa), extraia APENAS os nomes dos times DERROTADOS e adicione o sufixo ' Pré-Copa' aos seus nomes. Regra 2: Se a imagem for um CHAVEAMENTO (bracket/árvore), extraia TODOS os times presentes, lendo estritamente na ordem visual (esquerda para direita, de cima para baixo). Retorne APENAS um array JSON de strings puro, sem markdown. Exemplo: [\"Aldosivi Pré-Copa\", \"Patronato Pré-Copa\"] ou [\"River Plate\", \"Boca Juniors\"]";
     } else if (targetField === 'artilheiros') {
         promptText = "Extraia a lista de artilheiros desta imagem. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'gols' (numero inteiro), 'posicaoCampo' (string, a SIGLA exata da posição que aparece DENTRO DO RETÂNGULO COLORIDO À ESQUERDA do nome do jogador, ex: CA, SA, MAT, PTE, PTD), 'nacionalidade' (string opcional, INFERIR PELO NOME DO JOGADOR, ex: 'Haaland' = 'NORUEGA', se não souber deixe vazio. NÃO USE BRASIL POR PADRÃO). NÃO INVENTE 'ATACANTE' OU 'MEIA', LEIA EXATAMENTE A SIGLA DA IMAGEM! Exemplo: [{\"nome\": \"Haaland\", \"clube\": \"Man. City\", \"gols\": 35, \"posicaoCampo\": \"CA\", \"nacionalidade\": \"NORUEGA\"}]";
     } else if (targetField === 'assistencias') {
@@ -2906,7 +2907,7 @@ const handlePasteOcr = async (event, targetField) => {
     } else if (targetField === 'titulos') {
         promptText = "Extraia os vencedores dos títulos individuais (Melhor Jogador e Melhor Técnico). Retorne APENAS um objeto JSON puro válido, sem markdown. Estrutura obrigatória: { \"melhorJogador\": { \"nome\": \"Nome do Jogador\", \"clube\": \"Clube do Jogador\", \"nacionalidade\": \"\" }, \"melhorTecnico\": { \"nome\": \"Nome do Tecnico\", \"clube\": \"Clube do Tecnico\", \"nacionalidade\": \"\" } } (Preencha a nacionalidade inferindo pelo nome da pessoa, ex: 'Abel Ferreira' = 'PORTUGAL'. Se não souber, deixe vazio. Não use Brasil por padrão).";
     } else if (targetField === 'timeDaTemporada') {
-        promptText = "Extraia a lista dos 11 jogadores do time da temporada desta imagem. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'posicaoCampo' (string, a SIGLA da posição no retângulo à esquerda do nome, ex: PT, ZC, LD, LE, VOL, MLG, MAT, PTE, PTD, CA), 'nacionalidade' (string opcional, INFERIR PELO NOME DO JOGADOR, se não souber deixe vazio. NÃO USE BRASIL POR PADRÃO). Exemplo: [{\"nome\": \"Alisson\", \"clube\": \"Liverpool\", \"posicaoCampo\": \"PT\", \"nacionalidade\": \"BRASIL\"}, {\"nome\": \"Messi\", \"clube\": \"Inter Miami\", \"posicaoCampo\": \"PTD\", \"nacionalidade\": \"ARGENTINA\"}]";
+        promptText = "Extraia a lista dos 11 jogadores do time da temporada desta imagem. Retorne APENAS um array JSON puro válido, sem markdown. Cada objeto deve conter 'nome' (string, nome do jogador), 'clube' (string, nome do time), 'posicaoCampo' (string, a SIGLA da posição no retângulo à esquerda do nome, ex: PT, ZC, LD, LE, VOL, MLG, MAT, PTE, PTD, CA), 'nacionalidade' (string opcional, OBRIGATÓRIO TENTAR INFERIR PELO NOME DO JOGADOR E CLUBE, ex: 'Arrascaeta' = 'URUGUAI', 'Gomez' = 'PARAGUAI', 'Cano' = 'ARGENTINA', 'Suarez' = 'URUGUAI'. Se não souber, deixe vazio. NÃO USE BRASIL POR PADRÃO). Exemplo: [{\"nome\": \"Alisson\", \"clube\": \"Liverpool\", \"posicaoCampo\": \"PT\", \"nacionalidade\": \"BRASIL\"}, {\"nome\": \"Messi\", \"clube\": \"Inter Miami\", \"posicaoCampo\": \"PTD\", \"nacionalidade\": \"ARGENTINA\"}]";
     }
 
     let textResult = null;
@@ -2996,7 +2997,7 @@ const handlePasteOcr = async (event, targetField) => {
       if (isCopa) {
         const nomesLimpados = tabelaJson.map(nome => String(nome).replace(/^[^a-zA-ZÀ-ÿ]+/, '').trim());
         const existingLines = (newSeason.value[targetField] || '').split('\n').filter(l => l.trim());
-        const allTeams = Array.from(new Set([...existingLines, ...nomesLimpados]));
+        const allTeams = [...existingLines, ...nomesLimpados];
         newSeason.value[targetField] = allTeams.join('\n');
         ocrWorkspace.value.lastCount = nomesLimpados.length;
         ocrWorkspace.value.totalFound = allTeams.length;
@@ -3056,7 +3057,7 @@ const handlePasteOcr = async (event, targetField) => {
            const v = parseInt(row.v) || 0;
            const e = parseInt(row.e) || 0;
            const d = parseInt(row.d) || 0;
-           const j = v + e + d;
+           const j = parseInt(row.j) || (v + e + d);
            const gp = parseInt(row.gp) || 0;
            const gc = parseInt(row.gc) || 0;
            const sg = parseInt(row.sg) || (gp - gc);

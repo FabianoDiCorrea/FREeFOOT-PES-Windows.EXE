@@ -122,7 +122,8 @@
                         <div v-else class="shield-wrapper premium-mode d-flex align-items-center justify-content-center" style="width: 180px; height: 180px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
                             <div v-if="selectedNationalTeamData?.bandeira_url" class="premium-flag-bg" :style="{ backgroundImage: `url(${selectedNationalTeamData.bandeira_url})`, filter: 'blur(10px) brightness(0.4)', opacity: 0.8, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }"></div>
                             <div class="shield-container d-flex align-items-center justify-content-center" style="width: 100%; height: 100%; position: relative; z-index: 1;">
-                                <img :src="selectedNationalTeamData?.escudo_url" style="width: 155px; height: 155px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6))">
+                                <img v-if="selectedNationalTeamData?.escudo_url || selectedNationalTeamData?.bandeira_url" :src="selectedNationalTeamData?.escudo_url || selectedNationalTeamData?.bandeira_url" style="width: 155px; height: 155px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6))">
+                                <i v-else class="bi bi-shield-fill text-white opacity-25" style="font-size: 5rem;"></i>
                             </div>
                         </div>
 
@@ -140,8 +141,8 @@
                             <div class="d-flex align-items-center gap-2 mt-2" :class="selectedEntry.tipo === 'selecao' ? 'opacity-100' : 'opacity-75'">
                                  <template v-if="selectedEntry?.tipo === 'selecao' && selectedNationalTeamData">
                                     <div class="bg-white bg-opacity-10 rounded-pill px-2 py-1 d-flex align-items-center gap-2">
-                                        <img :src="selectedNationalTeamData?.continente" width="22" style="object-fit: contain">
-                                        <span class="fw-black text-uppercase small ls-1">{{ currentFederation?.nome || 'CONMEBOL' }}</span>
+                                        <img v-if="currentFederation?.logo || (selectedNationalTeamData?.continente && selectedNationalTeamData?.continente.startsWith('http'))" :src="currentFederation?.logo || selectedNationalTeamData?.continente" width="22" style="object-fit: contain">
+                                        <span class="fw-black text-uppercase small ls-1">{{ currentFederation?.nome || selectedNationalTeamData?.continente || 'DESCONHECIDO' }}</span>
                                     </div>
                                 </template>
                                 <template v-else>
@@ -185,16 +186,121 @@
                 </div>
             </div>
         </div>
+        
+        <div v-if="selectedEntry" class="col-12 px-2 mb-3">
+            <div class="d-flex justify-content-center gap-3 py-2 border-bottom border-secondary border-opacity-25 bg-dark bg-opacity-50">
+                <button class="nav-btn" :class="{ 'active': activeTab === 'stats' }" @click="activeTab = 'stats'">
+                    <i class="bi bi-bar-chart-fill me-1"></i> ESTATÍSTICAS DA TEMPORADA
+                </button>
+                <button class="nav-btn" :class="{ 'active': activeTab === 'awards' }" @click="activeTab = 'awards'">
+                    <i class="bi bi-award-fill me-1"></i> DESTAQUES & PRÊMIOS
+                </button>
+            </div>
+        </div>
 
         <!-- LADO ESQUERDO: TABELAS E DADOS (70%) -->
-        <div v-if="selectedEntry" class="col-xl-8 px-2">
+        <div v-show="activeTab === 'stats' && selectedEntry" class="col-xl-8 px-2">
             <div class="table-container p-0">
+                
+                <!-- Modal: Cores -->
+                <div v-if="showColorModal" class="modal-backdrop-custom d-flex align-items-center justify-content-center z-3">
+                    <div class="modal-content-custom animate-zoom-in" style="max-width: 450px;">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 border-secondary">
+                            <h5 class="mb-0 text-white fw-bold"><i class="bi bi-palette text-info me-2"></i>Personalizar Cores</h5>
+                            <button class="btn btn-sm btn-outline-secondary border-0" @click="showColorModal = false"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                        
+                        <div class="d-flex flex-column gap-3 overflow-y-auto" style="max-height: 60vh;">
+                            <!-- Card Background -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold small text-light">Fundo Geral do Card</span>
+                                <div class="d-flex gap-2">
+                                    <input type="color" v-model="selectedEntry.cores.card.bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                    <input type="color" v-model="selectedEntry.cores.card.border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                </div>
+                            </div>
+                            
+                            <hr class="border-secondary my-1 opacity-25">
+                            
+                            <!-- LIGA -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold small text-light">Linha: {{ selectedEntry.tipo === 'selecao' ? 'Copa do Mundo' : 'Liga' }}</span>
+                                <div class="d-flex gap-2">
+                                    <input type="color" v-model="selectedEntry.cores[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga'].bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                    <input type="color" v-model="selectedEntry.cores[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga'].text" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                    <input type="color" v-model="selectedEntry.cores[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga'].border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                </div>
+                            </div>
+
+                            <!-- Seleções: Eliminatórias, Copas, Amistosos -->
+                            <template v-if="selectedEntry.tipo === 'selecao'">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-light">Linha: Eliminatórias</span>
+                                    <div class="d-flex gap-2">
+                                        <input type="color" v-model="selectedEntry.cores.elim.bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                        <input type="color" v-model="selectedEntry.cores.elim.text" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                        <input type="color" v-model="selectedEntry.cores.elim.border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-light">Linha: Copas</span>
+                                    <div class="d-flex gap-2">
+                                        <input type="color" v-model="selectedEntry.cores.copasManual.bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                        <input type="color" v-model="selectedEntry.cores.copasManual.text" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                        <input type="color" v-model="selectedEntry.cores.copasManual.border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-light">Linha: Amistosos</span>
+                                    <div class="d-flex gap-2">
+                                        <input type="color" v-model="selectedEntry.cores.amistosos.bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                        <input type="color" v-model="selectedEntry.cores.amistosos.text" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                        <input type="color" v-model="selectedEntry.cores.amistosos.border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Clubes: Extra Competitions -->
+                            <template v-if="selectedEntry.tipo === 'clube'">
+                                <div v-for="(comp, i) in selectedEntry.extraCompetitions" :key="'color-extra-'+i" class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-light text-truncate" style="max-width: 200px;">Linha: {{ comp.nome || 'Competição Extra' }}</span>
+                                    <div class="d-flex gap-2">
+                                        <input type="color" v-model="comp.bgColor" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                        <input type="color" v-model="comp.textColor" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                        <input type="color" v-model="comp.borderColor" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                    </div>
+                                </div>
+                            </template>
+
+                            <hr class="border-secondary my-1 opacity-25">
+
+                            <!-- Total -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold small text-light">Linha: Total Temporada</span>
+                                <div class="d-flex gap-2">
+                                    <input type="color" v-model="selectedEntry.cores.total.bg" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Fundo">
+                                    <input type="color" v-model="selectedEntry.cores.total.text" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Texto">
+                                    <input type="color" v-model="selectedEntry.cores.total.border" class="form-control form-control-color p-0 border-0 bg-transparent" style="width: 25px; height: 25px;" title="Contorno">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button class="btn btn-sm btn-info text-dark fw-bold px-4" @click="showColorModal = false">Concluir</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tabela de Temporada -->
-                <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-75 py-2 px-3 border-bottom border-secondary border-opacity-25 rounded-top">
-                    <div class="text-uppercase small fw-bold text-warning"><i class="bi bi-table me-2"></i>Estatísticas da Temporada</div>
+                <div class="card-top-section rounded-top overflow-hidden" :class="{ 'has-custom-border': !!selectedEntry.cores?.card?.border }" :style="{ backgroundColor: selectedEntry.cores?.card?.bg || '', '--row-border': selectedEntry.cores?.card?.border || '' }">
+                    <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-75 py-2 px-3 border-bottom border-secondary border-opacity-25 rounded-top">
+                        <div class="text-uppercase small fw-bold text-warning"><i class="bi bi-table me-2"></i>Estatísticas da Temporada</div>
                     <div class="d-flex gap-2 flex-wrap">
                         <button class="btn btn-sm btn-outline-warning text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;" @click="editCurrentEntry">
                             <i class="bi bi-pencil-fill me-1"></i> Editar Dados
+                        </button>
+                        <button class="btn btn-sm btn-outline-info text-uppercase fw-bold px-2 py-1" style="font-size: 0.7rem;" @click="showColorModal = true" title="Personalizar Cores">
+                            <i class="bi bi-palette-fill"></i>
                         </button>
                         <button
                             v-if="!selectedEntry.cicloEncerrado"
@@ -238,11 +344,29 @@
                     </thead>
                     <tbody>
                         <!-- Linha 1: LIGA (Clubes) / COPA DO MUNDO (Seleções) -->
-                        <tr :class="selectedEntry.tipo === 'selecao' ? 'row-sel-copa' : 'row-liga'">
+                        <tr :class="[
+                                selectedEntry.tipo === 'selecao' ? 'row-sel-copa' : 'row-liga',
+                                { 
+                                    'has-custom-bg': !!selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.bg,
+                                    'has-custom-text': !!selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.text,
+                                    'has-custom-border': !!selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.border
+                                }
+                            ]"
+                            :style="{
+                                '--row-bg': selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.bg,
+                                '--row-text': selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.text,
+                                '--row-border': selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.border
+                            }">
                             <!-- Nome da competição -->
                             <td class="text-start ps-3 fw-bold">
                                 <template v-if="selectedEntry.tipo === 'selecao' && selectedEntry.copaMundo">
-                                    <input v-model="selectedEntry.copaMundo.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input v-model="selectedEntry.copaMundo.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
+                                        <button class="btn btn-link p-0 text-warning opacity-75 flex-shrink-0" style="font-size:0.8rem;"
+                                            @click="openColorModal('copaMundo', selectedEntry.copaMundo?.nome || 'Copa do Mundo')" title="Personalizar Cores">
+                                            <i class="bi bi-palette"></i>
+                                        </button>
+                                    </div>
                                 </template>
                                 <template v-else-if="selectedEntry.tipo !== 'selecao'">
                                     <!-- Modo manual (ligaManual=true) ou ciclo encerrado (dados congelados) -->
@@ -256,6 +380,10 @@
                                         <span v-else class="text-info opacity-50" style="font-size:0.65rem;" title="Ciclo encerrado — dados congelados">
                                             <i class="bi bi-lock-fill"></i>
                                         </span>
+                                        <button class="btn btn-link p-0 text-warning opacity-75 ms-1" style="font-size:0.8rem;"
+                                            @click="openColorModal('liga', selectedEntry.liga?.nome || 'Liga')" title="Personalizar Cores">
+                                            <i class="bi bi-palette"></i>
+                                        </button>
                                     </div>
                                     <!-- Modo automático: dados do Universo + botão de lápis -->
                                     <div v-else class="d-flex align-items-center gap-1">
@@ -263,6 +391,10 @@
                                         <button class="btn btn-link p-0 text-secondary opacity-50" style="font-size:0.75rem;"
                                             @click="toggleLigaManual" title="Editar dados da liga manualmente">
                                             <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                        <button class="btn btn-link p-0 text-warning opacity-75 ms-2" style="font-size:0.8rem;"
+                                            @click="openColorModal('liga', currentSeasonData?.nome || 'Liga')" title="Personalizar Cores">
+                                            <i class="bi bi-palette"></i>
                                         </button>
                                     </div>
                                 </template>
@@ -360,7 +492,17 @@
                         </tr>
 
                         <!-- Linha 2: ELIMINATÓRIAS (Automático) -->
-                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-elim">
+                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-elim"
+                            :class="{ 
+                                'has-custom-bg': !!selectedEntry.cores?.elim?.bg,
+                                'has-custom-text': !!selectedEntry.cores?.elim?.text,
+                                'has-custom-border': !!selectedEntry.cores?.elim?.border
+                            }"
+                            :style="{
+                                '--row-bg': selectedEntry.cores?.elim?.bg,
+                                '--row-text': selectedEntry.cores?.elim?.text,
+                                '--row-border': selectedEntry.cores?.elim?.border
+                            }">
                             <td class="text-start ps-3 fw-bold">
                                 <span>{{ eliminatoriasData?.nome || 'RESUL. ELIMINATORIAS' }}</span>
                             </td>
@@ -377,10 +519,26 @@
                         </tr>
 
                         <!-- Linha 3: COPAS (Manual) -->
-                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-copinhas">
+                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-copinhas"
+                            :class="{ 
+                                'has-custom-bg': !!selectedEntry.cores?.copasManual?.bg,
+                                'has-custom-text': !!selectedEntry.cores?.copasManual?.text,
+                                'has-custom-border': !!selectedEntry.cores?.copasManual?.border
+                            }"
+                            :style="{
+                                '--row-bg': selectedEntry.cores?.copasManual?.bg,
+                                '--row-text': selectedEntry.cores?.copasManual?.text,
+                                '--row-border': selectedEntry.cores?.copasManual?.border
+                            }">
                             <td class="text-start ps-3 fw-bold">
-                                <input v-if="selectedEntry.copasManual" v-model="selectedEntry.copasManual.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
-                                <span v-else class="text-secondary opacity-50">COPAS CONTINENTAIS</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input v-if="selectedEntry.copasManual" v-model="selectedEntry.copasManual.nome" class="table-input w-100 text-start ps-0" :style="{ background: 'transparent', color: selectedEntry.cores?.copasManual?.text || 'inherit' }">
+                                    <span v-else class="text-secondary opacity-50">COPAS CONTINENTAIS</span>
+                                    <button class="btn btn-link p-0 text-warning opacity-75 flex-shrink-0" style="font-size:0.8rem;"
+                                        @click="openColorModal('copasManual', selectedEntry.copasManual?.nome || 'Copas Continentais')" title="Personalizar Cores">
+                                        <i class="bi bi-palette"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td class="fw-bold">---</td>
                             <td class="fw-bold text-info"><span>{{ (Number(selectedEntry.copasManual?.vitorias || 0) * 3) + Number(selectedEntry.copasManual?.empates || 0) }}</span></td>
@@ -394,54 +552,107 @@
                             <td class="fw-bold"><span>{{ calculateWinRate({ vitorias: selectedEntry.copasManual?.vitorias, empates: selectedEntry.copasManual?.empates, jogos: Number(selectedEntry.copasManual?.vitorias||0)+Number(selectedEntry.copasManual?.empates||0)+Number(selectedEntry.copasManual?.derrotas||0) }) }}%</span></td>
                         </tr>
 
-                        <!-- Linha 4: AMISTOSOS (Manual) -->
-                        <tr :class="selectedEntry.tipo === 'selecao' ? 'row-sel-amistosos' : 'row-amistosos'">
+                        <!-- EXTRA COMPETITIONS (Clubes) -->
+                        <template v-if="selectedEntry.tipo !== 'selecao'">
+                            <tr v-for="(comp, idx) in selectedEntry.extraCompetitions" :key="'extra-'+idx" class="row-amistosos"
+                                :class="{ 
+                                    'has-custom-bg': !!comp.bgColor,
+                                    'has-custom-text': !!comp.textColor,
+                                    'has-custom-border': !!comp.borderColor
+                                }"
+                                :style="{
+                                    '--row-bg': comp.bgColor,
+                                    '--row-text': comp.textColor,
+                                    '--row-border': comp.borderColor
+                                }">
+                                <td class="text-start ps-3 fw-bold d-flex align-items-center gap-2 border-0">
+                                    <input v-model="comp.nome" @change="applyGlobalColor(comp)" class="table-input flex-grow-1 text-start ps-0" :style="{ background: 'transparent', color: comp.textColor || 'inherit' }" placeholder="Nome da Competição...">
+                                    <button class="btn btn-link p-0 text-warning opacity-75" style="font-size:0.8rem;"
+                                        @click="openColorModal('extra', comp.nome || 'Competição Extra', idx)" title="Personalizar Cores">
+                                        <i class="bi bi-palette"></i>
+                                    </button>
+                                    <button class="btn btn-link p-0 text-danger ms-1" @click="selectedEntry.extraCompetitions.splice(idx, 1)"><i class="bi bi-x-circle"></i></button>
+                                </td>
+                                <td>
+                                    <input v-model="comp.posicao" class="table-input" :style="{ color: comp.textColor || 'inherit' }" placeholder="Ex: Semi / Não jogou">
+                                </td>
+                                <td class="fw-bold text-info">
+                                    <span>{{ (Number(comp.vitorias||0)*3) + Number(comp.empates||0) }}</span>
+                                </td>
+                                <td class="fw-bold">
+                                    <span :style="{ color: comp.textColor || 'inherit' }">{{ Number(comp.vitorias||0) + Number(comp.empates||0) + Number(comp.derrotas||0) }}</span>
+                                </td>
+                                <td><input v-model.number="comp.vitorias" class="table-input" :style="{ color: comp.textColor || 'inherit' }"></td>
+                                <td><input v-model.number="comp.empates" class="table-input" :style="{ color: comp.textColor || 'inherit' }"></td>
+                                <td><input v-model.number="comp.derrotas" class="table-input" :style="{ color: comp.textColor || 'inherit' }"></td>
+                                <td><input v-model.number="comp.golsPro" class="table-input" :style="{ color: comp.textColor || 'inherit' }"></td>
+                                <td><input v-model.number="comp.golsContra" class="table-input" :style="{ color: comp.textColor || 'inherit' }"></td>
+                                <td><span :style="{ color: comp.textColor || 'inherit' }">{{ (comp.golsPro || 0) - (comp.golsContra || 0) }}</span></td>
+                                <td class="fw-bold">
+                                    <span :style="{ color: comp.textColor || 'inherit' }">{{ calculateWinRate({ vitorias: comp.vitorias, empates: comp.empates, jogos: Number(comp.vitorias||0)+Number(comp.empates||0)+Number(comp.derrotas||0) }) }}%</span>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <!-- Linha 4: AMISTOSOS (Seleções) -->
+                        <tr v-if="selectedEntry.tipo === 'selecao'" class="row-sel-amistosos"
+                            :class="{ 
+                                'has-custom-bg': !!selectedEntry.cores?.amistosos?.bg,
+                                'has-custom-text': !!selectedEntry.cores?.amistosos?.text,
+                                'has-custom-border': !!selectedEntry.cores?.amistosos?.border
+                            }"
+                            :style="{
+                                '--row-bg': selectedEntry.cores?.amistosos?.bg,
+                                '--row-text': selectedEntry.cores?.amistosos?.text,
+                                '--row-border': selectedEntry.cores?.amistosos?.border
+                            }">
                             <td class="text-start ps-3 fw-bold">
-                                <input v-if="selectedEntry.tipo === 'selecao' && selectedEntry.amistosos" v-model="selectedEntry.amistosos.nome" class="table-input w-100 text-start ps-0" style="background: transparent;">
-                                <span v-else-if="selectedEntry.tipo === 'selecao'" class="text-secondary opacity-50">AMISTOSOS NA TEMPORADA</span>
-                                <span v-else>TOTAL OUTRAS COMPETIÇÕES</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input v-if="selectedEntry.amistosos" v-model="selectedEntry.amistosos.nome" class="table-input w-100 text-start ps-0" :style="{ background: 'transparent', color: selectedEntry.cores?.amistosos?.text || 'inherit' }">
+                                    <span v-else class="text-secondary opacity-50">AMISTOSOS NA TEMPORADA</span>
+                                    <button class="btn btn-link p-0 text-warning opacity-75 flex-shrink-0" style="font-size:0.8rem;"
+                                        @click="openColorModal('amistosos', selectedEntry.amistosos?.nome || 'Amistosos')" title="Personalizar Cores">
+                                        <i class="bi bi-palette"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td><span>---</span></td>
                             <td class="fw-bold text-info">
-                                <span v-if="selectedEntry.tipo === 'selecao'">{{ (Number(selectedEntry.amistosos?.vitorias || 0)*3) + Number(selectedEntry.amistosos?.empates || 0) }}</span>
-                                <span v-else>{{ copasPontosCalculado }}</span>
+                                <span>{{ (Number(selectedEntry.amistosos?.vitorias || 0)*3) + Number(selectedEntry.amistosos?.empates || 0) }}</span>
                             </td>
                             <td class="fw-bold">
-                                <span v-if="selectedEntry.tipo === 'selecao'">{{ Number(selectedEntry.amistosos?.vitorias||0) + Number(selectedEntry.amistosos?.empates||0) + Number(selectedEntry.amistosos?.derrotas||0) }}</span>
-                                <span v-else>{{ copasJogosCalculado }}</span>
+                                <span>{{ Number(selectedEntry.amistosos?.vitorias||0) + Number(selectedEntry.amistosos?.empates||0) + Number(selectedEntry.amistosos?.derrotas||0) }}</span>
                             </td>
-                            <td>
-                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.vitorias" class="table-input">
-                                <input v-else v-model.number="selectedEntry.copas.vitorias" class="table-input">
-                            </td>
-                            <td>
-                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.empates" class="table-input">
-                                <input v-else v-model.number="selectedEntry.copas.empates" class="table-input">
-                            </td>
-                            <td>
-                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.derrotas" class="table-input">
-                                <input v-else v-model.number="selectedEntry.copas.derrotas" class="table-input">
-                            </td>
-                            <td>
-                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.golsPro" class="table-input">
-                                <input v-else v-model.number="selectedEntry.copas.golsPro" class="table-input">
-                            </td>
-                            <td>
-                                <input v-if="selectedEntry.tipo === 'selecao'" v-model.number="selectedEntry.amistosos.golsContra" class="table-input">
-                                <input v-else v-model.number="selectedEntry.copas.golsContra" class="table-input">
-                            </td>
-                            <td v-if="selectedEntry.tipo === 'selecao'"><span>{{ Number(selectedEntry.amistosos?.golsPro||0) - Number(selectedEntry.amistosos?.golsContra||0) }}</span></td>
-                            <td v-else-if="selectedEntry.copas"><span>{{ (selectedEntry.copas?.golsPro || 0) - (selectedEntry.copas?.golsContra || 0) }}</span></td>
-                            <td v-else>0</td>
+                            <td><input v-model.number="selectedEntry.amistosos.vitorias" class="table-input"></td>
+                            <td><input v-model.number="selectedEntry.amistosos.empates" class="table-input"></td>
+                            <td><input v-model.number="selectedEntry.amistosos.derrotas" class="table-input"></td>
+                            <td><input v-model.number="selectedEntry.amistosos.golsPro" class="table-input"></td>
+                            <td><input v-model.number="selectedEntry.amistosos.golsContra" class="table-input"></td>
+                            <td><span>{{ Number(selectedEntry.amistosos?.golsPro||0) - Number(selectedEntry.amistosos?.golsContra||0) }}</span></td>
                             <td class="fw-bold">
-                                <span v-if="selectedEntry.tipo === 'selecao'">{{ calculateWinRate({ vitorias: selectedEntry.amistosos?.vitorias, empates: selectedEntry.amistosos?.empates, jogos: Number(selectedEntry.amistosos?.vitorias||0)+Number(selectedEntry.amistosos?.empates||0)+Number(selectedEntry.amistosos?.derrotas||0) }) }}%</span>
-                                <span v-else>{{ calculateWinRate({ pontos: copasPontosCalculado, jogos: copasJogosCalculado }) }}%</span>
+                                <span>{{ calculateWinRate({ vitorias: selectedEntry.amistosos?.vitorias, empates: selectedEntry.amistosos?.empates, jogos: Number(selectedEntry.amistosos?.vitorias||0)+Number(selectedEntry.amistosos?.empates||0)+Number(selectedEntry.amistosos?.derrotas||0) }) }}%</span>
                             </td>
                         </tr>
 
                         <!-- Linha 5: TOTAL TEMPORADA -->
-                        <tr class="row-total">
-                            <td class="text-start ps-3 fw-black"><span>RESULTADO DA TEMPORADA</span></td>
+                        <tr class="row-total"
+                            :class="{ 
+                                'has-custom-bg': !!selectedEntry.cores?.total?.bg,
+                                'has-custom-text': !!selectedEntry.cores?.total?.text,
+                                'has-custom-border': !!selectedEntry.cores?.total?.border
+                            }"
+                            :style="{
+                                '--row-bg': selectedEntry.cores?.total?.bg,
+                                '--row-text': selectedEntry.cores?.total?.text,
+                                '--row-border': selectedEntry.cores?.total?.border
+                            }">
+                            <td class="text-start ps-3 fw-black d-flex align-items-center gap-2">
+                                <span :style="{ color: selectedEntry.cores?.total?.text || 'inherit' }">RESULTADO DA TEMPORADA</span>
+                                <button class="btn btn-link p-0 text-warning opacity-75" style="font-size:0.8rem;"
+                                    @click="openColorModal('total', 'Total da Temporada')" title="Personalizar Cores">
+                                    <i class="bi bi-palette"></i>
+                                </button>
+                            </td>
                             <td><span>---</span></td>
                             <td class="fw-bold text-info"><span>{{ totalStats.pontos }}</span></td>
                             <td class="fw-bold"><span>{{ totalStats.jogos }}</span></td>
@@ -455,6 +666,12 @@
                         </tr>
                     </tbody>
                 </table>
+                </div> <!-- Fim da card-top-section -->
+                <div v-if="selectedEntry.tipo !== 'selecao'" class="px-3 pb-2 pt-1 bg-dark">
+                    <button class="btn btn-sm btn-outline-info opacity-75 fw-bold text-uppercase w-100" @click="addExtraCompetition">
+                        <i class="bi bi-plus-circle me-1"></i> Adicionar Competição
+                    </button>
+                </div>
                 <div class="p-3">
                    <div class="row g-2">
                        <div class="col-md-4">
@@ -562,33 +779,87 @@
         </div>
 
         <!-- LADO DIREITO: DASHBOARDS (30%) -->
-        <div class="col-xl-4 px-2">
-            <div class="d-flex flex-column gap-3 h-100">
+        <div v-show="activeTab === 'stats'" class="col-xl-4 px-2">
+            <div class="d-flex flex-wrap gap-2 h-100 align-content-start">
                 <!-- Gráfico Superior: Liga (Clubes) ou Copa do Mundo (Seleções) -->
-                <div class="gauge-card-custom theme-liga text-center p-1 flex-fill d-flex flex-column justify-content-center">
-                    <div class="text-uppercase fw-bold mb-1 x-small opacity-40">
-                        {{ selectedEntry.tipo === 'selecao' ? 'Aproveitamento Copa do Mundo' : 'Aproveitamento Liga' }}
+                <div class="gauge-card-custom text-center p-1 flex-fill d-flex flex-column justify-content-center" 
+                     :class="!selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.bg ? 'theme-liga' : ''"
+                     :style="{ 
+                        minWidth: '45%', maxWidth: '50%',
+                        backgroundColor: selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.bg || '',
+                        borderLeft: selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.border ? '4px solid ' + selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.border : '',
+                        color: selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.text || ''
+                     }">
+                    <div class="text-uppercase fw-bold mb-1 x-small opacity-40 text-truncate px-1" style="margin:0 auto; max-width: 120px;" :style="{ color: selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.text || 'inherit' }">
+                        {{ selectedEntry.tipo === 'selecao' ? 'Copa do Mundo' : (currentSeasonData?.nome || 'LIGA') }}
                     </div>
                     <CareerGauge 
                         :value="selectedEntry.tipo === 'selecao' ? calculateWinRate({ vitorias: selectedEntry.copaMundo?.vitorias, empates: selectedEntry.copaMundo?.empates, jogos: selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0)) : 0 }) : calculateWinRate(currentSeasonData)" 
                         :label="selectedEntry.tipo === 'selecao' ? 'Copa' : 'Liga'" 
                     />
-                    <div class="performance-status mt-2 text-uppercase fw-black">
+                    <div class="performance-status mt-2 text-uppercase fw-black" style="font-size:0.75rem;" :style="{ color: selectedEntry.cores?.[selectedEntry.tipo === 'selecao' ? 'copaMundo' : 'liga']?.text || 'inherit' }">
                         {{ getPerformanceStatus(selectedEntry.tipo === 'selecao' ? calculateWinRate({ vitorias: selectedEntry.copaMundo?.vitorias, empates: selectedEntry.copaMundo?.empates, jogos: selectedEntry.copaMundo ? (Number(selectedEntry.copaMundo.vitorias||0)+Number(selectedEntry.copaMundo.empates||0)+Number(selectedEntry.copaMundo.derrotas||0)) : 0 }) : calculateWinRate(currentSeasonData)) }}
                     </div>
                 </div>
+
+                <!-- NEW: Gráficos Extras (V-for extraCompetitions) -->
+                <template v-if="selectedEntry.tipo === 'clube'">
+                    <div v-for="(comp, i) in selectedEntry.extraCompetitions" :key="'extra-gauge-'+i" 
+                         class="gauge-card-custom text-center p-1 flex-fill d-flex flex-column justify-content-center"
+                         :class="!comp.bgColor ? 'theme-copa' : ''"
+                         :style="{ 
+                            minWidth: '45%', maxWidth: '50%',
+                            backgroundColor: comp.bgColor || '',
+                            borderLeft: comp.borderColor ? '4px solid ' + comp.borderColor : '',
+                            color: comp.textColor || ''
+                         }">
+                        <div class="text-uppercase fw-bold mb-1 x-small opacity-40 text-truncate px-1" style="margin:0 auto; max-width: 120px;" :title="comp.nome || 'COMPETIÇÃO'" :style="{ color: comp.textColor || 'inherit' }">{{ comp.nome || 'COMPETIÇÃO' }}</div>
+                        <CareerGauge 
+                            :value="calculateWinRate({ vitorias: comp.vitorias, empates: comp.empates, jogos: Number(comp.vitorias||0)+Number(comp.empates||0)+Number(comp.derrotas||0) })" 
+                            label="Copa" 
+                        />
+                        <div class="performance-status mt-2 text-uppercase fw-black" style="font-size:0.75rem;" :style="{ color: comp.textColor || 'inherit' }">{{ getPerformanceStatus(calculateWinRate({ vitorias: comp.vitorias, empates: comp.empates, jogos: Number(comp.vitorias||0)+Number(comp.empates||0)+Number(comp.derrotas||0) })) }}</div>
+                    </div>
+                </template>
+                <template v-else>
+                    <div v-if="selectedEntry.copasManual && selectedEntry.copasManual.nome" 
+                         class="gauge-card-custom text-center p-1 flex-fill d-flex flex-column justify-content-center" 
+                         :class="!selectedEntry.cores?.copasManual?.bg ? 'theme-copa' : ''"
+                         :style="{ 
+                            minWidth: '45%', maxWidth: '50%',
+                            backgroundColor: selectedEntry.cores?.copasManual?.bg || '',
+                            borderLeft: selectedEntry.cores?.copasManual?.border ? '4px solid ' + selectedEntry.cores?.copasManual?.border : '',
+                            color: selectedEntry.cores?.copasManual?.text || ''
+                         }">
+                        <div class="text-uppercase fw-bold mb-1 x-small opacity-40 text-truncate px-1" style="margin:0 auto; max-width: 120px;" :style="{ color: selectedEntry.cores?.copasManual?.text || 'inherit' }">{{ selectedEntry.copasManual.nome }}</div>
+                        <CareerGauge 
+                            :value="calculateWinRate({ vitorias: selectedEntry.copasManual?.vitorias, empates: selectedEntry.copasManual?.empates, jogos: Number(selectedEntry.copasManual?.vitorias||0)+Number(selectedEntry.copasManual?.empates||0)+Number(selectedEntry.copasManual?.derrotas||0) })" 
+                            label="Copas" 
+                        />
+                        <div class="performance-status mt-2 text-uppercase fw-black" style="font-size:0.75rem;" :style="{ color: selectedEntry.cores?.copasManual?.text || 'inherit' }">{{ getPerformanceStatus(calculateWinRate({ vitorias: selectedEntry.copasManual?.vitorias, empates: selectedEntry.copasManual?.empates, jogos: Number(selectedEntry.copasManual?.vitorias||0)+Number(selectedEntry.copasManual?.empates||0)+Number(selectedEntry.copasManual?.derrotas||0) })) }}</div>
+                    </div>
+                </template>
+
                 <!-- Gráfico Inferior: Temporada (Total) -->
-                <div class="gauge-card-custom theme-total text-center p-1 flex-fill d-flex flex-column justify-content-center">
-                    <div class="text-uppercase fw-bold mb-2 x-small opacity-40">Aproveitamento Temporada</div>
-                    <CareerGauge :value="calculateWinRate(totalStats)" label="Temporada" />
-                    <div class="performance-status mt-2 text-uppercase fw-black">{{ getPerformanceStatus(calculateWinRate(totalStats)) }}</div>
+                <div class="gauge-card-custom text-center p-1 flex-fill d-flex flex-column justify-content-center mt-2"
+                     :class="!selectedEntry.cores?.total?.bg ? 'theme-total' : ''"
+                     :style="{ 
+                         minWidth: '100%', 
+                         border: !selectedEntry.cores?.total?.bg ? '1px solid rgba(255,165,0,0.3)' : '',
+                         backgroundColor: selectedEntry.cores?.total?.bg || '',
+                         borderLeft: selectedEntry.cores?.total?.border ? '4px solid ' + selectedEntry.cores?.total?.border : '',
+                         color: selectedEntry.cores?.total?.text || ''
+                     }">
+                    <div class="text-uppercase fw-bold mb-2 x-small opacity-75" :class="!selectedEntry.cores?.total?.text ? 'text-warning' : ''" :style="{ color: selectedEntry.cores?.total?.text || 'inherit' }">Aproveitamento Total Temporada</div>
+                    <CareerGauge :value="calculateWinRate(totalStats)" label="Total" />
+                    <div class="performance-status mt-2 text-uppercase fw-black" :class="!selectedEntry.cores?.total?.text ? 'text-warning' : ''" :style="{ color: selectedEntry.cores?.total?.text || 'inherit' }">{{ getPerformanceStatus(calculateWinRate(totalStats)) }}</div>
                 </div>
             </div>
         </div>
       </div>
 
       <!-- Orçamento Financeiro (Apenas Clubes) -->
-      <div v-if="selectedEntry?.tipo === 'clube'" class="row m-0 mb-4 px-2">
+      <div v-show="activeTab === 'stats' && selectedEntry?.tipo === 'clube'" class="row m-0 mb-4 px-2">
          <div class="col-12 mt-2">
             <div class="table-section-header text-center py-1 text-uppercase small fw-bold">ORÇAMENTO FINANCEIRO (PRÓX. TEMPORADA)</div>
             
@@ -632,15 +903,172 @@
             </div>
          </div>
       </div>
-   </template>
+      <!-- INÍCIO DA ABA AWARDS -->
+      <div v-if="activeTab === 'awards' && selectedEntry" class="row m-0 w-100">
+            <div class="col-12 px-3 py-4">
 
-      <!-- Mensagem de Estado Vazio -->
-      <div v-else-if="!showForm" class="col-12 py-5 text-center opacity-50">
-          <i class="bi bi-folder-x display-1 mb-3"></i>
-          <h3 class="fw-black text-uppercase">Nenhuma Temporada Registrada</h3>
-          <p>Selecione "Clubes" ou "Seleções" para ver seu histórico ou clique em "Nova Temporada".</p>
+
+                <!-- ARTILHEIROS DO TIME -->
+                <div v-if="teamSeasonScorers.length > 0" class="mb-5">
+                    <h4 class="fw-black text-uppercase ls-2 mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-bullseye text-danger"></i> Maiores Artilheiros
+                    </h4>
+                    <div class="row g-3">
+                        <div v-for="(scorer, idx) in teamSeasonScorers" :key="'scorer-'+idx" class="col-md-6 col-xl-4">
+                            <div class="premium-scorer-card-h p-3 d-flex align-items-center gap-3">
+                                <div class="text-center" style="width: 30px;">
+                                    <h4 class="m-0 fw-black text-secondary">#{{ idx + 1 }}</h4>
+                                </div>
+                                <div style="width: 60px; height: 60px; border-radius: 10px; overflow: hidden; background: #000; flex-shrink: 0; border: 2px solid #d4af37;">
+                                    <img v-if="scorer.foto" :src="scorer.foto" style="width: 100%; height: 100%; object-fit: cover;">
+                                    <div v-else class="w-100 h-100 d-flex align-items-center justify-content-center opacity-50"><i class="bi bi-person"></i></div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-black fs-5 text-uppercase text-warning">{{ scorer.nome }}</div>
+                                    <div class="small opacity-75">{{ scorer.campeonato }}</div>
+                                </div>
+                                <div class="text-end ps-3 border-start border-secondary border-opacity-25">
+                                    <h2 class="m-0 fw-black text-white">{{ scorer.gols }}</h2>
+                                    <span class="x-small text-uppercase opacity-50">Gols</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOGADORES NO TIME DA TEMPORADA -->
+                <div v-if="teamSeasonTOTS.length > 0" class="mb-5">
+                    <div v-for="(compTots, cIdx) in teamSeasonTOTS" :key="'comp-tots-'+cIdx" class="mb-5 p-0 overflow-hidden border border-success border-opacity-20 position-relative shadow-lg rounded-4" style="min-height: 550px;">
+                       <img src="/logos/competitions/campo_futebol.png" alt="Campo" class="position-absolute top-0 start-0 w-100 h-100" style="object-fit: cover; z-index: 0; opacity: 0.9;">
+                       <div class="position-absolute top-0 w-100 p-3 bg-black bg-opacity-75 text-center z-2 shadow border-bottom border-white border-opacity-10 d-flex justify-content-between align-items-center">
+                          <h4 class="m-0 text-white fw-black text-uppercase ls-2">
+                             <i class="bi bi-shield-check text-success me-2"></i> Jogadores no Time da Temporada
+                          </h4>
+                          <span class="badge bg-success bg-opacity-25 border border-success border-opacity-50 fs-6 text-uppercase">{{ compTots.campeonato }}</span>
+                       </div>
+                       
+                       <div class="pt-5 mt-5 position-relative z-1 d-flex flex-column justify-content-evenly pb-4" style="min-height: 500px;">
+                            <div v-for="(line, lIdx) in compTots.linhas" :key="'linha-'+lIdx" class="d-flex flex-wrap w-100 my-1 justify-content-center align-items-center" :style="{ gap: getLineGap(line.id, line.list.length) }">
+                                <div v-for="(jog, idx) in line.list" :key="'tt-'+lIdx+'-'+idx" style="width: 320px;">
+                                    <div v-if="jog.isUserTeam" class="d-flex align-items-center position-relative shadow-lg" 
+                                         style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 8px 14px; border: 2px solid #e1c784; width: 100%; border-radius: 4px;">
+                                        <div style="flex-shrink: 0; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 4px; margin-right: 12px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                                            <img v-if="jog.fotoUrl" :src="jog.fotoUrl" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                            <TeamShield v-else :teamName="jog.clube" :size="40" borderless :season="selectedEntry.temporada" />
+                                        </div>
+                                        <div class="d-flex flex-column text-start" style="min-width: 0; flex-grow: 1;">
+                                            <div class="fw-black text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 1.1rem; line-height: 1.1;">
+                                                <NationalFlag v-if="jog.nacionalidade" :countryName="jog.nacionalidade" :size="24" class="shadow-sm rounded-1" />
+                                                {{ jog.nome }}
+                                            </div>
+                                            <div class="mt-1 px-1 text-truncate text-uppercase text-light border border-dark border-opacity-25 d-flex align-items-center justify-content-between" style="background-color: #1a3c5a; font-size: 0.7rem; letter-spacing: 0.5px; opacity: 0.9;">
+                                                <span>{{ jog.clube }}</span>
+                                                <span class="text-warning fw-black">{{ jog.posicaoCampo || 'POS' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Espaço reservado invisível para manter a estrutura do campo caso o jogador não seja do time -->
+                                    <div v-else style="width: 100%; height: 70px;"></div>
+                                </div>
+                            </div>
+                       </div>
+                    </div>
+                </div>
+
+                <!-- PRÊMIOS INDIVIDUAIS -->
+                <div v-if="teamSeasonAwards.length > 0" class="mb-5">
+                    <h4 class="fw-black text-uppercase ls-2 mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-star-fill text-warning"></i> Prêmios de Destaque
+                    </h4>
+                    <div class="row g-3">
+                        <div v-for="(award, idx) in teamSeasonAwards" :key="'award-'+idx" class="col-md-6">
+                            <div class="card bg-black p-4 rounded-4 shadow position-relative h-100" 
+                                 :class="award.titulo === 'Melhor Técnico' ? 'border-info border-opacity-25' : 'border-warning border-opacity-25'" 
+                                 style="overflow: hidden;">
+                                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" 
+                                     :style="award.titulo === 'Melhor Técnico' ? 'background: radial-gradient(circle at center, var(--bs-info), transparent 70%); pointer-events: none;' : 'background: radial-gradient(circle at center, var(--bs-warning), transparent 70%); pointer-events: none;'"></div>
+                                
+                                <div class="fw-black mb-3 text-uppercase ls-1 position-relative z-1 text-center"
+                                     :class="award.titulo === 'Melhor Técnico' ? 'text-info' : 'text-warning'">
+                                    <i class="bi me-2" :class="award.titulo === 'Melhor Técnico' ? 'bi-person-workspace' : 'bi-star-fill'"></i>{{ award.titulo }}
+                                </div>
+                                
+                                <div class="d-flex align-items-center justify-content-center gap-4 position-relative z-1 mt-2 text-start">
+                                    <img v-if="award.titulo === 'Melhor Técnico'" src="/logos/competitions/tecnico_temporada.png" style="width: 90px; filter: drop-shadow(0 0 15px rgba(13,202,240,0.4)); object-fit: contain;">
+                                    <img v-else src="/logos/competitions/melhor_jogador_temporada.png" style="width: 90px; filter: drop-shadow(0 0 15px rgba(255,193,7,0.4)); object-fit: contain;">
+                                    
+                                    <div class="flex-grow-1">
+                                        <div class="fw-black text-light text-uppercase" style="line-height: 1.1; font-size: 1.4rem;">
+                                            {{ award.nome }}
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-start gap-2 mt-2">
+                                            <div class="text-secondary fw-bold small text-uppercase">{{ award.campeonato || selectedEntry.timeNome }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ESTADO VAZIO -->
+                <div v-if="teamSeasonScorers.length === 0 && teamSeasonAwards.length === 0 && teamSeasonTOTS.length === 0" class="text-center py-5 opacity-50">
+                    <i class="bi bi-inbox display-1 text-secondary mb-3"></i>
+                    <h5 class="fw-bold text-uppercase">Nenhum Destaque Registrado</h5>
+                    <p class="small">Os artilheiros, prêmios e jogadores no time da temporada deste time neste ano aparecerão aqui automaticamente se preenchidos no Universo.</p>
+                </div>
+            </div>
       </div>
+    </template>
 
+    </div>
+
+    <!-- Mensagem de Estado Vazio -->
+    <div v-else-if="!showForm && !selectedEntry" class="col-12 py-5 text-center opacity-50">
+        <i class="bi bi-folder-x display-1 mb-3"></i>
+        <h3 class="fw-black text-uppercase">Nenhuma Temporada Registrada</h3>
+        <p>Selecione "Clubes" ou "Seleções" para ver seu histórico ou clique em "Nova Temporada".</p>
+    </div>
+
+    <!-- Color Modal -->
+    <div v-if="showColorModal" class="modal-backdrop-custom d-flex align-items-center justify-content-center">
+        <div class="modal-content-custom bg-dark border border-secondary p-4 rounded shadow-lg text-center" style="width: 450px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="text-white fw-black m-0 text-uppercase d-flex align-items-center gap-2">
+                    <i class="bi bi-palette text-warning"></i> Cores: {{ colorModalName }}
+                </h4>
+                <button class="btn btn-sm btn-link text-secondary" @click="showColorModal = false"><i class="bi bi-x-lg" style="font-size: 1.2rem;"></i></button>
+            </div>
+            
+            <div class="row g-3 mb-4 text-start">
+                <div class="col-12">
+                    <label class="form-label x-small fw-bold opacity-75">Cor de Fundo</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" v-model="tempColors.bg" class="form-control form-control-color bg-black border-secondary w-100 p-1" title="Escolha a cor">
+                        <input type="text" v-model="tempColors.bg" class="form-control bg-black text-white border-secondary" placeholder="#000000">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label x-small fw-bold opacity-75">Cor do Texto</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" v-model="tempColors.text" class="form-control form-control-color bg-black border-secondary w-100 p-1" title="Escolha a cor">
+                        <input type="text" v-model="tempColors.text" class="form-control bg-black text-white border-secondary" placeholder="#FFFFFF">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label x-small fw-bold opacity-75">Cor da Borda Inferior / Contorno</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" v-model="tempColors.border" class="form-control form-control-color bg-black border-secondary w-100 p-1" title="Escolha a cor">
+                        <input type="text" v-model="tempColors.border" class="form-control bg-black text-white border-secondary" placeholder="Vazio = Padrão">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 mt-4">
+                <GameButton class="w-100" @click="saveColorSelection">SALVAR CORES</GameButton>
+                <button class="btn btn-outline-danger" @click="resetColors" title="Remover Cores"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
     </div>
 
     <!-- Budget Modal -->
@@ -699,6 +1127,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import GamePanel from '../components/GamePanel.vue'
 import GameButton from '../components/GameButton.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
@@ -707,6 +1136,7 @@ import NationalFlag from '../components/NationalFlag.vue'
 import CareerGauge from '../components/CareerGauge.vue'
 import { careerStore } from '../services/career.store'
 import { seasonStore } from '../services/season.store'
+import { awardsStore } from '../services/awards.store'
 import { rankingsStore } from '../services/rankings.store'
 import { NATIONAL_TEAMS_DATA } from '../data/nationalTeams.data'
 import { CLUBS_DATA } from '../data/clubs.data'
@@ -715,16 +1145,92 @@ import { ALL_COMPETITIONS_DATA } from '../services/competitions.data'
 import { INTERNATIONAL_DATA } from '../data/internationalCompetitions'
 import { NATIONAL_COMPETITIONS_STRUCTURE } from '../services/national.data'
 import { dataSearchService } from '../services/dataSearch.service'
-import { getTrofeuPath, normalizeString, normalizeYearStrict } from '../services/utils'
+import { getTrofeuPath, normalizeString, normalizeYearStrict, getSeasonFinalYear } from '../services/utils'
 
+const route = useRoute()
 const history = computed(() => careerStore.history)
 const selectedEntry = ref(null)
 const careerIndex = ref(0)
 const activeType = ref('clube') // 'clube' | 'selecao'
+const activeTab = ref('stats') // 'stats' | 'awards'
 const showForm = ref(false)
+const showColorModal = ref(false)
 const showTeams = ref(false)
 const showTrophyModal = ref(false)
 const showBudgetModal = ref(false)
+
+const tempColors = ref({ bg: '', text: '', border: '' })
+const colorModalTarget = ref(null)
+const colorModalName = ref('')
+const colorModalExtraIndex = ref(-1)
+
+const openColorModal = (targetKey, name, extraIndex = -1) => {
+    colorModalTarget.value = targetKey;
+    colorModalName.value = name || targetKey;
+    colorModalExtraIndex.value = extraIndex;
+    
+    // Carregar cores atuais
+    let current = { bg: '', text: '', border: '' };
+    if (extraIndex > -1) {
+        const comp = selectedEntry.value.extraCompetitions[extraIndex];
+        current = { bg: comp.bgColor || '', text: comp.textColor || '', border: comp.borderColor || '' };
+    } else {
+        current = selectedEntry.value.cores?.[targetKey] || { bg: '', text: '', border: '' };
+    }
+    
+    tempColors.value = { ...current };
+    showColorModal.value = true;
+}
+
+const saveGlobalCompetitionColor = (compName, colors) => {
+    if (!compName) return;
+    let globalColors = JSON.parse(localStorage.getItem('freefoot_comp_colors') || '{}');
+    globalColors[compName.trim().toUpperCase()] = { ...colors };
+    localStorage.setItem('freefoot_comp_colors', JSON.stringify(globalColors));
+}
+
+const getGlobalCompetitionColor = (compName) => {
+    if (!compName) return null;
+    let globalColors = JSON.parse(localStorage.getItem('freefoot_comp_colors') || '{}');
+    return globalColors[compName.trim().toUpperCase()] || null;
+}
+
+const applyGlobalColor = (comp) => {
+    const globalC = getGlobalCompetitionColor(comp.nome);
+    if (globalC) {
+        comp.bgColor = globalC.bg || '';
+        comp.textColor = globalC.text || '';
+        comp.borderColor = globalC.border || '';
+    }
+}
+
+const saveColorSelection = async () => {
+    if (!selectedEntry.value.cores) {
+        selectedEntry.value.cores = {};
+    }
+    
+    if (colorModalExtraIndex.value > -1) {
+        const comp = selectedEntry.value.extraCompetitions[colorModalExtraIndex.value];
+        comp.bgColor = tempColors.value.bg;
+        comp.textColor = tempColors.value.text;
+        comp.borderColor = tempColors.value.border;
+        
+        // Salvar padronização global se tiver nome
+        if (comp.nome) {
+            saveGlobalCompetitionColor(comp.nome, tempColors.value);
+        }
+    } else {
+        selectedEntry.value.cores[colorModalTarget.value] = { ...tempColors.value };
+    }
+    
+    await careerStore.saveEntry(JSON.parse(JSON.stringify(selectedEntry.value)));
+    showColorModal.value = false;
+}
+
+const resetColors = async () => {
+    tempColors.value = { bg: '', text: '', border: '' };
+    await saveColorSelection();
+}
 
 const openBudgetModal = () => {
     showBudgetModal.value = true
@@ -755,6 +1261,51 @@ const sanitizeEntry = (entry) => {
     sanitized.copasManual = ensure(sanitized.copasManual, 'COPAS CONTINENTAIS');
     sanitized.amistosos = ensure(sanitized.amistosos, 'AMISTOSOS NA TEMPORADA');
     sanitized.liga = ensure(sanitized.liga, 'LIGA');
+    
+    if (!sanitized.cores) {
+        sanitized.cores = {
+            card: { bg: '', text: '', border: '' },
+            liga: { bg: '', text: '', border: '' },
+            copaMundo: { bg: '', text: '', border: '' },
+            elim: { bg: '', text: '', border: '' },
+            copasManual: { bg: '', text: '', border: '' },
+            amistosos: { bg: '', text: '', border: '' },
+            total: { bg: '', text: '', border: '' }
+        };
+    }
+    
+    // Assegurar compatibilidade de cores nas propriedades
+    ['card', 'liga', 'copaMundo', 'elim', 'copasManual', 'amistosos', 'total'].forEach(k => {
+        if (!sanitized.cores[k]) sanitized.cores[k] = { bg: '', text: '', border: '' };
+        if (sanitized.cores[k].border === undefined) sanitized.cores[k].border = '';
+    });
+    
+    if (!sanitized.extraCompetitions) {
+        sanitized.extraCompetitions = [];
+        // Migrar 'copas' antiga para o array se houver dados
+        if (sanitized.copas && (sanitized.copas.vitorias > 0 || sanitized.copas.empates > 0 || sanitized.copas.derrotas > 0)) {
+            sanitized.extraCompetitions.push({
+                nome: 'OUTRAS COMPETIÇÕES',
+                vitorias: sanitized.copas.vitorias,
+                empates: sanitized.copas.empates,
+                derrotas: sanitized.copas.derrotas,
+                golsPro: sanitized.copas.golsPro,
+                golsContra: sanitized.copas.golsContra,
+                bgColor: '',
+                textColor: '',
+                borderColor: ''
+            });
+            // Reset 'copas' to not migrate again
+            sanitized.copas = { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 };
+        }
+    } else {
+        // Garantir que competições existentes tenham cores padrão (vazias, para usar padrão do CSS se não preenchidas)
+        sanitized.extraCompetitions.forEach(comp => {
+            if (comp.bgColor === undefined) comp.bgColor = '';
+            if (comp.textColor === undefined) comp.textColor = '';
+            if (comp.borderColor === undefined) comp.borderColor = '';
+        });
+    }
     
     return sanitized;
 };
@@ -845,6 +1396,132 @@ const filteredHistory = computed(() => {
     return (history.value || []).filter(h => h && h.tipo === activeType.value)
 })
 
+const teamSeasonTOTS = computed(() => {
+    if (!selectedEntry.value || selectedEntry.value.tipo !== 'clube') return [];
+    if (selectedEntry.value.cicloEncerrado) return []; 
+    
+    const targetYear = getSeasonFinalYear(selectedEntry.value.temporada);
+    const seasons = seasonStore.list.filter(s => getSeasonFinalYear(s.ano) === targetYear);
+    
+    let totsComps = [];
+    seasons.forEach(season => {
+        if (season.timeDaTemporada && season.timeDaTemporada.length > 0) {
+            const hasOurPlayer = season.timeDaTemporada.some(j => normalizeString(j.clube) === normalizeString(selectedEntry.value.timeNome));
+            
+            if (hasOurPlayer) {
+                let players = [...season.timeDaTemporada];
+                while(players.length < 11) {
+                    players.push({ nome: '---', clube: '---', posicaoCampo: '' });
+                }
+                
+                players = players.map(j => {
+                    const isOur = normalizeString(j.clube) === normalizeString(selectedEntry.value.timeNome);
+                    if (isOur) {
+                        return { ...j, isUserTeam: true, campeonato: season.campeonato || season.competitionName || 'Universo' };
+                    } else {
+                        return { isUserTeam: false };
+                    }
+                });
+                
+                const linhas = [
+                    { id: 'linha1', list: [players[0], players[1]] },
+                    { id: 'linha2', list: [players[2]] },
+                    { id: 'linha3', list: [players[3], players[4]] },
+                    { id: 'linha4', list: [players[5]] },
+                    { id: 'linha5', list: [players[6], players[7]] },
+                    { id: 'linha6', list: [players[8], players[9]] },
+                    { id: 'linha7', list: [players[10]] }
+                ];
+                
+                totsComps.push({
+                    campeonato: season.campeonato || season.competitionName || 'Universo',
+                    linhas: linhas
+                });
+            }
+        }
+    });
+    return totsComps;
+});
+
+const getLineGap = (id, count = 1) => {
+  if (id === 'linha1') return '160px'; // 2 Atacantes
+  if (id === 'linha3') return '250px'; // 2 Meias Centrais
+  if (id === 'linha5') return '600px'; // 2 Laterais (Extremidades)
+  if (id === 'linha6') return '80px';  // 2 Zagueiros (Fechados)
+  return '0px'; 
+};
+
+const teamSeasonScorers = computed(() => {
+    if (!selectedEntry.value || selectedEntry.value.tipo !== 'clube') return [];
+    if (selectedEntry.value.cicloEncerrado) return [];
+    
+    const targetYear = getSeasonFinalYear(selectedEntry.value.temporada);
+    const seasons = seasonStore.list.filter(s => getSeasonFinalYear(s.ano) === targetYear);
+    
+    let scorers = [];
+    seasons.forEach(season => {
+        if (season.topScorers) {
+            const clubScorers = season.topScorers.filter(a => normalizeString(a.clube) === normalizeString(selectedEntry.value.timeNome));
+            scorers = scorers.concat(clubScorers.map(s => ({ ...s, campeonato: season.campeonato || season.competitionName || 'Universo' })));
+        }
+    });
+    return scorers.sort((a, b) => b.gols - a.gols);
+});
+
+const teamSeasonAwards = computed(() => {
+    if (!selectedEntry.value || selectedEntry.value.tipo !== 'clube') return [];
+    if (selectedEntry.value.cicloEncerrado) return [];
+    
+    const targetYear = getSeasonFinalYear(selectedEntry.value.temporada);
+    
+    let awards = [];
+    
+    awardsStore.list.forEach(a => {
+        if (getSeasonFinalYear(a.season) === targetYear && normalizeString(a.clube) === normalizeString(selectedEntry.value.timeNome)) {
+            awards.push({ ...a });
+        }
+    });
+    
+    const seasons = seasonStore.list.filter(s => getSeasonFinalYear(s.ano) === targetYear);
+    seasons.forEach(season => {
+        if (Array.isArray(season.titulos)) {
+            season.titulos.forEach(t => {
+                if (t.vencedores) {
+                    t.vencedores.forEach(v => {
+                        if (normalizeString(v.time) === normalizeString(selectedEntry.value.timeNome) || normalizeString(v.clube) === normalizeString(selectedEntry.value.timeNome)) {
+                            awards.push({
+                                titulo: t.nome,
+                                nome: v.nome,
+                                foto: v.foto,
+                                campeonato: season.campeonato || season.competitionName || 'Universo'
+                            });
+                        }
+                    });
+                }
+            });
+        } else if (typeof season.titulos === 'object' && season.titulos !== null) {
+            if (season.titulos.melhorJogador && normalizeString(season.titulos.melhorJogador.clube) === normalizeString(selectedEntry.value.timeNome)) {
+                awards.push({
+                    titulo: 'Melhor Jogador',
+                    nome: season.titulos.melhorJogador.nome,
+                    foto: season.titulos.melhorJogador.fotoUrl,
+                    campeonato: season.campeonato || season.competitionName || 'Universo'
+                });
+            }
+            if (season.titulos.melhorTecnico && normalizeString(season.titulos.melhorTecnico.clube) === normalizeString(selectedEntry.value.timeNome)) {
+                awards.push({
+                    titulo: 'Melhor Técnico',
+                    nome: season.titulos.melhorTecnico.nome,
+                    foto: season.titulos.melhorTecnico.fotoUrl,
+                    campeonato: season.campeonato || season.competitionName || 'Universo'
+                });
+            }
+        }
+    });
+    
+    return awards;
+});
+
 watch(activeType, () => {
     const list = filteredHistory.value
     if (list && list.length > 0) {
@@ -864,6 +1541,7 @@ const entryForm = ref({
     copasManual: { nome: 'COPAS CONTINENTAIS', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
     amistosos: { nome: 'AMISTOSOS NA TEMPORADA', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
     copas: { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 }, // Para compatibilidade clubes
+    extraCompetitions: [],
     titulos: [],
     rankInicio: '',
     rankFinal: '',
@@ -882,13 +1560,20 @@ const selectedNationalTeamData = computed(() => {
 
 const currentFederation = computed(() => {
     if (!selectedNationalTeamData.value) return null
-    const logoUrl = selectedNationalTeamData.value.continente
+    const cont = selectedNationalTeamData.value.continente
     
-    // 1. Buscar por URL exata
-    const found = Object.values(FEDERATIONS_DATA).find(f => f.logo === logoUrl)
+    // 1. Buscar por chave direta (Ex: "África")
+    if (cont && FEDERATIONS_DATA[cont]) return FEDERATIONS_DATA[cont]
+
+    // 2. Buscar por nome (Ex: "CAF")
+    let found = Object.values(FEDERATIONS_DATA).find(f => f.nome === cont)
     if (found) return found
 
-    // 2. Fallback por nome de país/continente se a URL falhar
+    // 3. Buscar por URL (Legado)
+    found = Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
+    if (found) return found
+
+    // 4. Fallback
     if (selectedEntry.value?.pais) {
         return FEDERATIONS_DATA[selectedEntry.value.pais] || null
     }
@@ -928,6 +1613,13 @@ onMounted(async () => {
     await careerStore.loadAll()
     await seasonStore.loadAll() 
     await rankingsStore.loadAll() 
+    if (!awardsStore.list.length) await awardsStore.loadAll()
+
+    const type = route.query.type
+    if (type && ['clube', 'selecao'].includes(type)) {
+        activeType.value = type
+    }
+
     if (history.value.length > 0) {
         const activeHistory = history.value.filter(h => h.tipo === activeType.value)
         if (activeHistory.length > 0) {
@@ -963,6 +1655,7 @@ const openForm = (entry = null) => {
             copasManual: { nome: 'COPAS CONTINENTAIS', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
             amistosos: { nome: 'AMISTOSOS NA TEMPORADA', vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
             copas: { jogos: 0, vitorias: 0, empates: 0, derrotas: 0, golsPro: 0, golsContra: 0, pontos: 0 },
+            extraCompetitions: [],
             titulos: [],
             rankInicio: '',
             rankFinal: '',
@@ -1155,6 +1848,23 @@ const deleteCurrentEntry = async () => {
     alert('Temporada removida com sucesso.')
 }
 
+const addExtraCompetition = () => {
+    if (!selectedEntry.value.extraCompetitions) {
+        selectedEntry.value.extraCompetitions = [];
+    }
+    selectedEntry.value.extraCompetitions.push({
+        nome: '',
+        vitorias: 0,
+        empates: 0,
+        derrotas: 0,
+        golsPro: 0,
+        golsContra: 0,
+        bgColor: '',
+        textColor: '',
+        borderColor: ''
+    });
+}
+
 /**
  * Encerra o ciclo da temporada atual.
  * Congela os dados da liga (snapshot) e marca cicloEncerrado=true.
@@ -1263,13 +1973,20 @@ const totalStats = computed(() => {
 
     const isSelecao = selectedEntry.value.tipo === 'selecao'
     
-    const liga = ensureStats(isSelecao ? selectedEntry.value.liga : currentSeasonData.value)
+    const liga = ensureStats(isSelecao ? selectedEntry.value.copaMundo : currentSeasonData.value)
     const elim = ensureStats(isSelecao ? eliminatoriasData.value : null)
-    const copaMundo = ensureStats(isSelecao ? selectedEntry.value.copaMundo : null)
     const copasManual = ensureStats(isSelecao ? selectedEntry.value.copasManual : null)
-    const amistosos = ensureStats(isSelecao ? selectedEntry.value.amistosos : (selectedEntry.value.copas || null))
+    const amistosos = ensureStats(isSelecao ? selectedEntry.value.amistosos : null)
 
-    const sum = (field) => liga[field] + elim[field] + copaMundo[field] + copasManual[field] + amistosos[field]
+    const sum = (field) => {
+        let total = liga[field] + elim[field] + copasManual[field] + amistosos[field];
+        if (!isSelecao && selectedEntry.value.extraCompetitions) {
+            selectedEntry.value.extraCompetitions.forEach(comp => {
+                total += Number(comp[field] || 0);
+            });
+        }
+        return total;
+    }
 
     const v = sum('vitorias')
     const e = sum('empates')
@@ -1290,12 +2007,16 @@ const totalStats = computed(() => {
 })
 
 const calculateWinRate = (stats) => {
-    if (!stats || !stats.jogos || stats.jogos === 0) return '0.00'
+    if (!stats) return '0.00'
     const v = Number(stats.vitorias ?? Math.floor((stats.pontos || 0) / 3))
     const e = Number(stats.empates ?? ((stats.pontos || 0) % 3))
     const d = Number(stats.derrotas || 0)
-    const j = v + e + d || Number(stats.jogos)
+    
+    // Prioritize the explicitly passed 'jogos', otherwise calculate from V+E+D
+    const j = stats.jogos !== undefined ? Number(stats.jogos) : (v + e + d)
+    
     if (j === 0) return '0.00'
+    
     // Fórmula: aproveitamento de pontos = pontos / (jogos × 3) × 100
     // Empate vale 1pt, Vitória 3pts, Derrota 0pt — igual à tabela do futebol
     const pts = (v * 3) + (e * 1)
@@ -2002,6 +2723,12 @@ watch(selectedEntry, async (newVal) => {
     font-weight: bold;
     border-radius: 4px;
     padding: 2px;
+    transform: skewX(15deg);
+}
+
+.career-table tr.has-custom-bg .table-input,
+.career-table tr.has-custom-text .table-input {
+    background: transparent !important;
 }
 
 .performance-status {
@@ -2570,6 +3297,43 @@ watch(selectedEntry, async (newVal) => {
     box-shadow: 0 0 5px var(--bs-warning);
 }
 
+/* --- OVERRIDE DE CORES DINÂMICAS --- */
+/* Força a aplicação das cores customizadas acima das classes originais */
+
+.career-table tr.has-custom-bg,
+.career-table tr.has-custom-bg td {
+    background-color: var(--row-bg) !important;
+    background-image: none !important;
+}
+
+.career-table tr.has-custom-text,
+.career-table tr.has-custom-text td,
+.career-table tr.has-custom-text span,
+.career-table tr.has-custom-text input {
+    color: var(--row-text) !important;
+}
+
+.career-table tr.has-custom-border td {
+    border-bottom: 3px solid var(--row-border) !important;
+}
+
+/* Card Outer Border */
+.card-top-section.has-custom-border {
+    border: 3px solid var(--row-border) !important;
+}
+
+</style>
+
+<style scoped>
+.premium-scorer-card-h {
+  height: 90px;
+  background: rgba(10, 15, 25, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
 </style>
 
 

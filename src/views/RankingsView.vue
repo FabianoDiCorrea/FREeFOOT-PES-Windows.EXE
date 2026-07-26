@@ -305,20 +305,24 @@ const sortedRankings = computed(() => {
       // Enriquecimento de federação para dados legados e clubes
       let fedLogo = item.federationLogo
       let fedName = item.federationName
+      let countryName = item.country
       
       const found = dataSearchService.search(item.teamName, r.type === 'selecoes' ? 'selecao' : 'clube')
       if (found) {
+          countryName = found.pais || found.nome || countryName
           if (r.type === 'clubes' || !fedLogo || !fedName) {
-              const cont = found.continente
-              if (cont) {
-                  const fedEntry = FEDERATIONS_DATA[cont] || 
-                                   Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
-                                   Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
-                  if (fedEntry) {
-                      fedLogo = fedEntry.logo
-                      fedName = fedEntry.nome
-                  }
-              }
+            const cont = found.continente
+            if (cont) {
+                const fedEntry = FEDERATIONS_DATA[cont] || 
+                                 Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
+                                 Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
+                if (fedEntry) {
+                    fedLogo = fedEntry.logo
+                    fedName = fedEntry.nome
+                } else if (cont.startsWith('http') || cont.startsWith('data:')) {
+                    fedLogo = cont
+                }
+            }
               if (!fedLogo && found.pais) {
                   const contFound = ALL_COMPETITIONS_DATA.find(c => c.paises && c.paises.some(p => p.nome === found.pais))
                   if (contFound) {
@@ -342,22 +346,13 @@ const sortedRankings = computed(() => {
           federationLogo: fedLogo, 
           federationName: fedName, 
           evolution: prevItem.position - item.position, 
+          evolution: prevMatch.position - item.position, 
           isNew: false 
         }
       }
-      // Se não achou no ranking principal, tenta achar no MyTeam da temporada anterior
-      const prevMyTeam = prev?.myTeam
-      if (prevMyTeam && norm(prevMyTeam.teamName) === norm(item.teamName)) {
-         return { 
-           ...item, 
-           federationLogo: fedLogo, 
-           federationName: fedName, 
-           evolution: prevMyTeam.position - item.position, 
-           isNew: false 
-         }
-      }
       return { 
         ...item, 
+        country: countryName,
         federationLogo: fedLogo, 
         federationName: fedName, 
         evolution: 0, 
@@ -368,6 +363,46 @@ const sortedRankings = computed(() => {
     // Calcular evolução para o MyTeam
     let myTeamWithEvo = { ...r.myTeam }
     if (r.myTeam && r.myTeam.teamName) {
+       // Enriquecimento
+       let fedLogo = myTeamWithEvo.federationLogo
+       let fedName = myTeamWithEvo.federationName
+       let countryName = myTeamWithEvo.country
+
+       const found = dataSearchService.search(r.myTeam.teamName, r.type === 'selecoes' ? 'selecao' : 'clube')
+       if (found) {
+           countryName = found.pais || found.nome || countryName
+           if (r.type === 'clubes' || !fedLogo || !fedName) {
+               const cont = found.continente
+               if (cont) {
+                   const fedEntry = FEDERATIONS_DATA[cont] || 
+                                    Object.values(FEDERATIONS_DATA).find(f => f.nome.toUpperCase() === cont.toUpperCase()) ||
+                                    Object.values(FEDERATIONS_DATA).find(f => f.logo === cont)
+                   if (fedEntry) {
+                       fedLogo = fedEntry.logo
+                       fedName = fedEntry.nome
+                   } else if (cont.startsWith('http') || cont.startsWith('data:')) {
+                       fedLogo = cont
+                   }
+               }
+               if (!fedLogo && found.pais) {
+                   const contFound = ALL_COMPETITIONS_DATA.find(c => c.paises && c.paises.some(p => p.nome === found.pais))
+                   if (contFound) {
+                       const fedEntry = FEDERATIONS_DATA[contFound.continente]
+                       if (fedEntry) {
+                           fedLogo = fedEntry.logo
+                           fedName = fedEntry.nome
+                       }
+                   }
+               }
+               if (!fedLogo && found.federacao_logo) {
+                   fedLogo = found.federacao_logo
+               }
+           }
+       }
+       myTeamWithEvo.country = countryName
+       myTeamWithEvo.federationLogo = fedLogo
+       myTeamWithEvo.federationName = fedName
+
        const prevItemInRanking = prev?.ranking.find(p => norm(p.teamName) === norm(r.myTeam.teamName))
        const prevMyTeam = prev?.myTeam && norm(prev?.myTeam.teamName) === norm(r.myTeam.teamName) ? prev.myTeam : null
        
@@ -476,6 +511,8 @@ const saveRanking = async () => {
             if (fedEntry) {
                 fedLogo = fedEntry.logo
                 fedName = fedEntry.nome
+            } else if (cont.startsWith('http') || cont.startsWith('data:')) {
+                fedLogo = cont
             }
         }
         if (!fedLogo && found.pais) {
@@ -518,6 +555,8 @@ const saveRanking = async () => {
             if (fedEntry) {
                 myFedLogo = fedEntry.logo
                 myFedName = fedEntry.nome
+            } else if (cont.startsWith('http') || cont.startsWith('data:')) {
+                myFedLogo = cont
             }
         }
         if (!myFedLogo && fMy.pais) {

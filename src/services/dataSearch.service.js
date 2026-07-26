@@ -70,16 +70,16 @@ export const dataSearchService = {
         if (!name) return null;
         const search = normalizeString(name);
 
-        const exactMatch = NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome) === search) ||
-            NATIONAL_TEAMS_DATA.find(n => normalizeCountry(n.pais) === normalizeCountry(search)) ||
-            cachedCustomNationalities.find(n => normalizeString(n.nome) === search);
+        const exactMatch = cachedCustomNationalities.find(n => normalizeString(n.nome) === search) ||
+            NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome) === search) ||
+            NATIONAL_TEAMS_DATA.find(n => normalizeCountry(n.pais) === normalizeCountry(search));
 
         if (exactMatch) return exactMatch;
 
         if (exactOnly) return null;
 
-        return NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome).includes(search)) ||
-            cachedCustomNationalities.find(n => normalizeString(n.nome).includes(search));
+        return cachedCustomNationalities.find(n => normalizeString(n.nome).includes(search)) ||
+            NATIONAL_TEAMS_DATA.find(n => normalizeString(n.nome).includes(search));
     },
 
     /**

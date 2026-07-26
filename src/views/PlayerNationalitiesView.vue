@@ -17,10 +17,10 @@
           @error="showFallbackTitle = true"
         >
         <h2 v-if="showFallbackTitle" class="fw-black text-uppercase m-0 ls-2 text-info">
-          <i class="bi bi-globe2 me-2"></i>NACIONALIDADES DOS JOGADORES
+          <i class="bi bi-globe2 me-2"></i>NACIONALIDADES E SELEÇÕES
         </h2>
         <div class="small text-secondary fw-bold text-uppercase mt-2 opacity-75">
-          Representação de países dos jogadores da carreira (sem vínculo a competições)
+          Cadastre novas seleções e bandeiras que não existem nativamente no sistema
         </div>
       </div>
       <LogoFREeFOOT />
@@ -64,6 +64,15 @@
         :class="{ 'selected': selectedNat?.id === nat.id }"
         @click="selectNat(nat)"
       >
+        <!-- Botão de editar (aparece no hover) -->
+        <button
+          class="btn-edit-nat"
+          @click.stop="editNationality(nat)"
+          title="Editar país"
+        >
+          <i class="bi bi-pencil-fill"></i>
+        </button>
+
         <!-- Botão de remover (aparece no hover) -->
         <button
           class="btn-remove-nat"
@@ -108,7 +117,9 @@
       <div class="modal-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h4 class="fw-black text-uppercase m-0 text-info">
-            <i class="bi bi-plus-circle-fill me-2"></i>ADICIONAR PAÍS
+            <i class="bi bi-pencil-square me-2" v-if="isEditing"></i>
+            <i class="bi bi-plus-circle-fill me-2" v-else></i>
+            {{ isEditing ? 'EDITAR' : 'ADICIONAR' }} PAÍS
           </h4>
           <button class="btn-close btn-close-white" @click="closeModal"></button>
         </div>
@@ -136,16 +147,33 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label x-small fw-bold text-secondary text-uppercase">URL da Bandeira (opcional)</label>
+          <label class="form-label x-small fw-bold text-secondary text-uppercase">URL da Bandeira do País</label>
           <input
             type="text"
             v-model="form.bandeira_url"
             class="form-control game-input"
-            placeholder="https://... (deixe em branco para busca automática)"
+            placeholder="https://... (PNG ou JPG)"
           >
-          <div class="x-small text-secondary opacity-50 mt-1">
-            Se deixar em branco, o sistema tentará encontrar a bandeira automaticamente pelo nome.
-          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label x-small fw-bold text-secondary text-uppercase">URL do Escudo da Federação (Opcional)</label>
+          <input
+            type="text"
+            v-model="form.escudo_url"
+            class="form-control game-input"
+            placeholder="https://... (Aparecerá nas tabelas e detalhes)"
+          >
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label x-small fw-bold text-secondary text-uppercase">Continente da Seleção (Opcional)</label>
+          <select v-model="form.continente" class="form-select game-input">
+            <option value="">-- Nenhum / Desconhecido --</option>
+            <option v-for="fed in federationsList" :key="fed.chave" :value="fed.chave">
+              {{ fed.chave }} ({{ fed.nome }})
+            </option>
+          </select>
         </div>
 
         <div class="mb-4">
@@ -182,6 +210,7 @@ import { db } from '../services/db'
 import NationalFlag from '../components/NationalFlag.vue'
 import LogoFREeFOOT from '../components/LogoFREeFOOT.vue'
 import { refreshCustomNationalities } from '../services/dataSearch.service'
+import { FEDERATIONS_DATA } from '../services/federations.data'
 
 // ────────────────────────────────────────────────
 // Chave de persistência no localforage
@@ -199,11 +228,26 @@ const saving        = ref(false)
 const showFallbackTitle = ref(false)
 const inputNome     = ref(null)
 
+const isEditing     = ref(false)
+
 // Formulário de adição
 const form = ref({
+  id: null,
   nome: '',
   bandeira_url: '',
+  escudo_url: '',
+  continente: '',
   nota: ''
+})
+
+const federationsList = computed(() => {
+  const list = []
+  for (const [key, value] of Object.entries(FEDERATIONS_DATA)) {
+    if (!key.startsWith('Outros') && key !== 'América' && key !== 'Ásia - Oceania' && key !== 'Mundial') {
+      list.push({ chave: key, nome: value.nome, logo: value.logo })
+    }
+  }
+  return list
 })
 
 // ────────────────────────────────────────────────
@@ -238,9 +282,24 @@ const loadNationalities = async () => {
 // Abre o modal de adição
 // ────────────────────────────────────────────────
 const openAddModal = () => {
-  form.value = { nome: '', bandeira_url: '', nota: '' }
+  isEditing.value = false
+  form.value = { id: null, nome: '', bandeira_url: '', escudo_url: '', continente: '', nota: '' }
   showModal.value = true
   // Foca o campo de nome após abrir
+  setTimeout(() => inputNome.value?.focus(), 100)
+}
+
+const editNationality = (nat) => {
+  isEditing.value = true
+  form.value = {
+    id: nat.id,
+    nome: nat.nome,
+    bandeira_url: nat.bandeira_url || '',
+    escudo_url: nat.escudo_url || '',
+    continente: nat.continente || '',
+    nota: nat.nota || ''
+  }
+  showModal.value = true
   setTimeout(() => inputNome.value?.focus(), 100)
 }
 
@@ -258,9 +317,9 @@ const saveNationality = async () => {
   const nomeLimpo = form.value.nome.trim()
   if (!nomeLimpo) return
 
-  // Verifica duplicata (ignora maiúsculas/minúsculas)
+  // Verifica duplicata (ignora maiúsculas/minúsculas, exceto o atual)
   const jáExiste = nationalities.value.some(
-    n => n.nome.toLowerCase() === nomeLimpo.toLowerCase()
+    n => n.nome.toLowerCase() === nomeLimpo.toLowerCase() && n.id !== form.value.id
   )
   if (jáExiste) {
     alert(`O país "${nomeLimpo}" já está registrado!`)
@@ -270,15 +329,23 @@ const saveNationality = async () => {
   saving.value = true
   try {
     const novoRegistro = {
-      id: Date.now().toString(), // ID único baseado em timestamp
+      id: form.value.id || Date.now().toString(), // ID único baseado em timestamp
       nome: nomeLimpo,
       bandeira_url: form.value.bandeira_url.trim(),
+      escudo_url: form.value.escudo_url?.trim() || '',
+      continente: form.value.continente?.trim() || '',
       nota: form.value.nota.trim()
     }
 
-    // Adiciona à lista e re-ordena
-    const lista = [...nationalities.value, novoRegistro]
-      .sort((a, b) => a.nome.localeCompare(b.nome))
+    let lista = [...nationalities.value]
+    if (form.value.id) {
+       const idx = lista.findIndex(n => n.id === form.value.id)
+       if (idx !== -1) lista[idx] = novoRegistro
+    } else {
+       lista.push(novoRegistro)
+    }
+    
+    lista.sort((a, b) => a.nome.localeCompare(b.nome))
 
     // Persiste no banco local
     await db.save(DB_KEY, lista)
@@ -437,6 +504,38 @@ const handleBack = () => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 4px;
+}
+
+.btn-edit-nat {
+  position: absolute;
+  top: 8px;
+  right: 40px;
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 50%;
+  color: rgba(255, 193, 7, 0.7);
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.nationality-card:hover .btn-edit-nat {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-edit-nat:hover {
+  background: rgba(255, 193, 7, 0.5);
+  border-color: #ffc107;
+  color: white;
 }
 
 /* ── Botão de remover (oculto, aparece no hover) ── */

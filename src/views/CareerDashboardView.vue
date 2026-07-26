@@ -558,7 +558,7 @@ const customTooltipExternal = function(context) {
         const searchCountry = country?.trim() || '';
         
         const club = dataSearchService.findClub(teamName);
-        if (club?.escudo_url) shieldUrl = club.escudo_url;
+        if (club?.escudo_url) shieldUrl = getCachedUrl(club.escudo_url);
 
         if (searchCountry) {
             let fed = FEDERATIONS_DATA[searchCountry];
@@ -570,10 +570,10 @@ const customTooltipExternal = function(context) {
                 const nameForSearch = searchCountry === 'Estados Unidos' ? 'USA' : searchCountry;
                 const nt = dataSearchService.findNationalTeam(nameForSearch);
                 if (nt?.bandeira_url) {
-                    flagUrl = nt.bandeira_url;
+                    flagUrl = getCachedUrl(nt.bandeira_url);
                 } else {
                     const club = dataSearchService.findClub(teamName);
-                    if (club?.bandeira_url) flagUrl = club.bandeira_url;
+                    if (club?.bandeira_url) flagUrl = getCachedUrl(club.bandeira_url);
                 }
             }
         }
@@ -629,6 +629,19 @@ const customTooltipExternal = function(context) {
                 <span class="tooltip-label">COMPETIÇÃO:</span>
                 <span class="tooltip-value" style="color: ${dataPoint.lineColor || rankColor}; font-weight: 900; text-transform: uppercase;">${dataPoint.compName}</span>
             </div>
+        `;
+        
+        if (dataPoint.previousTeams && dataPoint.previousTeams.length > 0) {
+            innerHtml += `<div class="tooltip-row mt-2" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; flex-direction: column; align-items: flex-start;">`;
+            innerHtml += `<span class="tooltip-label x-small" style="font-size: 0.65rem; opacity: 0.6; margin-bottom: 4px;">TAMBÉM TREINOU NESTA TEMP.:</span>`;
+            dataPoint.previousTeams.forEach(pt => {
+                let posText = pt.posicaoTimeline ? `Saiu em ${pt.posicaoTimeline}º` : (pt.faseLabel || 'Sem Posição');
+                innerHtml += `<span class="tooltip-value highlight" style="font-size: 0.85rem; color: #ffcc00; display: block;">&bull; ${pt.timeNome} <small class="text-white-50">(${posText})</small></span>`;
+            });
+            innerHtml += `</div>`;
+        }
+        
+        innerHtml += `
             <div class="tooltip-glow" style="background: radial-gradient(circle at top right, ${dataPoint.lineColor || rankColor}15 0%, transparent 70%)"></div>
         `;
 
@@ -1194,8 +1207,9 @@ const processedSeasons = computed(() => {
             if (clubInfo) finalPais = clubInfo.pais;
         }
 
-        const winRate = j > 0 ? (((v + e) / j) * 100).toFixed(2) : 0;
-        
+        const ptsConquistados = (v * 3) + e;
+        const maxPts = j * 3;
+        const winRate = j > 0 ? ((ptsConquistados / maxPts) * 100).toFixed(2) : 0;        
         // Posição: Sincronizada > Rank Final manual
         const finalP = p || parseInt(h.rankFinal) || 0;
 
@@ -1245,9 +1259,33 @@ const getCupRank = (fase) => {
 // Atualiza o Gráfico sempre que a View, Store ou Qualquer dado de Universo mudar
 watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     // Ordenar a lista cronologicamente
-    const sorted = [...newList].sort((a,b) => {
+    let sorted = [...newList].sort((a,b) => {
         return parseInt(a.anoCortado) - parseInt(b.anoCortado)
     });
+
+    // Mesclar times na mesma temporada (pega o último time como principal e joga os antigos pro tooltip)
+    const mergedSorted = [];
+    for (const item of sorted) {
+        const yearNorm = normalizeYearStrict(item.temporada);
+        const existing = mergedSorted.find(m => normalizeYearStrict(m.temporada) === yearNorm);
+        if (existing) {
+            if (!existing.previousTeams) existing.previousTeams = [];
+            // Salva o time que já estava lá (o mais antigo) no histórico de "previous"
+            existing.previousTeams.push({
+                timeNome: existing.timeNome,
+                posicaoTimeline: existing.posicaoTimeline,
+                pais: existing.pais,
+                extraCompetitions: existing.extraCompetitions
+            });
+            // Atualiza os dados principais com o time mais recente, mas preserva a lista de previousTeams
+            const prevTeams = existing.previousTeams;
+            Object.assign(existing, item);
+            existing.previousTeams = prevTeams;
+        } else {
+            mergedSorted.push({ ...item, previousTeams: [] });
+        }
+    }
+    sorted = mergedSorted;
 
     const normalizedLabels = sorted.map(s => normalizeYearStrict(s.temporada));
     
@@ -1263,8 +1301,6 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
     for (let i = 0; i < padCount; i++) finalLabels.push(' '.repeat(i + 1));
 
     labels.value = finalLabels;
-    
-    
 
 
     const bgs = [];
@@ -1342,7 +1378,8 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             isRebaixado: isRebaixadoYear,
             lineColor: colors.bg === '#fff' ? '#0066ff' : colors.bg,
             pointColor: finalBg,
-            pointStyle: finalStyle
+            pointStyle: finalStyle,
+            previousTeams: s.previousTeams
         };
     });
     
@@ -1360,6 +1397,32 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
 
         const hYearNorm = normalizeYearStrict(s.temporada);
         const hTimeNorm = normalizeString(s.timeNome);
+
+        // 0. VERIFICAR EXTRA COMPETITIONS PRIMEIRO (Prioridade para manual)
+        if (s.extraCompetitions && s.extraCompetitions.length > 0) {
+            const manualCup = s.extraCompetitions.find(c => {
+                const cName = (c.nome || '').toLowerCase();
+                // Assumir como copa nacional se tiver 'copa' mas não for internacional
+                return (cName.includes('copa') || cName.includes('cup') || cName.includes('pokal')) && 
+                       !cName.includes('libertadores') && !cName.includes('sul-americana') && 
+                       !cName.includes('champions') && !cName.includes('mundial') && !cName.includes('recopa');
+            });
+            if (manualCup && manualCup.posicao && manualCup.posicao !== '---') {
+                const rank = getCupRank(manualCup.posicao);
+                if (rank || manualCup.posicao.toLowerCase() === 'não jogou') {
+                    return {
+                        x: normYear,
+                        y: rank, // Se for null (ex: não jogou), ele não desenha o ponto
+                        time: s.timeNome,
+                        compName: manualCup.nome,
+                        pais: s.pais,
+                        faseLabel: manualCup.posicao,
+                        temporadaLonga: s.temporada,
+                        previousTeams: s.previousTeams
+                    };
+                }
+            }
+        }
 
         // Buscar competições do tipo Copa nesta temporada no Universo
         const copasDaTemporada = seasonStore.list.filter(season => {
@@ -1420,6 +1483,54 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             }
         }
 
+        let copasPreviousTeams = [];
+        if (s.previousTeams) {
+            copasPreviousTeams = s.previousTeams.map(pt => {
+                let ptCopaFaseStr = 'Não jogou copas';
+                const ptTimeNorm = normalizeString(pt.timeNome);
+                
+                let manualCupFase = null;
+                if (pt.extraCompetitions && pt.extraCompetitions.length > 0) {
+                    const manualCup = pt.extraCompetitions.find(c => {
+                        const cName = (c.nome || '').toLowerCase();
+                        return (cName.includes('copa') || cName.includes('cup') || cName.includes('pokal')) && 
+                               !cName.includes('libertadores') && !cName.includes('sul-americana') && 
+                               !cName.includes('champions') && !cName.includes('mundial') && !cName.includes('recopa');
+                    });
+                    if (manualCup && manualCup.posicao && manualCup.posicao !== '---') {
+                        manualCupFase = manualCup.posicao;
+                    }
+                }
+
+                if (manualCupFase) {
+                    ptCopaFaseStr = (manualCupFase.toLowerCase() === 'não' || manualCupFase.toLowerCase().includes('não jogou')) ? 'Não jogou' : manualCupFase;
+                } else {
+                    for (const copa of copasDaTemporada) {
+                        if (copa.campeao && normalizeString(copa.campeao) === ptTimeNorm) {
+                            ptCopaFaseStr = 'Campeão';
+                            break;
+                        }
+                        if (copa.participantes && copa.participantes.length > 0) {
+                            const p = copa.participantes.find(part => normalizeString(part.nome) === ptTimeNorm);
+                            if (p && p.colocacao) {
+                                ptCopaFaseStr = p.colocacao;
+                                break;
+                            }
+                        }
+                        if (copa.tabela && normalizeString(copa.tabela).includes(ptTimeNorm)) {
+                            ptCopaFaseStr = 'Participou (Fase Desconhecida)';
+                            break;
+                        }
+                    }
+                }
+                return {
+                    timeNome: pt.timeNome,
+                    posicaoTimeline: null, // Evita mostrar posição da liga
+                    faseLabel: ptCopaFaseStr
+                };
+            });
+        }
+
         return {
             x: normYear,
             y: copaPos,
@@ -1427,7 +1538,8 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
             compName: copaName,
             pais: s.pais,
             faseLabel: copaFaseStr,
-            temporadaLonga: s.temporada
+            temporadaLonga: s.temporada,
+            previousTeams: copasPreviousTeams
         };
     });
 }, { immediate: true });

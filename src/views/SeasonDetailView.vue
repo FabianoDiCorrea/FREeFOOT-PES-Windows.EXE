@@ -638,8 +638,8 @@
               <h4 class="m-0 text-white fw-black text-uppercase ls-2">TIME DA TEMPORADA</h4>
            </div>
            
-           <div class="pt-5 mt-5 position-relative z-1 d-flex flex-column justify-content-between pb-4" style="min-height: 500px;">
-              <div v-for="(line, lIdx) in timeDaTemporadaLines" :key="'linha-'+lIdx" class="d-flex flex-wrap w-100 my-2 justify-content-center align-items-center" :style="{ gap: getLineGap(line.id) }">
+           <div class="pt-5 mt-5 position-relative z-1 d-flex flex-column justify-content-evenly pb-4" style="min-height: 500px;">
+              <div v-for="(line, lIdx) in timeDaTemporadaLines" :key="'linha-'+lIdx" class="d-flex flex-wrap w-100 my-2 justify-content-center align-items-center" :style="{ gap: getLineGap(line.id, line.list.length) }">
                   <div v-for="(jog, idx) in line.list" :key="'tt-'+lIdx+'-'+idx"
                        draggable="true"
                        @dragstart="onNativeDragStart(jog)"
@@ -647,7 +647,7 @@
                        @drop="onNativeDrop(jog)"
                        :style="{ opacity: dragActiveItem === jog ? 0.5 : 1, transition: 'all 0.2s', cursor: 'pointer' }">
                     <div class="d-flex align-items-center position-relative shadow-lg" 
-                         style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 8px 14px; border: 2px solid #e1c784; width: 280px; border-radius: 2px;">
+                         style="background: linear-gradient(180deg, #cba259 0%, #a4762e 100%); padding: 8px 14px; border: 2px solid #e1c784; width: 330px; border-radius: 2px;">
                       <div style="flex-shrink: 0; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px; margin-right: 12px;">
                          <TeamShield :teamName="jog.clube" :size="42" borderless :season="season.ano" />
                       </div>
@@ -1192,56 +1192,34 @@ const shouldShowNationality = (playerNationality) => {
 }
 
 const timeDaTemporadaLines = computed(() => {
-  if (!season.value?.timeDaTemporada) return [];
-  const lines = { gol: [], zag: [], lat: [], vol: [], mlg: [], mat: [], ata: [] };
+  if (!season.value?.timeDaTemporada || season.value.timeDaTemporada.length === 0) return [];
   
-  season.value.timeDaTemporada.forEach(jog => {
-    const p = (jog.posicaoCampo || '').toUpperCase().trim();
-    
-    if (['GOL', 'GK', 'PT'].includes(p)) {
-      lines.gol.push(jog);
-    } 
-    else if (['ZG', 'ZC', 'ZAG', 'CB'].includes(p)) {
-      lines.zag.push(jog);
-    }
-    else if (['LAT', 'LE', 'LD', 'RB', 'LB'].includes(p)) {
-      lines.lat.push(jog);
-    }
-    else if (['VOL', 'DMF'].includes(p)) {
-      lines.vol.push(jog);
-    }
-    else if (['MLG', 'MEI', 'MD', 'ME', 'MLD', 'MLE', 'CMF', 'LMF', 'RMF'].includes(p)) {
-      lines.mlg.push(jog);
-    }
-    else if (['MAT', 'AMF'].includes(p)) {
-      lines.mat.push(jog);
-    }
-    else {
-      lines.ata.push(jog); // CA, SA, ATA, PTD, PTE, etc
-    }
-  });
+  // Padrão Fixo Solicitado para todas as competições:
+  // 11 posições organizadas no formato 2-1-2-1-2-2-1
+  const players = [...season.value.timeDaTemporada];
   
-  // O array define a ordem geométrica (de cima para baixo no HTML flexbox)
+  // Completa com vazio caso haja menos de 11 (prevenção de quebra de layout)
+  while(players.length < 11) {
+    players.push({ nome: '---', clube: '---', posicaoCampo: '' });
+  }
+
   return [
-    { id: 'ata', list: lines.ata },
-    { id: 'mat', list: lines.mat },
-    { id: 'mlg', list: lines.mlg },
-    { id: 'vol', list: lines.vol },
-    { id: 'lat', list: lines.lat },
-    { id: 'zag', list: lines.zag },
-    { id: 'gol', list: lines.gol }
-  ].filter(line => line.list.length > 0); // Filtra as linhas vazias para evitar buracos irregulares
+    { id: 'linha1', list: [players[0], players[1]] },
+    { id: 'linha2', list: [players[2]] },
+    { id: 'linha3', list: [players[3], players[4]] },
+    { id: 'linha4', list: [players[5]] },
+    { id: 'linha5', list: [players[6], players[7]] },
+    { id: 'linha6', list: [players[8], players[9]] },
+    { id: 'linha7', list: [players[10]] }
+  ];
 });
 
-const getLineGap = (id) => {
-  // Laterais bem abertos nas extremidades (exatamente como aprovado no print 2)
-  if (id === 'lat') return '700px';
-  // Meias abertos, mas mais fechados que os laterais
-  if (id === 'mlg') return '350px';
-  // Zagueiros mais abertos que a média
-  if (id === 'zag') return '80px';
-  // Atacantes e outros no centro
-  return '150px';
+const getLineGap = (id, count = 1) => {
+  if (id === 'linha1') return '160px'; // 2 Atacantes
+  if (id === 'linha3') return '250px'; // 2 Meias Centrais
+  if (id === 'linha5') return '600px'; // 2 Laterais (Extremidades)
+  if (id === 'linha6') return '80px';  // 2 Zagueiros (Fechados)
+  return '0px'; // Fallback / Linhas com 1 jogador
 };
 
 // =====================================

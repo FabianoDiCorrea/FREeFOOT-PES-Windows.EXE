@@ -71,3 +71,10 @@
 /* Aplicar cores dinâmicas via classes injectadas */
 .form-select.bg-pos-gold { color: #000 !important; -webkit-text-fill-color: #000 !important; }
 .form-select.bg-pos-silver { color: #000 !important; -webkit-text-fill-color: #000 !important; }
+.form-select.bg-pos-bronze { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-green { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-blue-lib { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-blue-sula { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-red-group { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-red-pre { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+.form-select.bg-pos-gray { color: #fff !important; -webkit-text-fill-color: #fff !important; }

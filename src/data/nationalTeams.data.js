@@ -868,5 +868,15 @@ export const NATIONAL_TEAMS_DATA = [
     "bandeira_url": "https://a.imagem.app/o2z97V.png",
     "logo_continente": "",
     "federacao_logo": "https://a.imagem.app/B76MoQ.png"
+  },
+  {
+    "id": 88,
+    "nome": "Cabo Verde",
+    "pais": "",
+    "continente": "https://a.imagem.app/B76a00.webp",
+    "escudo_url": "",
+    "bandeira_url": "",
+    "logo_continente": "",
+    "federacao_logo": "https://a.imagem.app/B76a00.webp"
   }
 ];
