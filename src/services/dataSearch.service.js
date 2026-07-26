@@ -10,6 +10,19 @@ import { NATIONAL_COMPETITIONS_STRUCTURE } from './national.data';
 import { normalizeString, normalizeCountry } from './utils';
 import { db } from './db';
 
+// Aliases PES → FREeFOOT (nomes completos do jogo → abreviados do sistema)
+const TEAM_NAME_ALIASES = {
+    'paris saint-germain': 'PSG',
+    'paris saint germain': 'PSG',
+    'liga deportiva universitaria': 'LDU',
+};
+
+function resolveAlias(name) {
+    if (!name) return name;
+    const lower = name.toLowerCase().trim();
+    return TEAM_NAME_ALIASES[lower] || name;
+}
+
 let cachedCustomNationalities = [];
 
 export const refreshCustomNationalities = async () => {
@@ -30,7 +43,8 @@ export const dataSearchService = {
      */
     findClub(name, exactOnly = false) {
         if (!name) return null;
-        const search = normalizeString(name);
+        const resolved = resolveAlias(name);
+        const search = normalizeString(resolved);
         const list = clubStore.list.length > 0 ? clubStore.list : [];
 
         const exactMatch = list.find(c => normalizeString(c.nome) === search);

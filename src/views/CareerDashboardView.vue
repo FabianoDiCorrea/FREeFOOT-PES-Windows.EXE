@@ -1398,11 +1398,66 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
         const hYearNorm = normalizeYearStrict(s.temporada);
         const hTimeNorm = normalizeString(s.timeNome);
 
+        // Buscar competições do tipo Copa nesta temporada no Universo (ANTES de qualquer return)
+        const copasDaTemporada = seasonStore.list.filter(season => {
+            const sYearNorm = normalizeYearStrict(season.ano);
+            if (sYearNorm !== hYearNorm) return false;
+            const cName = (season.competitionName || '').toLowerCase();
+            return cName.includes('copa') && !cName.includes('libertadores') && !cName.includes('sul-americana') && !cName.includes('champions') && !cName.includes('mundial de clubes');
+        });
+
+        // Computar previousTeams de Copa ANTES de qualquer return, para nunca vazar posição de Liga
+        let copasPreviousTeams = [];
+        if (s.previousTeams) {
+            copasPreviousTeams = s.previousTeams.map(pt => {
+                let ptCopaFaseStr = 'Não jogou';
+                const ptTimeNorm = normalizeString(pt.timeNome);
+                
+                // Prioridade 1: Dados manuais do encerramento de ciclo
+                let manualCupFase = null;
+                if (pt.extraCompetitions && pt.extraCompetitions.length > 0) {
+                    const manualCup = pt.extraCompetitions.find(c => {
+                        const cName = (c.nome || '').toLowerCase();
+                        return (cName.includes('copa') || cName.includes('cup') || cName.includes('pokal')) && 
+                               !cName.includes('libertadores') && !cName.includes('sul-americana') && 
+                               !cName.includes('champions') && !cName.includes('mundial') && !cName.includes('recopa');
+                    });
+                    if (manualCup && manualCup.posicao && manualCup.posicao !== '---') {
+                        manualCupFase = manualCup.posicao;
+                    }
+                }
+
+                if (manualCupFase) {
+                    ptCopaFaseStr = (manualCupFase.toLowerCase() === 'não' || manualCupFase.toLowerCase().includes('não jogou')) ? 'Não jogou' : manualCupFase;
+                } else if (!pt.extraCompetitions || pt.extraCompetitions.length === 0) {
+                    // Só busca na CPU se o usuário NÃO preencheu nada manual (evita dados fantasma)
+                    for (const copa of copasDaTemporada) {
+                        if (copa.campeao && normalizeString(copa.campeao) === ptTimeNorm) {
+                            ptCopaFaseStr = 'Campeão';
+                            break;
+                        }
+                        if (copa.participantes && copa.participantes.length > 0) {
+                            const p = copa.participantes.find(part => normalizeString(part.nome) === ptTimeNorm);
+                            if (p && p.colocacao) {
+                                ptCopaFaseStr = p.colocacao;
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Se o usuário removeu a copa da lista ou marcou "Não", fica "Não jogou"
+                return {
+                    timeNome: pt.timeNome,
+                    posicaoTimeline: null,
+                    faseLabel: ptCopaFaseStr
+                };
+            });
+        }
+
         // 0. VERIFICAR EXTRA COMPETITIONS PRIMEIRO (Prioridade para manual)
         if (s.extraCompetitions && s.extraCompetitions.length > 0) {
             const manualCup = s.extraCompetitions.find(c => {
                 const cName = (c.nome || '').toLowerCase();
-                // Assumir como copa nacional se tiver 'copa' mas não for internacional
                 return (cName.includes('copa') || cName.includes('cup') || cName.includes('pokal')) && 
                        !cName.includes('libertadores') && !cName.includes('sul-americana') && 
                        !cName.includes('champions') && !cName.includes('mundial') && !cName.includes('recopa');
@@ -1412,26 +1467,17 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
                 if (rank || manualCup.posicao.toLowerCase() === 'não jogou') {
                     return {
                         x: normYear,
-                        y: rank, // Se for null (ex: não jogou), ele não desenha o ponto
+                        y: rank,
                         time: s.timeNome,
                         compName: manualCup.nome,
                         pais: s.pais,
                         faseLabel: manualCup.posicao,
                         temporadaLonga: s.temporada,
-                        previousTeams: s.previousTeams
+                        previousTeams: copasPreviousTeams
                     };
                 }
             }
         }
-
-        // Buscar competições do tipo Copa nesta temporada no Universo
-        const copasDaTemporada = seasonStore.list.filter(season => {
-            const sYearNorm = normalizeYearStrict(season.ano);
-            if (sYearNorm !== hYearNorm) return false;
-            const cName = (season.competitionName || '').toLowerCase();
-            // Limitar a copas nacionais / copas do mundo (ignorando as de ligas/continentais exclusivas)
-            return cName.includes('copa') && !cName.includes('libertadores') && !cName.includes('sul-americana') && !cName.includes('champions') && !cName.includes('mundial de clubes');
-        });
 
         for (const copa of copasDaTemporada) {
             let extra = '';
@@ -1481,54 +1527,6 @@ watch([processedSeasons, () => seasonStore.list], ([newList, seasonList]) => {
                     }
                 }
             }
-        }
-
-        let copasPreviousTeams = [];
-        if (s.previousTeams) {
-            copasPreviousTeams = s.previousTeams.map(pt => {
-                let ptCopaFaseStr = 'Não jogou copas';
-                const ptTimeNorm = normalizeString(pt.timeNome);
-                
-                let manualCupFase = null;
-                if (pt.extraCompetitions && pt.extraCompetitions.length > 0) {
-                    const manualCup = pt.extraCompetitions.find(c => {
-                        const cName = (c.nome || '').toLowerCase();
-                        return (cName.includes('copa') || cName.includes('cup') || cName.includes('pokal')) && 
-                               !cName.includes('libertadores') && !cName.includes('sul-americana') && 
-                               !cName.includes('champions') && !cName.includes('mundial') && !cName.includes('recopa');
-                    });
-                    if (manualCup && manualCup.posicao && manualCup.posicao !== '---') {
-                        manualCupFase = manualCup.posicao;
-                    }
-                }
-
-                if (manualCupFase) {
-                    ptCopaFaseStr = (manualCupFase.toLowerCase() === 'não' || manualCupFase.toLowerCase().includes('não jogou')) ? 'Não jogou' : manualCupFase;
-                } else {
-                    for (const copa of copasDaTemporada) {
-                        if (copa.campeao && normalizeString(copa.campeao) === ptTimeNorm) {
-                            ptCopaFaseStr = 'Campeão';
-                            break;
-                        }
-                        if (copa.participantes && copa.participantes.length > 0) {
-                            const p = copa.participantes.find(part => normalizeString(part.nome) === ptTimeNorm);
-                            if (p && p.colocacao) {
-                                ptCopaFaseStr = p.colocacao;
-                                break;
-                            }
-                        }
-                        if (copa.tabela && normalizeString(copa.tabela).includes(ptTimeNorm)) {
-                            ptCopaFaseStr = 'Participou (Fase Desconhecida)';
-                            break;
-                        }
-                    }
-                }
-                return {
-                    timeNome: pt.timeNome,
-                    posicaoTimeline: null, // Evita mostrar posição da liga
-                    faseLabel: ptCopaFaseStr
-                };
-            });
         }
 
         return {

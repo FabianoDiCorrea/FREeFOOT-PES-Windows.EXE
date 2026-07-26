@@ -6,6 +6,13 @@ from PIL import ImageGrab, Image
 # Inicializa o leitor
 reader = easyocr.Reader(['pt', 'en'])
 
+# Aliases PES → FREeFOOT (nomes completos do jogo → abreviados do sistema)
+TEAM_ALIASES = {
+    "PARIS SAINT-GERMAIN": "PSG",
+    "PARIS SAINT GERMAIN": "PSG",
+    "LIGA DEPORTIVA UNIVERSITARIA": "LDU",
+}
+
 def capturar_e_ler_ocr():
     """Captura imagem do clipboard e retorna resultado detalhado."""
     try:
@@ -75,6 +82,12 @@ def processar_tabela_v6(resultado_ocr, modo_copa=False, img_width=None, img_heig
             nome_time = " ".join(nome_tokens).upper()
             # Limpeza do número de posição (ex: "1 CHELSEA" -> "CHELSEA")
             nome_time = re.sub(r'^\d+[\s.]+', '', nome_time)
+            
+            # Aplicar aliases PES → FREeFOOT
+            for alias_de, alias_para in TEAM_ALIASES.items():
+                if nome_time == alias_de:
+                    nome_time = alias_para
+                    break
             
             if modo_copa:
                 if len(nome_time) > 2:
